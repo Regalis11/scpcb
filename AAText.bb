@@ -1,5 +1,3 @@
-;Graphics3D 1280,720,0,2
-
 Global AATextEnable% = GetINIInt(OptionFile, "options", "antialiased text")
 Global AASelectedFont%
 Global AATextCam%,AATextSprite%[150]
@@ -207,18 +205,16 @@ Function AALoadFont%(file$="Tahoma", height=13, bold=0, italic=0, underline=0, A
 	
 	newFont\lowResFont = LoadFont(file,height,bold,italic,underline)
 	
-	newFont\mW = (FontWidth()/AATextScaleFactor)+3
-	newFont\mH = (FontHeight()/AATextScaleFactor)+3
+	SetFont newFont\lowResFont
+	newFont\mW = FontWidth()
+	newFont\mH = FontHeight()
 	
 	If AATextEnable Then
 		Local hResFont% = LoadFont(file,height*AATextScaleFactor,bold,italic,underline)
 		Local tImage% = CreateTexture(1024,1024,3)
 		Local tX% = 0 : Local tY% = 1
+		
 		SetFont hResFont
-		
-		newFont\mW = (FontWidth()/AATextScaleFactor)+3
-		newFont\mH = (FontHeight()/AATextScaleFactor)+3
-		
 		Local tCharImage% = CreateImage(FontWidth()+2*AATextScaleFactor,FontHeight()+2*AATextScaleFactor)
 		ClsColor 0,0,0
 		LockBuffer TextureBuffer(tImage)
@@ -237,50 +233,59 @@ Function AALoadFont%(file$="Tahoma", height=13, bold=0, italic=0, underline=0, A
 		For i=32 To 126
 			SetBuffer ImageBuffer(tCharImage)
 			Cls
-			;Color 60,60,60
-			;Text 0,0,Chr(i)
-			;Text AATextScaleFactor,0,Chr(i)
-			;Text 0,AATextScaleFactor,Chr(i)
-			;Text AATextScaleFactor,AATextScaleFactor,Chr(i)
+
 			Color 255,255,255
+			SetFont hResFont
 			Text AATextScaleFactor/2,AATextScaleFactor/2,Chr(i)
 			Local tw% = StringWidth(Chr(i)) : Local th% = FontHeight()
+			SetFont newFont\lowResFont
+			Local dsw% = StringWidth(Chr(i)) : Local dsh% = FontHeight()
+			
+			Local wRatio# = Float(tw)/Float(dsw)
+			Local hRatio# = Float(th)/Float(dsh)
+			
 			SetBuffer BackBuffer()
 				
 			LockBuffer ImageBuffer(tCharImage)
-			For iy%=0 To th/Float(AATextScaleFactor)+2*AATextScaleFactor
-				For ix%=0 To tw/Float(AATextScaleFactor)+2*AATextScaleFactor
-					Local rx% = ix*AATextScaleFactor
-					Local ry% = iy*AATextScaleFactor
+			
+			For iy%=0 To dsh-1
+				For ix%=0 To dsw-1
+					Local rsx% = Int(Float(ix)*wRatio-(wRatio*0.0))
+					If (rsx<0) Then rsx=0
+					Local rsy% = Int(Float(iy)*hRatio-(hRatio*0.0))
+					If (rsy<0) Then rsy=0
+					Local rdx% = Int(Float(ix)*wRatio+(wRatio*1.0))
+					If (rdx>tw) Then rdx=tw-1
+					Local rdy% = Int(Float(iy)*hRatio+(hRatio*1.0))
+					If (rdy>th) Then rdy=th-1
 					Local ar% = 0
-					For iiy%=ry To ry+AATextScaleFactor/2
-						If (iiy>=0 And iiy<th+1*AATextScaleFactor) Then
-							For iix%=rx To rx+AATextScaleFactor/2
-								If (iix>=0 And iix<tw+1*AATextScaleFactor) Then
-									ar=ar+((ReadPixelFast(iix,iiy,ImageBuffer(tCharImage)) And $FF)/Float(AATextScaleFactor+3)*1.25)
-									ar=((Float(ar)/255.0)^(0.9))*255
-									If ar>255 Then ar=255
-								EndIf
+					If Abs(rsx-rdx)*Abs(rsy-rdy)>0 Then
+						For iiy%=rsy To rdy-1
+							For iix%=rsx To rdx-1
+								ar=ar+((ReadPixelFast(iix,iiy,ImageBuffer(tCharImage)) And $FF))
 							Next
-						EndIf
-					Next
-					;ar = ((Float(ar)/255.0)^0.5)*255.0
+						Next
+						ar = ar/(Abs(rsx-rdx)*Abs(rsy-rdy))
+						If ar>255 Then ar=255
+						ar = ((Float(ar)/255.0)^(0.5))*255
+					EndIf
 					WritePixelFast(ix+tX,iy+tY,$FFFFFF+(ar Shl 24),TextureBuffer(tImage))
 				Next
 			Next
+			
 			UnlockBuffer ImageBuffer(tCharImage)
 	
 			newFont\x[i]=tX
 			newFont\y[i]=tY
-			newFont\w[i]=(StringWidth(Chr(i))/AATextScaleFactor)+3
+			newFont\w[i]=dsw+2
 			
 			If newFont\mW<newFont\w[i]-3 Then newFont\mW=newFont\w[i]-3
 			
-			newFont\h[i]=(FontHeight()/AATextScaleFactor)+3
+			newFont\h[i]=dsh+2
 			tX=tX+newFont\w[i]+2
-			If (tX>1024-(FontWidth()/AATextScaleFactor)-4) Then
+			If (tX>1024-FontWidth()-4) Then
 				tX=0
-				tY=tY+(FontHeight()/AATextScaleFactor)+6
+				tY=tY+FontHeight()+6
 			EndIf
 		Next
 		
@@ -296,7 +301,6 @@ Function AALoadFont%(file$="Tahoma", height=13, bold=0, italic=0, underline=0, A
 			Next
 		Next
 		UnlockBuffer ImageBuffer(backup)
-		;SaveImage backup,file+".bmp"
 		newFont\backup = backup
 		
 		UnlockBuffer TextureBuffer(tImage)

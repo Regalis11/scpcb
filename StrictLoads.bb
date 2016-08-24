@@ -14,7 +14,7 @@
 ;likely to cause more crashes than 'clean' CB, as this prevents anyone from loading any assets that don't exist, regardless if they are ever used
 ;added zero checks since blitz load functions return zero sometimes even if the filetype exists
 Function LoadImage_Strict(file$)
-	If FileType(file$)<>1 Then RuntimeError "Image " + file$ + " missing. "
+	If FileType(file$)<>1 Then RuntimeError "Image " + Chr(34) + file$ + Chr(34) + " missing. "
 	tmp = LoadImage(file$)
 	
 	;attempt to load the image again
@@ -22,7 +22,7 @@ Function LoadImage_Strict(file$)
 	
 	If tmp = 0 Then
 		;if loading failed again, add an error message to the console and return a black image
-		CreateConsoleMsg("Loading image ''"+file+"'' failed")
+		CreateConsoleMsg("Loading image " + Chr(34) + file$ + Chr(34) + " failed.")
 		If ConsoleOpening Then
 			ConsoleOpen = True
 		EndIf
@@ -36,14 +36,14 @@ End Function
 ;Function LoadSound_Strict(file$)
 ;	
 ;	If FileType(file$)<>1 Then 
-;		CreateConsoleMsg("Sound " + file$ + " not found.")
+;		CreateConsoleMsg("Sound " + Chr(34) + file$ + Chr(34) + " not found.")
 ;		ConsoleInput = ""
 ;		ConsoleOpen = True
 ;		Return 0
 ;	EndIf
 ;   tmp = LoadSound(file$)
 ;	If tmp = 0 Then 
-;		CreateConsoleMsg("Failed to load Sound:" + file$)
+;		CreateConsoleMsg("Failed to load Sound: " + Chr(34) + file$ + Chr(34))
 ;		ConsoleInput = ""
 ;		ConsoleOpen = True
 ;	EndIf
@@ -90,7 +90,7 @@ Function PlaySound_Strict%(sndHandle%)
 				If Not ChannelPlaying(snd\channels[i]) Then
 					If snd\internalHandle=0 Then
 						If FileType(snd\name)<>1 Then
-							CreateConsoleMsg("Sound "+snd\name+" not found.")
+							CreateConsoleMsg("Sound " + Chr(34) + snd\name + Chr(34) + " not found.")
 							If ConsoleOpening
 								ConsoleOpen = True
 							EndIf
@@ -98,7 +98,7 @@ Function PlaySound_Strict%(sndHandle%)
 							If EnableSFXRelease Then snd\internalHandle = LoadSound(snd\name)
 						EndIf
 						If snd\internalHandle = 0 Then
-							CreateConsoleMsg("Failed to load Sound: "+snd\name)
+							CreateConsoleMsg("Failed to load Sound: " + Chr(34) + snd\name + Chr(34))
 							If ConsoleOpening
 								ConsoleOpen = True
 							EndIf
@@ -112,7 +112,7 @@ Function PlaySound_Strict%(sndHandle%)
 			Else
 				If snd\internalHandle=0 Then
 					If FileType(snd\name)<>1 Then
-						CreateConsoleMsg("Sound "+snd\name+" not found.")
+						CreateConsoleMsg("Sound " + Chr(34) + snd\name + Chr(34) + " not found.")
 						If ConsoleOpening
 							ConsoleOpen = True
 						EndIf
@@ -121,7 +121,7 @@ Function PlaySound_Strict%(sndHandle%)
 					EndIf
 						
 					If snd\internalHandle = 0 Then
-						CreateConsoleMsg("Failed to load Sound: "+snd\name)
+						CreateConsoleMsg("Failed to load Sound: " + Chr(34) + snd\name + Chr(34))
 						If ConsoleOpening
 							ConsoleOpen = True
 						EndIf

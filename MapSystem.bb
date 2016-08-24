@@ -1948,7 +1948,7 @@ Function FillRoom(r.Rooms)
 			PositionEntity(r\Objects[3], r\x+1216.0*RoomScale, 0, r\z+2112.0*RoomScale, True)
 			EntityParent r\Objects[3], r\obj
 			
-			;sillan loppupää
+			;sillan loppupï¿½ï¿½
 			r\Objects[4]=CreatePivot()
 			PositionEntity(r\Objects[4], r\x, 96.0*RoomScale, r\z+6400.0*RoomScale, True)
 			EntityParent r\Objects[4], r\obj		
@@ -1977,7 +1977,7 @@ Function FillRoom(r.Rooms)
 			r\Objects[9]=CreatePivot()
 			PositionEntity(r\Objects[9], r\x+2624.0*RoomScale, 992.0*RoomScale, r\z+6157.0*RoomScale, True)
 			EntityParent r\Objects[9], r\obj	
-			;objects[10] = valopyssyn yläosa
+			;objects[10] = valopyssyn ylï¿½osa
 			
 			;tunnelin loppu
 			r\Objects[11]=CreatePivot()
@@ -2028,7 +2028,7 @@ Function FillRoom(r.Rooms)
 			PositionEntity(r\RoomDoors[4]\buttons[0], r\x, 7.0, r\z, True)
 			
 			
-			;käytävän takaosa
+			;kï¿½ytï¿½vï¿½n takaosa
 			r\Objects[3] = CreatePivot()
 			PositionEntity(r\Objects[3], r\x-7680.0*RoomScale, 10992.0*RoomScale, r\z-27048.0*RoomScale, True)
 			EntityParent r\Objects[3], r\obj
@@ -2084,7 +2084,7 @@ Function FillRoom(r.Rooms)
 			PositionEntity(r\Objects[11], r\x+2816.0*RoomScale, 11024.0*RoomScale, r\z-2816.0*RoomScale, True)
 			EntityParent r\Objects[11], r\obj
 			
-			;r\Objects[12] = 682:n käsi
+			;r\Objects[12] = 682:n kï¿½si
 			
 			;"valvomon" takaovi
 			r\RoomDoors[5] = CreateDoor(0, r\x+3248.0*RoomScale, 9856.0*RoomScale, r\z+6400.0*RoomScale, 0, r, False, False, 0, "ABCD")
@@ -2492,10 +2492,10 @@ Function FillRoom(r.Rooms)
 			PositionEntity(d\buttons[0], EntityX(d\buttons[0],True), EntityY(d\buttons[0],True), r\z + 608.0 * RoomScale,True)
 			PositionEntity(d\buttons[1], EntityX(d\buttons[1],True), EntityY(d\buttons[1],True), r\z + 608.0 * RoomScale,True)
 			
-			;yläkerran hissin ovi
+			;ylï¿½kerran hissin ovi
 			r\RoomDoors[0] = CreateDoor(r\zone, r\x + 1192.0 * RoomScale, 0.0, r\z, 90, r, True)
 			r\RoomDoors[0]\AutoClose = False : r\RoomDoors[0]\open = True
-			;yläkerran hissi
+			;ylï¿½kerran hissi
 			r\Objects[4] = CreatePivot()
 			PositionEntity(r\Objects[4], r\x + 1496.0 * RoomScale, 240.0 * RoomScale, r\z)
 			EntityParent(r\Objects[4], r\obj)
@@ -5313,9 +5313,9 @@ Function FindPath(n.NPCs, x#, y#, z#)
 	
 	Local CurrX, CurrZ
 	
-       ;pathstatus = 0, ei ole etsitty reittiä
-       ;pathstatus = 1, reitti löydetty
-       ;pathstatus = 2, reittiä ei ole olemassa   
+       ;pathstatus = 0, ei ole etsitty reittiï¿½
+       ;pathstatus = 1, reitti lï¿½ydetty
+       ;pathstatus = 2, reittiï¿½ ei ole olemassa   
 	
 	For w.WayPoints = Each WayPoints
 		w\state = 0
@@ -5396,7 +5396,7 @@ Function FindPath(n.NPCs, x#, y#, z#)
 	EndIf
 	If EndPoint = Null Then Return 2
 	
-       ;aloitus- ja lopetuspisteet löydetty, aletaan etsiä reittiä
+       ;aloitus- ja lopetuspisteet lï¿½ydetty, aletaan etsiï¿½ reittiï¿½
 	
 	Repeat
 		
@@ -5447,7 +5447,7 @@ Function FindPath(n.NPCs, x#, y#, z#)
 					
                 EndIf
 			Next
-		Else ;open listiltä ei löytynyt mitään
+		Else ;open listiltï¿½ ei lï¿½ytynyt mitï¿½ï¿½n
 			If EndPoint\state > 0 Then
                 StartPoint\parent = Null
                 EndPoint\state = 2
@@ -5511,8 +5511,8 @@ Function FindPath(n.NPCs, x#, y#, z#)
 		
 	Else
 		
-		DebugLog "FUNCTION FindPath() - reittiä ei löytynyt"
-		Return 2 ;reittiä määränpäähän ei löytynyt
+		DebugLog "FUNCTION FindPath() - reittiï¿½ ei lï¿½ytynyt"
+		Return 2 ;reittiï¿½ mï¿½ï¿½rï¿½npï¿½ï¿½hï¿½n ei lï¿½ytynyt
 		
 	EndIf
 	
@@ -5796,8 +5796,8 @@ Function UpdateSecurityCams()
 									If BlinkTimer > - 5 Then Sanity=Sanity-(FPSfactor * 16)
 									
 									If Sanity < (-1000) Then 
-										DeathMSG = "''What we know is that he died of cardiac arrest. My guess is that it was caused by SCP-895, although it hasn't been observed affecting video equipment from this far before. "
-										DeathMSG = DeathMSG + "Further testing is needed to determine if SCP-895's effect is spreading.''"
+										DeathMSG = Chr(34)+"What we know is that he died of cardiac arrest. My guess is that it was caused by SCP-895, although it has never been observed affecting video equipment from this far before. "
+										DeathMSG = DeathMSG + "Further testing is needed to determine whether SCP-895's "+Chr(34)+"Red Zone"+Chr(34)+" is increasing."+Chr(34)
 										
 										Kill()				
 									EndIf
@@ -5992,9 +5992,9 @@ Function UpdateLever(obj, locked=False)
 					EndIf
 				EndIf 
 				
-				If EntityPitch(obj,True) > 75 Then ;päällä
+				If EntityPitch(obj,True) > 75 Then ;pï¿½ï¿½llï¿½
 					If prevpitch =< 75 Then PlaySound2(LeverSFX, Camera, obj, 1.0)
-				ElseIf EntityPitch(obj,True) < -75 ;pois päältä
+				ElseIf EntityPitch(obj,True) < -75 ;pois pï¿½ï¿½ltï¿½
 					If prevpitch => -75 Then PlaySound2(LeverSFX, Camera, obj, 1.0)	
 				EndIf						
 			EndIf
@@ -6011,9 +6011,9 @@ Function UpdateLever(obj, locked=False)
 		
 	EndIf
 	
-	If EntityPitch(obj,True) > 0 Then ;päällä
+	If EntityPitch(obj,True) > 0 Then ;pï¿½ï¿½llï¿½
 		Return True
-	Else ;pois päältä
+	Else ;pois pï¿½ï¿½ltï¿½
 		Return False
 	EndIf	
 	
@@ -6077,9 +6077,9 @@ Function UpdateElevators#(State#, door1.Doors, door2.Doors, room1, room2, event.
 		door2\locked = True
 		door1\NPCCalledElevator = 2
 		door2\NPCCalledElevator = 2
-		If State < 0 Then ;ylhäältä alas
+		If State < 0 Then ;ylhï¿½ï¿½ltï¿½ alas
 			State = State - FPSfactor
-			;pelaaja hissin sisällä
+			;pelaaja hissin sisï¿½llï¿½
 			If Abs(EntityX(Collider)-EntityX(room1,True))<280.0*RoomScale Then
 				If Abs(EntityZ(Collider)-EntityZ(room1,True))<280.0*RoomScale Then
 					If Abs(EntityY(Collider)-EntityY(room1,True))<280.0*RoomScale Then
@@ -6151,9 +6151,9 @@ Function UpdateElevators#(State#, door1.Doors, door2.Doors, room1, room2, event.
 				
 				PlaySound2(ElevatorBeepSFX, Camera, room1, 4.0)
 			EndIf
-		Else ;alhaalta ylös
+		Else ;alhaalta ylï¿½s
 			State = State + FPSfactor
-			;pelaaja hissin sisällä
+			;pelaaja hissin sisï¿½llï¿½
 			If Abs(EntityX(Collider)-EntityX(room2,True))<280.0*RoomScale Then
 				If Abs(EntityZ(Collider)-EntityZ(room2,True))<280.0*RoomScale Then
 					If Abs(EntityY(Collider)-EntityY(room2,True))<280.0*RoomScale Then
@@ -6195,7 +6195,7 @@ Function UpdateElevators#(State#, door1.Doors, door2.Doors, room1, room2, event.
 				door2\NPCCalledElevator = False
 				State = 0
 				
-				;pelaaja hissin sisällä, siirretään
+				;pelaaja hissin sisï¿½llï¿½, siirretï¿½ï¿½n
 				If inside Then	
 					x# = Max(Min((EntityX(Collider)-EntityX(room2,True)),280*RoomScale-0.17),-280*RoomScale+0.17)
 					z# = Max(Min((EntityZ(Collider)-EntityZ(room2,True)),280*RoomScale-0.17),-280*RoomScale+0.17)
@@ -6262,9 +6262,9 @@ Function UpdateElevators2#(State#, door1.Doors, door2.Doors, room1, room2, event
 	If door1\open = False And door2\open = False Then
 		door1\locked = True 
 		door2\locked = True 
-		If State < 0 Then ;ylhäält?alas
+		If State < 0 Then ;ylhï¿½ï¿½lt?alas
 			State = State - FPSfactor
-			;pelaaja hissin sisäll?
+			;pelaaja hissin sisï¿½ll?
 			If Abs(EntityX(Collider)-EntityX(room1,True))<280.0*RoomScale Then
 				If Abs(EntityZ(Collider)-EntityZ(room1,True))<280.0*RoomScale Then	
 					If Abs(EntityY(Collider)-EntityY(room1,True))<280.0*RoomScale Then	
@@ -6318,9 +6318,9 @@ Function UpdateElevators2#(State#, door1.Doors, door2.Doors, room1, room2, event
 				PlaySound2(ElevatorBeepSFX, Camera, room1, 4.0)	
 				;PlaySound_Strict(ElevatorBeepSFX)	
 			EndIf
-		Else ;alhaalta ylös
+		Else ;alhaalta ylï¿½s
 			State = State + FPSfactor
-			;pelaaja hissin sisäll?
+			;pelaaja hissin sisï¿½ll?
 			If Abs(EntityX(Collider)-EntityX(room2,True))<280.0*RoomScale Then
 				If Abs(EntityZ(Collider)-EntityZ(room2,True))<280.0*RoomScale Then	
 					If Abs(EntityY(Collider)-EntityY(room2,True))<280.0*RoomScale Then
@@ -6344,7 +6344,7 @@ Function UpdateElevators2#(State#, door1.Doors, door2.Doors, room1, room2, event
 				
 				UseDoor(door1,True)	
 				
-				;pelaaja hissin sisäll? siirretään
+				;pelaaja hissin sisï¿½ll? siirretï¿½ï¿½n
 				If inside Then	
 					
 					dist# = Distance(EntityX(Collider,True),EntityZ(Collider,True),EntityX(room2,True),EntityZ(room2,True))
@@ -6859,7 +6859,7 @@ Function CreateMap()
 				
 				temp = Min(MapTemp(x + 1, y),1) + Min(MapTemp(x - 1, y),1) + Min(MapTemp(x, y + 1),1) + Min(MapTemp(x, y - 1),1)
 				
-				Select temp ;viereisissä ruuduissa olevien huoneiden määrä
+				Select temp ;viereisissï¿½ ruuduissa olevien huoneiden mï¿½ï¿½rï¿½
 					Case 1
 						If MapRoomID(ROOM1) < MaxRooms And MapName(x,y) = "" Then
 							If CheckRoomOverlap(MapRoom(ROOM1, MapRoomID(ROOM1)), x, y) Then

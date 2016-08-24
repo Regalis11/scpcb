@@ -532,8 +532,8 @@ Function PickItem(item.Items)
 						ShowEntity Light
 						LightFlash = 1.0
 						PlaySound_Strict(IntroSFX(11))
-						DeathMSG = "Subject D-9431 found dead inside SCP-914's output booth next to what appears to be an ordinary 9V battery. The subject is covered in severe "
-						DeathMSG = DeathMSG + "electrical burns, and assumed to be killed by an electrical shock caused by the battery. The battery has been stored for further study."
+						DeathMSG = "Subject D-9431 found dead inside SCP-914's output booth next to what appears to be an ordinary nine-volt battery. The subject is covered in severe "
+						DeathMSG = DeathMSG + "electrical burns, and assumed to be killed via an electrical shock caused by the battery. The battery has been stored for further study."
 						Kill()
 					Case "scp148"
 						GiveAchievement(Achv148)	
@@ -544,7 +544,7 @@ Function PickItem(item.Items)
 					Case "key6"
 						GiveAchievement(AchvOmni)
 					Case "veryfinevest"
-						Msg = "The vest is too heavy to pick up"
+						Msg = "The vest is too heavy to pick up."
 						MsgTimer = 70*6
 						Exit
 					Case "firstaid", "finefirstaid", "veryfinefirstaid", "firstaid2"
@@ -565,7 +565,7 @@ Function PickItem(item.Items)
 			EndIf
 		Next
 	Else
-		Msg = "You can't carry any more items"
+		Msg = "You cannot carry any more items."
 		MsgTimer = 70 * 5
 	EndIf
 End Function

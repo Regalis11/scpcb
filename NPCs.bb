@@ -809,15 +809,15 @@ Function UpdateNPCs()
 														DeathMSG = "Subject D-9341. Cause of death: Fatal cervical fracture. The surveillance tapes confirm that the subject was killed by SCP-173."	
 													Case "173"
 														If Rand(2)=1 Then
-															DeathMSG = "''Yes, we we're just about to start the tests when it started. The Class Ds and the guard died as soon as the lights started flickering, "
-															DeathMSG = DeathMSG + "but I managed to get out of the surveillance room before it got me.''"
+															DeathMSG = Chr(34)+"Yes, we we're just about to start the tests when it started. The Class Ds and the guard died as soon as the lights started flickering, "
+															DeathMSG = DeathMSG + "but I managed to get out of the surveillance room before it got me."+Chr(34)
 														Else
 															DeathMSG = "Subject D-9341. Cause of death: Fatal cervical fracture. According to Security Chief Franklin who was present at SCP-173's containment "
 															DeathMSG = DeathMSG + "chamber during the breach, the subject was killed by SCP-173 as soon as the disruptions in the electrical network started."
 														EndIf
 													Case "room2doors"
-														DeathMSG = "''If I'm not mistaken, one of the main purposes of these rooms was to stop SCP-173 from moving further in the event of a containment breach. "
-														DeathMSG = DeathMSG + "So, who's brilliant idea was it to put A GODDAMN MAN-SIZED VENTILATION DUCT in it?''"
+														DeathMSG = Chr(34)+"If I'm not mistaken, one of the main purposes of these rooms was to stop SCP-173 from moving further in the event of a containment breach. "
+														DeathMSG = DeathMSG + "So, who's brilliant idea was it to put A GODDAMN MAN-SIZED VENTILATION DUCT in it?"+Chr(34)
 													Default 
 														DeathMSG = "Subject D-9341. Cause of death: Fatal cervical fracture. Assumed to be attacked by SCP-173."	
 												End Select
@@ -1090,7 +1090,7 @@ Function UpdateNPCs()
 											PlaySound_Strict(DamageSFX(1))
 											PlaySound_Strict(HorrorSFX(5))											
 											If PlayerRoom\RoomTemplate\Name = "pocketdimension" Then
-												DeathMSG = "Subject D-9341. Body partially decomposed by what is assumed to be SCP-106's ''corrosion'' effect. Body disposed of via incineration."
+												DeathMSG = "Subject D-9341. Body partially decomposed by what is assumed to be SCP-106's "+Chr(34)+"corrosion"+Chr(34)+" effect. Body disposed of via incineration."
 												Kill()
 											Else
 												PlaySound_Strict(OldManSFX(3))
@@ -1584,12 +1584,12 @@ Function UpdateNPCs()
 											
 											If (Not GodMode) Then
 												If PlayerRoom\RoomTemplate\Name$ = "room049"
-													DeathMSG = "Three (3) active instances of SCP-049-2 discovered in the tunnel outside SCP-049's containment chamber. Terminated by Nine Tailed Fox."
+													DeathMSG = "Three (3) active instances of SCP-049-2 discovered in the tunnel outside SCP-049's containment chamber. Terminated by Nine-Tailed Fox."
 													For e.events = Each Events
 														If e\EventName = "room049" Then e\EventState=-1 : Exit
 													Next
 												Else
-													DeathMSG = "An active instance of SCP-049-2 was discovered in [REDACTED]. Terminated by Nine Tailed Fox."
+													DeathMSG = "An active instance of SCP-049-2 was discovered in [REDACTED]. Terminated by Nine-Tailed Fox."
 													Kill()
 												EndIf
 												PlaySound_Strict HorrorSFX(13)
@@ -2836,7 +2836,7 @@ Function UpdateNPCs()
 												If WrapAngle(EntityYaw(pvt)-EntityYaw(n\Collider))<10 Then
 													PlaySound2(Gunshot2SFX, Camera, n\Collider, 20)
 													
-													DeathMSG = "''CH-2 to control. Shot down a runaway Class D at Gate B.''"
+													DeathMSG = Chr(34)+"CH-2 to control. Shot down a runaway Class D at Gate B."+Chr(34)
 													
 													Shoot( EntityX(pvt),EntityY(pvt), EntityZ(pvt),(15/dist)*(n\State=2),(n\State=2))
 													
@@ -2966,11 +2966,11 @@ Function UpdateNPCs()
 												PlaySound_Strict DamageSFX(Rand(3,4))
 												
 												If Injuries > 3.0 Then 
-													DeathMSG = "''We'll need more than the regular cleaning team to care of this. "
+													DeathMSG = Chr(34)+"We will need more than the regular cleaning team to care of this. "
 													DeathMSG = DeathMSG + "Two large and highly active tentacle-like appendages seem "
-													DeathMSG = DeathMSG + "to have formed inside the chamber. Their level of their aggression "
-													DeathMSG = DeathMSG + "is unlike anything we've seen before - it looks like they've "
-													DeathMSG = DeathMSG + "beaten some unfortunate Class D to death at some point during the breach.''"
+													DeathMSG = DeathMSG + "to have formed inside the chamber. Their level of aggression is "
+													DeathMSG = DeathMSG + "unlike anything we've seen before - it looks like they have "
+													DeathMSG = DeathMSG + "beaten some unfortunate Class D to death at some point during the breach."+Chr(34)
 													Kill()
 												EndIf
 											EndIf
@@ -3390,8 +3390,8 @@ Function UpdateNPCs()
 									EndIf
 									
 									If Injuries>4.0 Then 
-										DeathMSG="All four escaped SCP-939 specimens have been captured and recontained successfully. "
-										DeathMSG=DeathMSG+"Three (3) of them made quite a mess at Storage Area 6. A cleaning team has been dispatched."
+										DeathMSG=Chr(34)+"All four escaped SCP-939 specimens have been captured and recontained successfully. "
+										DeathMSG=DeathMSG+"Three (3) of them made quite a mess at Storage Area 6. A cleaning team has been dispatched."+Chr(34)
 										Kill()
 										If (Not GodMode) Then n\State = 5
 									EndIf								
@@ -3825,8 +3825,8 @@ Function UpdateNPCs()
 								Else
 									DeathMSG = "Several bipedal entities of unknown origin were found in Site-[REDACTED]. "
 									DeathMSG = DeathMSG + "Testing reveals that these entities behave similarly to those "
-									DeathMSG = DeathMSG + "seen when using SCP-178. It is unknown whether SCP-178 and "
-									DeathMSG = DeathMSG + "these entities are related."
+									DeathMSG = DeathMSG + "seen when using SCP-178. It is unknown at the current time "
+									DeathMSG = DeathMSG + "whether SCP-178 and these entities are related."
 								EndIf
 								Kill()
 							EndIf
@@ -3866,7 +3866,21 @@ Function UpdateNPCs()
 					If (WearingNightVision=0) Then
 						HideEntity n\obj
 						If dist<1 Then
-							Msg="You feel something breathing right next to you"
+							Select Rand(6)
+								Case 1
+									Msg="You feel something breathing right next to you."
+								Case 2
+									Msg=Chr(34)+"It feels like something's in this room with me."+Chr(34)
+								Case 3
+									Msg="You feel like something is here with you, but you do not see anything."
+								Case 4
+									Msg=Chr(34)+"Is my mind playing tricks on me or is there someone else here?"+Chr(34)
+								Case 5
+									Msg="You feel like something is following you."
+								Case 6
+									Msg="You can feel something near you, but you are unable to see it. Perhaps its time is now."
+							End Select
+
 							MsgTimer=5*70
 						EndIf
 					Else
@@ -3948,12 +3962,18 @@ Function UpdateNPCs()
 									StaminaEffectTimer = 1000
 									
 									If MsgTimer<=0 And StaminaEffect<1.5 Then
-										If Rand(2)=1 Then
-											Msg="You suddenly feel tired"
-										Else
-											Msg="You suddenly feel exhausted"
-										EndIf
-										MsgTimer = 5*70
+										Select Rand(4)
+											Case 1
+												Msg = "You feel exhausted."
+											Case 2
+												Msg = Chr(34)+"Could really go for a nap now..."+Chr(34)
+											Case 3
+												Msg = Chr(34)+"If I wasn't in this situation I would take a nap somewhere."+Chr(34)
+											Case 4
+												Msg = "You feel restless."
+										End Select
+
+										MsgTimer = 7*70
 									EndIf
 								EndIf							
 							EndIf
@@ -4269,7 +4289,7 @@ Function UpdateNPCs()
 												DeathMSG = DeathMSG + "Class-B amnestics due to Incident 1499-E. The Class D subject involved in the event "
 												DeathMSG = DeathMSG + "died shortly after being shot by Agent [REDACTED]."
 											Else
-												DeathMSG = "An unidentified male and a deceased Class D subject were discovered in [REDACTED] by the Nine Tailed Fox. "
+												DeathMSG = "An unidentified male and a deceased Class D subject were discovered in [REDACTED] by the Nine-Tailed Fox. "
 												DeathMSG = DeathMSG + "The man was described as highly agitated and seemed to only speak Russian. "
 												DeathMSG = DeathMSG + "He's been taken into a temporary holding area at [REDACTED] while waiting for a translator to arrive."
 											EndIf
@@ -4294,7 +4314,7 @@ Function UpdateNPCs()
 												DeathMSG = DeathMSG + "Class-B amnestics due to Incident 1499-E. The Class D subject involved in the event "
 												DeathMSG = DeathMSG + "died shortly after being shot by Agent [REDACTED]."
 											Else
-												DeathMSG = "An unidentified male and a deceased Class D subject were discovered in [REDACTED] by the Nine Tailed Fox. "
+												DeathMSG = "An unidentified male and a deceased Class D subject were discovered in [REDACTED] by the Nine-Tailed Fox. "
 												DeathMSG = DeathMSG + "The man was described as highly agitated and seemed to only speak Russian. "
 												DeathMSG = DeathMSG + "He's been taken into a temporary holding area at [REDACTED] while waiting for a translator to arrive."
 											EndIf
@@ -4953,11 +4973,11 @@ Function UpdateMTFUnit(n.NPCs)
 									
 									FreeEntity(pvt)
 									
-									DeathMSG="Subject D-9341. Died of blood loss after being shot by Nine Tailed Fox."
+									DeathMSG="Subject D-9341. Died of blood loss after being shot by Nine-Tailed Fox."
 									
 									;player killed -> "target terminated"
 									If prev => 0 And KillTimer < 0 Then
-										DeathMSG="Subject D-9341. Terminated by Nine Tailed Fox."
+										DeathMSG="Subject D-9341. Terminated by Nine-Tailed Fox."
 										PlayMTFSound(LoadTempSound("SFX\MTF\Targetterminated"+Rand(1,4)+".ogg"),n)
 									EndIf
 								EndIf	
@@ -5683,7 +5703,7 @@ Function UpdateMTFUnit(n.NPCs)
 							FreeEntity(pvt)
 							
 							;If prev => 0 And KillTimer < 0 Then
-								;DeathMSG="Subject D-9341. Terminated by Nine Tailed Fox."
+								;DeathMSG="Subject D-9341. Terminated by Nine-Tailed Fox."
 								;If n\MTFLeader = Null Then PlayMTFSound(LoadTempSound("SFX\049\MTF_2.ogg"),n)
 							;EndIf
 						EndIf	
@@ -6033,21 +6053,22 @@ Function Shoot(x#,y#,z#,hitProb#=1.0,particles%=True)
 		If Rnd(1.0)=<hitProb Then
 			TurnEntity Camera, Rnd(-3,3), Rnd(-3,3), 0
 			
+			Local ShotMessageUpdate$
 			If WearingVest>0 Then
 				If WearingVest = 1 Then
 					Select Rand(8)
 						Case 1,2,3,4,5
 							BlurTimer = 500
 							Stamina = 0
-							Msg = "Air escapes from your lungs as something hits your vest" : MsgTimer = 70*6		
+							ShotMessageUpdate = "A bullet penetrated your vest, making you gasp."
 							Injuries = Injuries + Rnd(0.1,0.5)
 						Case 6
 							BlurTimer = 500
-							Msg = "You feel a burning pain in your left leg" : MsgTimer = 70*6
+							ShotMessageUpdate = "A bullet hit your left leg."
 							Injuries = Injuries + Rnd(0.8,1.2)
 						Case 7
 							BlurTimer = 500
-							Msg = "You feel a burning pain in your right leg" : MsgTimer = 70*6		
+							ShotMessageUpdate = "A bullet hit your right leg."
 							Injuries = Injuries + Rnd(0.8,1.2)
 						Case 8
 							Kill()
@@ -6056,7 +6077,7 @@ Function Shoot(x#,y#,z#,hitProb#=1.0,particles%=True)
 					If Rand(10)=1 Then
 						Kill()
 					Else
-						Msg = "You feel something hitting your vest" : MsgTimer = 70*6	
+						ShotMessageUpdate = "A bullet hit your chest. The vest absorbed most of the damage."
 						Injuries = Injuries + Rnd(0.1,0.5)
 					EndIf
 				EndIf
@@ -6066,27 +6087,33 @@ Function Shoot(x#,y#,z#,hitProb#=1.0,particles%=True)
 						Kill()
 					Case 2
 						BlurTimer = 500
-						Msg = "You feel a burning pain in your left leg" : MsgTimer = 70*6
+						ShotMessageUpdate = "A bullet hit your left leg."
 						Injuries = Injuries + Rnd(0.8,1.2)
 					Case 3
 						BlurTimer = 500
-						Msg = "You feel a burning pain in your right leg" : MsgTimer = 70*6	
+						ShotMessageUpdate = "A bullet hit your right leg."
 						Injuries = Injuries + Rnd(0.8,1.2)
 					Case 4
 						BlurTimer = 500
-						Msg = "You feel a burning pain in your right shoulder" : MsgTimer = 70*6			
+						ShotMessageUpdate = "A bullet hit your right shoulder."
 						Injuries = Injuries + Rnd(0.8,1.2)	
 					Case 5
 						BlurTimer = 500
-						Msg = "You feel a burning pain in your left shoulder" : MsgTimer = 70*6			
+						ShotMessageUpdate = "A bullet hit your left shoulder."
 						Injuries = Injuries + Rnd(0.8,1.2)	
 					Case 6
 						BlurTimer = 500
-						Msg = "You feel a burning pain in your abdomen" : MsgTimer = 70*6
+						ShotMessageUpdate = "A bullet hit your right shoulder."
 						Injuries = Injuries + Rnd(2.5,4.0)
 				End Select
 			EndIf
 			
+			;Only updates the message if it's been more than two seconds.
+			If (MsgTimer<64*4) Then
+				Msg = ShotMessageUpdate
+				MsgTimer = 70*6
+			EndIf
+
 			Injuries = Min(Injuries, 4.0)
 			
 			;Kill()
@@ -6290,7 +6317,7 @@ Function Console_SpawnNPC(c_input$,state%=-9999)
 		Case "scp-1499-1","scp1499-1","1499-1"
 			n.NPCs = CreateNPC(NPCtype1499, EntityX(Collider),EntityY(Collider)+0.2,EntityZ(Collider))
 		Default 
-			CreateConsoleMsg("NPC type not found")
+			CreateConsoleMsg("NPC type not found.")
 	End Select
 	
 	If n <> Null

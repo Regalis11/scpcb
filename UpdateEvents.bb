@@ -38,11 +38,11 @@ Function UpdateEvents()
 						CameraFogRange(Camera, CameraFogNear, CameraFogFar)
 						CameraFogMode(Camera, 1)
 						If SelectedDifficulty\saveType = SAVEANYWHERE Then
-							Msg = "Press F5 to save"
+							Msg = "Press F5 to save."
 							MsgTimer = 70*4
 						Else
 							If SelectedDifficulty\saveType = SAVEONSCREENS Then
-								Msg = "Find a lit up computer screen to save"
+								Msg = "Saving is only permitted on clickable monitors scattered throughout the facility."
 								MsgTimer = 70 * 4	
 							EndIf 
 						EndIf
@@ -356,20 +356,20 @@ Function UpdateEvents()
 							ElseIf e\EventState3 < 30
 								If e\EventState3 > 25 Then 
 									e\EventState3 = e\EventState3+FPSfactor/3.0
-									Msg = "Pick up the paper on the desk"
+									Msg = "Pick up the paper on the desk."
 									MsgTimer=70*7
 									e\EventState3=30
 								EndIf
 							ElseIf e\EventState3 < 35
 								If Inventory(0)<>Null Then
-									Msg = "Press TAB to open the inventory"
+									Msg = "Press "+KeyName(Min(KEY_INV,210))+" to open the inventory."
 									MsgTimer=70*4
 									e\EventState3 = 40
 									Exit
 								EndIf
 							ElseIf e\EventState > 45 And e\EventState3 < 45
 								If InvOpen Then
-									Msg = "Click the document to view it"
+									Msg = "Double click on the document to view it."
 									MsgTimer=70*4
 									e\EventState3 = 45
 								EndIf
@@ -973,7 +973,7 @@ Function UpdateEvents()
 							PositionEntity(Curr173\Collider, EntityX(e\room\Objects[5], True), EntityY(Curr173\Collider), EntityZ(e\room\Objects[5], True))
 							RotateEntity(Curr173\Collider, 0, 0, 0, True)
 							ResetEntity(Curr173\Collider)
-						ElseIf e\EventState < 14000 ; pelaaja sisällä huoneessa
+						ElseIf e\EventState < 14000 ; pelaaja sisï¿½llï¿½ huoneessa
 							e\EventState = Min(e\EventState + FPSfactor, 13000)
 							
 							If e\EventState < 10300 Then
@@ -1043,7 +1043,7 @@ Function UpdateEvents()
 							Animate2(e\room\NPC[6]\obj, AnimTime(e\room\NPC[6]\obj),357,381, 0.05)
 							
 							e\EventState = Min(e\EventState + FPSfactor, 19000)
-							If e\EventState < 14100 Then ;valot sammuu ja 173 tappaa ensimmäisen class d:n
+							If e\EventState < 14100 Then ;valot sammuu ja 173 tappaa ensimmï¿½isen class d:n
 								
 								;14000-14030
 								If e\EventState < 14060 Then
@@ -1158,7 +1158,7 @@ Function UpdateEvents()
 										For r.Rooms = Each Rooms
 											If r\RoomTemplate\Name = "start" Then
 												DebugLog "tostart"
-												;Msg = "Press F5 to save"
+												;Msg = "Press F5 to save."
 												;MsgTimer = 70*8
 												
 												PlayerRoom = r
@@ -1460,11 +1460,10 @@ Function UpdateEvents()
 								EndIf
 								If Sanity < (-1000) Then 
 									If WearingNightVision=2
-										DeathMSG = "''Class-D viewed SCP-895 through a pair of digital night vision goggles enhanced by SCP-914. It is possible that the Class-D"
-										DeathMSG = DeathMSG + "was able to resist the memetic effects partially through these goggles.''"
+										DeathMSG = Chr(34)+"Class D viewed SCP-895 through a pair of digital night vision goggles, presumably enhanced by SCP-914. It might be possible that the subject"
+										DeathMSG = DeathMSG + "was able to resist the memetic effects partially through these goggles. The goggles have been stored for further study."+Chr(34)
 									Else
-										DeathMSG = "''Class-D viewed SCP-895 through a pair of digital night vision goggles, which caused insanity similar to those who view"
-										DeathMSG = DeathMSG + "SCP-895 via a video feed.''"
+										DeathMSG = Chr(34)+"Class D viewed SCP-895 through a pair of digital night vision goggles, killing him."+Chr(34)
 									EndIf
 									Kill()
 								EndIf
@@ -1748,7 +1747,7 @@ Function UpdateEvents()
 								ElseIf e\EventState > 42.0*70
 									CameraShake = 0.5
 									
-									;helikopterit lähtee pois
+									;helikopterit lï¿½htee pois
 									e\room\NPC[0]\EnemyX = EntityX(e\room\Objects[19],True)+4.0
 									e\room\NPC[0]\EnemyY = EntityY(e\room\Objects[19],True)+4.0
 									e\room\NPC[0]\EnemyZ = EntityZ(e\room\Objects[19],True)+4.0
@@ -1779,7 +1778,7 @@ Function UpdateEvents()
 												EndIf
 											Next
 											
-											If temp = 1 Then ;nuken kaukolaukaisu päällä, räjäytetään
+											If temp = 1 Then ;nuken kaukolaukaisu pï¿½ï¿½llï¿½, rï¿½jï¿½ytetï¿½ï¿½n
 												ExplosionTimer = Max(ExplosionTimer, 0.1)
 												SelectedEnding = "B2"
 											Else
@@ -2231,7 +2230,7 @@ Function UpdateEvents()
 											EndIf
 										Else
 											Curr106\PathTimer = 70*200
-											For i = 2 To 4 ;helikopterit hyökkää 106:n kimppuun
+											For i = 2 To 4 ;helikopterit hyï¿½kkï¿½ï¿½ 106:n kimppuun
 												e\room\NPC[i]\State = 3 
 												e\room\NPC[i]\EnemyX = EntityX(Curr106\obj,True)
 												e\room\NPC[i]\EnemyY = EntityY(Curr106\obj,True)+5.0
@@ -2298,7 +2297,7 @@ Function UpdateEvents()
 												For i = 5 To 8
 													e\room\NPC[i]\State = 2
 												Next
-												For i = 2 To 4 ;helikopterit hyökkää pelaajan kimppuun
+												For i = 2 To 4 ;helikopterit hyï¿½kkï¿½ï¿½ pelaajan kimppuun
 													e\room\NPC[i]\State = 2
 												Next
 												HideEntity Curr106\obj
@@ -2679,7 +2678,7 @@ Function UpdateEvents()
 								Curr106\State = -0.1
 								e\EventState = 601
 							EndIf
-						ElseIf Curr106\State > 0 ;106 kiertää isointa huonetta
+						ElseIf Curr106\State > 0 ;106 kiertï¿½ï¿½ isointa huonetta
 							angle = (e\EventState/10 Mod 360)
 							PositionEntity(Curr106\Collider, EntityX(e\room\obj), 0.2+0.35+Sin(e\EventState/14.0+i*20.0)*0.4, EntityX(e\room\obj))
 							RotateEntity(Curr106\Collider, 0,angle,0)
@@ -2690,12 +2689,12 @@ Function UpdateEvents()
 						EndIf
 					EndIf 
 					
-					If EntityDistance(Collider, Curr106\Collider) < 0.3 Then ;106 hyökkää jos on tarpeeksi lähellä pelaajaa
+					If EntityDistance(Collider, Curr106\Collider) < 0.3 Then ;106 hyï¿½kkï¿½ï¿½ jos on tarpeeksi lï¿½hellï¿½ pelaajaa
 						Curr106\Idle = False
 						Curr106\State = -11
 					EndIf
 					
-					If e\EventState2 = 1 Then ;pienessä huoneessa
+					If e\EventState2 = 1 Then ;pienessï¿½ huoneessa
 						
 						PositionEntity(e\room\Objects[9], EntityX(e\room\Objects[8],True)+3384*RoomScale, 0.0, EntityZ(e\room\Objects[8],True))
 						
@@ -2820,7 +2819,7 @@ Function UpdateEvents()
 											FreeEntity pvt
 											
 											If KillTimer = 0 Then
-												DeathMSG = "In addition to the decomposed appearance typical of the victims of SCP-106, the body exhibits injuries that have not been observed before: "
+												DeathMSG = "In addition to the decomposed appearance typical of SCP-106's victims, the body exhibits injuries that have not been observed before: "
 												DeathMSG = DeathMSG + "massive skull fracture, three broken ribs, fractured shoulder and multiple heavy lacerations."
 												
 												PlaySound_Strict LoadTempSound("SFX\PDimpact.ogg")
@@ -2874,6 +2873,7 @@ Function UpdateEvents()
 										BlinkTimer = -10
 										PositionEntity Collider, EntityX(e\room\Objects[8],True)-1344*RoomScale,2944*RoomScale,EntityZ(e\room\Objects[8],True)-1184*RoomScale
 										ResetEntity Collider
+										Crouch = False
 										
 										LoadEventSound(e,"SFX\PDExplosion.ogg")
 										LoadEventSound(e,"SFX\PDplane.ogg",1)
@@ -3081,7 +3081,7 @@ Function UpdateEvents()
 						EndIf
 						
 						If EntityY(Collider) < -1600*RoomScale Then
-							;pelaaja on "uloskäynnillä"
+							;pelaaja on "uloskï¿½ynnillï¿½"
 							If Distance(EntityX(e\room\Objects[16],True),EntityZ(e\room\Objects[16],True),EntityX(Collider),EntityZ(Collider))<144*RoomScale Then
 								
 								CameraFogColor Camera, 0,0,0
@@ -3479,7 +3479,7 @@ Function UpdateEvents()
 							HideEntity e\room\Objects[4]
 						EndIf						
 						
-						If e\SoundCHN = 0 Then ;soitetaan huminaa jos pelaaja ei lähellä
+						If e\SoundCHN = 0 Then ;soitetaan huminaa jos pelaaja ei lï¿½hellï¿½
 							e\SoundCHN = PlaySound2(TeslaIdleSFX, Camera, e\room\Objects[3],4.0,0.5)
 						Else
 							If Not ChannelPlaying(e\SoundCHN) Then e\SoundCHN = PlaySound2(TeslaIdleSFX, Camera, e\room\Objects[3],4.0,0.5)
@@ -3487,7 +3487,7 @@ Function UpdateEvents()
 						
 						For i = 0 To 2
 							If Distance(EntityX(Collider),EntityZ(Collider),EntityX(e\room\Objects[i],True),EntityZ(e\room\Objects[i],True)) < 300.0*RoomScale Then
-								;soitetaan laukaisuääni
+								;soitetaan laukaisuï¿½ï¿½ni
 								If KillTimer => 0 Then 
 									PlayerSoundVolume = Max(8.0,PlayerSoundVolume)
 									StopChannel(e\SoundCHN)
@@ -3501,7 +3501,7 @@ Function UpdateEvents()
 						If Curr106\State < -10 And e\EventState = 0 Then 
 							For i = 0 To 2
 								If Distance(EntityX(Curr106\Collider),EntityZ(Curr106\Collider),EntityX(e\room\Objects[i],True),EntityZ(e\room\Objects[i],True)) < 300.0*RoomScale Then
-									;soitetaan laukaisuääni
+									;soitetaan laukaisuï¿½ï¿½ni
 									If KillTimer => 0 Then 
 										StopChannel(e\SoundCHN)
 										e\SoundCHN = PlaySound2(TeslaActivateSFX, Camera, e\room\Objects[3],4.0,0.5)
@@ -3575,7 +3575,7 @@ Function UpdateEvents()
 											CameraShake = 1.0
 											DeathMSG = ""
 											Kill()
-											DeathMSG = "Subject D-9341 killed by the Tesla Gate at [REDACTED]."
+											DeathMSG = "Subject D-9341 killed by the Tesla gate at [REDACTED]."
 										EndIf
 									Next
 								EndIf
@@ -4415,8 +4415,8 @@ Function UpdateEvents()
 					Else
 						e\EventState=(e\EventState+FPSfactor*0.7)
 						;0-50 = menee keskelle
-						;50-200 = katselee ympärilleen
-						;200-250 = lähtee pois
+						;50-200 = katselee ympï¿½rilleen
+						;200-250 = lï¿½htee pois
 						
 						
 						If e\EventState < 50 Then
@@ -5193,7 +5193,7 @@ Function UpdateEvents()
 								Msg = "If you're seeing this, post a bug report."
 								MsgTimer = 70*5
 							Case 700.0
-								Msg = "Seriously, this SCP shouldn't spawn."
+								Msg = "Seriously, this SCP should not spawn." ; shouldn't --> should not why juan why --Mark
 								MsgTimer = 70*5
 							Case 800.0
 								BlinkTimer = -2
@@ -5540,7 +5540,7 @@ Function UpdateEvents()
 									If e\EventState3>70 And e\EventState3-FPSfactor=<70 Then
 										PlaySound_Strict LoadTempSound("SFX\012\player1.ogg")
 									ElseIf e\EventState3>13*70 And e\EventState3-FPSfactor=<13*70
-										Msg="You start pushing your nails through your wrist"
+										Msg="You start pushing your nails into your wrist, drawing blood."
 										MsgTimer = 7*70
 										Injuries=Injuries+0.5
 										PlaySound_Strict LoadTempSound("SFX\012\player2.ogg")
@@ -5549,12 +5549,12 @@ Function UpdateEvents()
 										EntityTexture (e\room\Objects[4], tex,0,1)
 										FreeTexture tex
 										
-										Msg="You tear open your left wrist and start completing the composition with your blood"
+										Msg="You tear open your left wrist and start writing on the composition with your blood."
 										MsgTimer = 7*70
 										Injuries=Max(Injuries,1.5)
 										PlaySound_Strict LoadTempSound("SFX\012\player"+Rand(3,4)+".ogg")
 									ElseIf e\EventState3>49*70 And e\EventState3-FPSfactor=<49*70
-										Msg="You push your fingers deeper into the wound"
+										Msg="You push your fingers deeper into the wound."
 										MsgTimer = 8*70
 										Injuries=Injuries+0.3
 										PlaySound_Strict LoadTempSound("SFX\012\player5.ogg")
@@ -5570,7 +5570,7 @@ Function UpdateEvents()
 										EntityTexture (e\room\Objects[4], tex,0,1)
 										FreeTexture tex
 										
-										Msg="You rip the wound wide open"
+										Msg="You rip the wound wide open. Grabbing scoops of blood pouring out."
 										MsgTimer = 7*70
 										Injuries=Injuries+0.8
 										PlaySound_Strict LoadTempSound("SFX\012\player7.ogg")
@@ -6402,7 +6402,7 @@ Function UpdateEvents()
 			Case "room106"
 				;[Block]
 				
-				;eventstate2 = onko magneetit päällä
+				;eventstate2 = onko magneetit pï¿½ï¿½llï¿½
 				
 				If SoundTransmission Then 
 					If e\EventState = 1 Then
@@ -6475,8 +6475,8 @@ Function UpdateEvents()
 						
 						UpdateButton(e\room\Objects[4])
 						If ClosestButton = e\room\Objects[4] And MouseHit1 Then
-							e\EventState = 1 ;femur breaker käyntiin
-							If SoundTransmission = True Then ;soitetaan ääni jos sound transmission on päällä
+							e\EventState = 1 ;femur breaker kï¿½yntiin
+							If SoundTransmission = True Then ;soitetaan ï¿½ï¿½ni jos sound transmission on pï¿½ï¿½llï¿½
 								If e\SoundCHN2 <> 0 Then
 									If ChannelPlaying(e\SoundCHN2) Then StopChannel e\SoundCHN2
 								EndIf 
@@ -6548,9 +6548,9 @@ Function UpdateEvents()
 								PositionEntity e\room\Objects[8], 0, 1000.0, 0, True 
 								PositionEntity e\room\Objects[7], 0, 1000.0, 0, True 
 								
-								If e\EventState2 = True Then ;magneetit päällä -> 106 napattu
+								If e\EventState2 = True Then ;magneetit pï¿½ï¿½llï¿½ -> 106 napattu
 									Contained106 = True
-								Else ;magneetit pois päältä -> 106 tulee ulos ja hyökkää
+								Else ;magneetit pois pï¿½ï¿½ltï¿½ -> 106 tulee ulos ja hyï¿½kkï¿½ï¿½
 									PositionEntity(Curr106\Collider, EntityX(e\room\Objects[6], True), EntityY(e\room\Objects[6], True), EntityZ(e\room\Objects[6], True))
 									
 									Contained106 = False
@@ -6712,7 +6712,7 @@ Function UpdateEvents()
 							Case 67
 								If (Rand(150)=1) Then
 									DeathMSG = "The SCP-205 cycle seems to have resumed its normal course after the anomalies observed during "
-									DeathMSG = DeathMSG + "[REDACTED]. The body of a Class D subject D-9341 was discovered inside the chamber. "
+									DeathMSG = DeathMSG + "[REDACTED]. The body of subject D-9341 was discovered inside the chamber. "
 									DeathMSG = DeathMSG + "The subject exhibits signs of blunt force trauma typical for personnel who have "
 									DeathMSG = DeathMSG + "entered the chamber when the lights are off."
 									
@@ -6848,7 +6848,8 @@ Function UpdateEvents()
 											e\EventState = 0.0
 											
 										Else
-											Msg = "The door won't budge"
+											PlaySound_Strict(LoadTempSound("SFX\Doors\WoodenDoorBudge.ogg"))
+											Msg = "The door will not budge."
 											MsgTimer = 70*5
 										EndIf
 									EndIf
@@ -6879,7 +6880,8 @@ Function UpdateEvents()
 								
 								If SelectedItem = Null Then
 									If MouseHit1 Then
-										Msg = "The door won't budge"
+										PlaySound_Strict(LoadTempSound("SFX\Doors\WoodenDoorBudge.ogg"))
+										Msg = "The door will not budge."
 										MsgTimer = 5*70
 									EndIf
 								ElseIf SelectedItem\itemtemplate\tempname="scp860" 
@@ -7016,7 +7018,7 @@ Function UpdateEvents()
 						
 						If e\EventState2 > 1000 Then
 							If e\Sound2=0 Then
-								e\Sound2 = LoadSound_Strict("SFX\Doors\WoodenDoorOpen.ogg")
+								e\Sound2 = LoadSound_Strict("SFX\1123\DoorOpen.ogg")
 								e\SoundCHN2 = PlaySound_Strict(e\Sound2)
 							EndIf
 							RotateEntity e\room\Objects[11], 0, CurveAngle(10, EntityYaw(e\room\Objects[11],0), 40), 0
@@ -7142,6 +7144,7 @@ Function UpdateEvents()
 						BlurTimer = 500	
 						Injuries = PrevInjuries
 						Bloodloss = PrevBloodloss
+						Crouch = False
 						
 						PrevInjuries = 0
 						PrevBloodloss = 0
@@ -7428,7 +7431,7 @@ Function UpdateEvents()
 										If (Not WearingHazmat) Then 
 											Injuries=Injuries+0.1
 											Infect=1
-											Msg = "A piece of glass flew off and cut your arm"
+											Msg = "The window shattered and a piece of glass cut your arm."
 											MsgTimer = 70*8
 										EndIf
 										
@@ -7740,9 +7743,9 @@ Function UpdateEvents()
 										KillTimer = Min(-1, KillTimer)
 										BlinkTimer = -10
 										If e\SoundCHN <> 0 Then StopChannel e\SoundCHN
-										DeathMSG = "A heavily mutilated corpse found inside the output booth of SCP-914. DNA testing identified the corpse as Class D Subject D-9341. "
-										DeathMSG = DeathMSG + "The subject has obviously been ''refined'' by SCP-914 on the ''Rough'' setting, but we're still confused as to how he "
-										DeathMSG = DeathMSG + "ended up inside the intake booth and who or what wound the key."
+										DeathMSG = Chr(34)+"A heavily mutilated corpse found inside the output booth of SCP-914. DNA testing identified the corpse as Class D Subject D-9341. "
+										DeathMSG = DeathMSG + "The subject had obviously been "+Chr(34)+"refined"+Chr(34)+" by SCP-914 on the "+Chr(34)+"Rough"+Chr(34)+" setting, but we are still confused as to how he "
+										DeathMSG = DeathMSG + "ended up inside the intake booth and who or what wound the key."+Chr(34)
 									Case "coarse"
 										BlinkTimer = -10
 										If e\EventState - FPSfactor2 < 70 * 3 Then PlaySound_Strict Use914SFX
@@ -7776,7 +7779,7 @@ Function UpdateEvents()
 								Select setting
 									Case "coarse"
 										Injuries = 4.0
-										Msg = "You notice countless small incisions all around your body. They're bleeding heavily."
+										Msg = "You notice countless small incisions all around your body. They are bleeding heavily."
 										MsgTimer = 70*8
 									Case "1:1"
 										InvertMouse = (Not InvertMouse)
@@ -7846,7 +7849,7 @@ Function UpdateEvents()
 									e\EventState = 3	
 									PlaySound_Strict e\Sound2
 									
-									Msg = "Something is growing all around your body!"
+									Msg = "Something is growing all around your body."
 									MsgTimer = 70.0 * 3.0
 								Else
 									e\EventState3 = 70*30
@@ -7858,10 +7861,28 @@ Function UpdateEvents()
 							BlurTimer = e\EventState2*2.0
 							
 							If (e\EventState2>250.0 And e\EventState2-FPSfactor <= 250.0) Then
-								Msg = "THEY LOOK LIKE EARS"
+								Select Rand(3)
+									Case 1
+										Msg = "Ears are growing all over your body."
+									Case 2
+										Msg = "Ear-like organs are growing all over your body."
+									Case 3
+										Msg = "Ears are growing all over your body. They are crawling on your skin."
+								End Select
+
 								MsgTimer = 70.0 * 3.0
 							Else If (e\EventState2>600.0 And e\EventState2-FPSfactor <= 600.0)
-								Msg = "IT'S GETTING HARD TO BREATHE"
+								Select Rand(4)
+									Case 1
+										Msg = "It is becoming difficult to breathe."
+									Case 2
+										Msg = "You have excellent hearing now. Also, you are dying."
+									Case 3
+										Msg = "The ears are growing inside your body."
+									Case 4
+										Msg = Chr(34)+"Can't... Breathe..."+Chr(34)
+								End Select
+
 								MsgTimer = 70.0 * 5.0
 							EndIf
 							
@@ -8223,7 +8244,7 @@ Function UpdateEvents()
 								Else
 									PlaySound_Strict LoadTempSound("SFX\1162\s12_phit+"+Rand(0,1)+"_mod"+Rand(1,2)+".ogg")
 									LightFlash = 5.0
-									Msg = "You feel a sudden overwhelming pain in you chest"
+									Msg = "You feel a sudden overwhelming pain in your chest."
 									MsgTimer = 70*5
 								EndIf
 								Exit
@@ -8253,7 +8274,7 @@ Function UpdateEvents()
 							Else
 								PlaySound_Strict LoadTempSound("SFX\1162\s12_phit+"+Rand(0,1)+"_mod"+Rand(1,2)+".ogg")
 								LightFlash = 5.0
-								Msg = "You notice something moving in your pockets and a sudden pain in your chest"
+								Msg = "You notice something moving in your pockets and a sudden pain in your chest."
 								MsgTimer = 70*5
 							EndIf
 							e\EventState2 = 0.0

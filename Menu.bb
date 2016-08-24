@@ -207,7 +207,7 @@ Function UpdateMainMenu()
 					RandomSeed = ""
 					If temp Then 
 						If Rand(15)=1 Then 
-							Select Rand(10)
+							Select Rand(13)
 								Case 1 
 									RandomSeed = "NIL"
 								Case 2
@@ -228,6 +228,12 @@ Function UpdateMainMenu()
 									RandomSeed = "rustledjim"
 								Case 10
 									RandomSeed = "larry"
+								Case 11
+									RandomSeed = "JORGE"
+								Case 12
+									RandomSeed = "dirtymetal"
+								Case 13
+									RandomSeed = "whatpumpkin"
 							End Select
 						Else
 							n = Rand(4,8)
@@ -1053,33 +1059,38 @@ Function UpdateLauncher()
 			y=y+20
 		Next
 		
-		Fullscreen = DrawTick(40 + 430 - 15, 260 - 55 + 5, Fullscreen, FakeFullScreen)
-		FakeFullScreen = DrawTick(40 + 430 - 15, 260 - 55 + 35, FakeFullScreen)
+		Fullscreen = DrawTick(40 + 430 - 15, 260 - 55 + 5 - 8, Fullscreen, BorderlessWindowed)
+		BorderlessWindowed = DrawTick(40 + 430 - 15, 260 - 55 + 35, BorderlessWindowed)
 		lock% = False
-		If FakeFullScreen Or (Not Fullscreen) Then lock% = True
-		Bit16Mode = DrawTick(40 + 430 - 15, 260 - 55 + 65, Bit16Mode,lock%)
-		LauncherEnabled = DrawTick(40 + 430 - 15, 260 - 55 + 95, LauncherEnabled)
-		
-		If FakeFullScreen
-			Color 255, 0, 0
-			Fullscreen = False
+
+		If BorderlessWindowed Or (Not Fullscreen) Then lock% = True
+		Bit16Mode = DrawTick(40 + 430 - 15, 260 - 55 + 65 + 8, Bit16Mode,lock%)
+		LauncherEnabled = DrawTick(40 + 430 - 15, 260 - 55 + 95 + 8, LauncherEnabled)
+
+		If BorderlessWindowed
+ 		   Color 255, 0, 0
+ 		   Fullscreen = False
 		Else
-			Color 255, 255, 255
+  		  Color 255, 255, 255
 		EndIf
-		Text(40 + 430 + 15, 262 - 55 + 5, "Fullscreen")
+
+		Text(40 + 430 + 15, 262 - 55 + 5 - 8, "Fullscreen")
 		Color 255, 255, 255
-		Text(40 + 430 + 15, 262 - 55 + 35, "Fake fullscreen")
-		If FakeFullScreen Or (Not Fullscreen)
-			Color 255, 0, 0
-			Bit16Mode = False
+		Text(40 + 430 + 15, 262 - 55 + 35 - 8, "Borderless",False,False)
+		Text(40 + 430 + 15, 262 - 55 + 35 + 12, "windowed mode",False,False)
+
+		If BorderlessWindowed Or (Not Fullscreen)
+ 		   Color 255, 0, 0
+ 		   Bit16Mode = False
 		Else
-			Color 255, 255, 255
+		    Color 255, 255, 255
 		EndIf
-		Text(40 + 430 + 15, 262 - 55 + 65, "16 Bit")
+
+		Text(40 + 430 + 15, 262 - 55 + 65 + 8, "16 Bit")
 		Color 255, 255, 255
-		Text(40 + 430 + 15, 262 - 55 + 95, "Use launcher")
+		Text(40 + 430 + 15, 262 - 55 + 95 + 8, "Use launcher")
 		
-		If (Not FakeFullScreen)
+		If (Not BorderlessWindowed)
 			If Fullscreen
 				Text(40+ 260 + 15, 262 - 55 + 140, "Current Resolution: "+(GfxModeWidths(SelectedGFXMode) + "x" + GfxModeHeights(SelectedGFXMode) + "," + (16+(16*(Not Bit16Mode)))))
 			Else
@@ -1120,10 +1131,10 @@ Function UpdateLauncher()
 	Else
 		PutINIValue(OptionFile, "launcher", "launcher enabled", "false")
 	EndIf
-	If FakeFullScreen Then
-		PutINIValue(OptionFile, "options", "fakefullscreen", "true")
+	If BorderlessWindowed Then
+		PutINIValue(OptionFile, "options", "borderless windowed", "true")
 	Else
-		PutINIValue(OptionFile, "options", "fakefullscreen", "false")
+		PutINIValue(OptionFile, "options", "borderless windowed", "false")
 	EndIf
 	If Bit16Mode Then
 		PutINIValue(OptionFile, "options", "16bit", "true")
@@ -1304,28 +1315,42 @@ Function DrawLoading(percent%, shortloading=False)
 			AAText(GraphicWidth / 2, GraphicHeight / 2 + 80, strtemp, True, True)
 			
 			If percent = 0 Then 
-				Select Rand(10)
-					Case 1
-						SelectedLoadingScreen\txt[0] ="A very fine radio might prove to be useful"
-					Case 2
-						SelectedLoadingScreen\txt[0] ="ThIS PLaCE WiLL BUrN"
-					Case 3
-						SelectedLoadingScreen\txt[0] ="You can't control it"
-					Case 4
-						SelectedLoadingScreen\txt[0] ="eof9nsd3jue4iwe1fgj"
-					Case 5
-						SelectedLoadingScreen\txt[0] = "YOU NEED TO TRUST IT"
-					Case 6 
-						SelectedLoadingScreen\txt[0] = "Look my friend in the eye when you address him, isn't that the way of the gentleman?"
-					Case 7
-						SelectedLoadingScreen\txt[0] = "???____??_???__????n?"	
-					Case 8
-						SelectedLoadingScreen\txt[0] = "???????????"
-					Case 9,10
-						SelectedLoadingScreen\txt[0] = "It will happen on " +CurrentDate()
-					Case 11,12
-						SelectedLoadingScreen\txt[0] = CurrentTime()
-				End Select
+				Local 990Text% = Rand(5)
+				If 990Text = 1
+					Select Rand(2)
+						Case 1
+							SelectedLoadingScreen\txt[0] = "It will happen on " + CurrentDate() + "."
+						Case 2
+							SelectedLoadingScreen\txt[0] = CurrentTime()
+					End Select
+				Else
+					Select Rand(13)
+						Case 1
+							SelectedLoadingScreen\txt[0] = "A very fine radio might prove to be useful."
+						Case 2
+							SelectedLoadingScreen\txt[0] = "ThIS PLaCE WiLL BUrN"
+						Case 3
+							SelectedLoadingScreen\txt[0] = "You cannot control it."
+						Case 4
+							SelectedLoadingScreen\txt[0] = "eof9nsd3jue4iwe1fgj"
+						Case 5
+							SelectedLoadingScreen\txt[0] = "YOU NEED TO TRUST IT"
+						Case 6 
+							SelectedLoadingScreen\txt[0] = "Look my friend in the eye when you address him, isn't that the way of the gentleman?"
+						Case 7
+							SelectedLoadingScreen\txt[0] = "???____??_???__????n?"
+						Case 8, 9
+							SelectedLoadingScreen\txt[0] = "Jorge has been expecting you."
+						Case 10
+							SelectedLoadingScreen\txt[0] = "???????????"
+						Case 11
+							SelectedLoadingScreen\txt[0] = "Make her a member of the midnight crew."
+						Case 12
+							SelectedLoadingScreen\txt[0] = "oncluded that coming here was a mistake. We have to turn back."
+						Case 13
+							SelectedLoadingScreen\txt[0] = "This alloy contains a certain the essence of my life."
+					End Select
+				EndIf
 			EndIf
 			
 			strtemp$ = SelectedLoadingScreen\txt[0]
@@ -1358,13 +1383,13 @@ Function DrawLoading(percent%, shortloading=False)
 		
 		If percent = 100 Then 
 			If firstloop And SelectedLoadingScreen\title <> "CWM" Then PlaySound_Strict HorrorSFX(8)
-			AAText(GraphicWidth / 2, GraphicHeight - 50, "PRESS ANY KEY", True, True)
+			AAText(GraphicWidth / 2, GraphicHeight - 50, "PRESS ANY KEY TO CONTINUE", True, True)
 		Else
 			FlushKeys()
 			FlushMouse()
 		EndIf
 		
-		If FakeFullScreen Then
+		If BorderlessWindowed Then
 			If (RealGraphicWidth<>GraphicWidth) Or (RealGraphicHeight<>GraphicHeight) Then
 				CopyRect 0,0,GraphicWidth,GraphicHeight,1024-GraphicWidth/2,1024-GraphicHeight/2,BackBuffer(),TextureBuffer(fresize_texture)
 				SetBuffer BackBuffer()

@@ -233,7 +233,7 @@ Function SaveGame(file$)
 		
 		For i=0 To 10
 			If r\Levers[i]<>0 Then
-				If EntityPitch(r\Levers[i],True) > 0 Then ;päällä
+				If EntityPitch(r\Levers[i],True) > 0 Then ;pï¿½ï¿½llï¿½
 					WriteByte(f,1)
 				Else
 					WriteByte(f,0)
@@ -421,9 +421,13 @@ Function SaveGame(file$)
 	
 	CloseFile f
 	
-	PlaySound_Strict(LoadTempSound("SFX/save.ogg"))
+	If SelectedDifficulty\saveType = SAVEONSCREENS Then
+		PlaySound_Strict(LoadTempSound("SFX/save2.ogg"))
+	Else
+		PlaySound_Strict(LoadTempSound("SFX/save.ogg"))
+	EndIf
 	
-	Msg = "Game saved"
+	Msg = "Game progress saved."
 	MsgTimer = 70 * 4
 	
 End Function

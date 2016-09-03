@@ -714,6 +714,8 @@ Function UpdateConsole()
 					Contained106 = False
 					ShowEntity Curr106\Collider
 					ShowEntity Curr106\obj
+				Case "crash"
+					RuntimeError "gtfo"
 				Case "halloween"
 					HalloweenTex = Not HalloweenTex
 					If HalloweenTex Then

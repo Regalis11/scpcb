@@ -24,8 +24,8 @@ v1.3.2
 - Damage indicator messages now only display once at least two seconds have passed since the previous one displayed. This prevents the messages from constantly updating when being shot at.
 - Renamed fake fullscreen to borderless windowed mode.
 - The blink meter's timer is now randomized, making blinking appear more realistic.
-- Updated HUD elements (by Brokami)
-- Added two new console commands (by CommanderMark and Agent G/Polyfox)
+- Updated HUD elements (by Brokami).
+- Added two new console commands (by CommanderMark and Agent G/Polyfox).
 
 ----------------------------------------------------------------------------------
 

@@ -714,6 +714,21 @@ Function UpdateConsole()
 					Contained106 = False
 					ShowEntity Curr106\Collider
 					ShowEntity Curr106\obj
+				Case "crash", "mav"
+					Select Rand(6)
+						Case 1
+							RuntimeError "What were you expecting?"
+						Case 2
+							RuntimeError "Memory Access Violation!"
+						Case 3
+							RuntimeError "Um, ok."
+						Case 4
+							RuntimeError "I am crashaholic!"
+						Case 5
+							RuntimeError "TBH that would have happened eventually anyway."
+						Case 6
+							RuntimeError "#MakeSCPCBMAVagain"
+					End select
 				Case "halloween"
 					HalloweenTex = Not HalloweenTex
 					If HalloweenTex Then

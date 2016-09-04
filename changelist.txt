@@ -25,7 +25,7 @@ v1.3.2
 - Renamed fake fullscreen to borderless windowed mode.
 - The blink meter's timer is now randomized, making blinking appear more realistic.
 - Updated HUD elements (by Brokami)
-- Added a new console command (credit to Mark and Agent G/Polyfox)
+- Added two new console commands (by CommanderMark and Agent G/Polyfox)
 
 ----------------------------------------------------------------------------------
 

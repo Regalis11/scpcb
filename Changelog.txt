@@ -11,8 +11,8 @@ v1.3.2
 - Some improvements to SCP-049's AI.
 - Adjusted the spelling and grammar for a majority of in-game text.
 - Extended the parameters of the "help" console command.
-- Updated SCP-173's model so that it no longer uses 2 texture layers. In laments terms, its texture is no longer applied twice making it appear "darker".
-	-Credits to Juanjpro for the updated the model.
+- Updated SCP-173's model so that it no longer uses 2 texture layers. In layman's terms, its texture is no longer applied twice and therefore it no longer appears "darker".
+	-Credits to Juanjpro for the updated model.
 - Added unique locked door and DNA scanner sound effects.
 - Damage indicator messages now only display once at least two seconds have passed since the previous one displayed. This prevents the messages from constantly updating when being shot at.
 - Renamed fake fullscreen to borderless windowed mode.
@@ -28,7 +28,7 @@ v1.3.2
 
 Bug Fixes:
 - Fixed a crash involving the disabling of anti-aliased text while in-game.
-- Added extra hit boxes to room049, room3storage and room3z2, preventing the player from falling through the floor in certain spots of these rooms.
+- Added extra hitboxes to room049, room3storage and room3z2, preventing the player from falling through the floor in certain spots of these rooms.
 - Adjusted SCP-096's collision detection.
 - SCP-096 will no longer become triggered when looking at its face while the player's eyes are closed.
 - Fixed a bug involving the severed hand spawn in room3storage.

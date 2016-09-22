@@ -7367,7 +7367,7 @@ Function UpdateEvents()
 				
 			Case "testroom173"
 				;[Block]
-				If PlayerRoom = e\room Then	
+				If e\room\RoomDoors[0]\open Then	
 					If Curr173\Idle = 0 Then 
 						If e\EventState = 0 Then
 							PositionEntity(Curr173\Collider, EntityX(e\room\Objects[0], True), 0.5, EntityZ(e\room\Objects[0], True))
@@ -8057,7 +8057,7 @@ Function UpdateEvents()
 							EndIf
 						Next
 					EndIf
-					PositionEntity e\room\Objects[0],0,800,0
+					;PositionEntity e\room\Objects[0],0,800,0
 					CameraFogRange Camera,40,80
 					CameraFogColor Camera,96,97,104
 					CameraClsColor Camera,96,97,104

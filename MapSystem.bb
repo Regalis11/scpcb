@@ -2240,8 +2240,10 @@ Function FillRoom(r.Rooms)
 			
 			FreeTexture Glasstex
 			
-			d = CreateDoor(r\zone, r\x - 240.0 * RoomScale, 0.0, r\z + 640.0 * RoomScale, 90, r, False, False, 1)
-			d\AutoClose = False : d\open = False
+			;d = CreateDoor(r\zone, r\x - 240.0 * RoomScale, 0.0, r\z + 640.0 * RoomScale, 90, r, False, False, 1)
+			;d\AutoClose = False : d\open = False
+			r\RoomDoors[0] = CreateDoor(r\zone, r\x - 240.0 * RoomScale, 0.0, r\z + 640.0 * RoomScale, 90, r, False, False, 1)
+			r\RoomDoors[0]\AutoClose = False : r\RoomDoors[0]\open = False
 			
 			d = CreateDoor(r\zone, r\x - 512.0 * RoomScale, 0.0, r\z + 384.0 * RoomScale, 0, r, False, False)
 			d\AutoClose = False : d\open = False					
@@ -7724,6 +7726,11 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#2#A#CE9#11EE#13BF#1DDF#1DF6
-;~B#1227
+;~F#2#A#2F#FC#10B#119#120#131#139#141#2DE#2EE#2FF#327#335#345#34A#355#3FD#508
+;~F#529#54D#562#56D#5A8#5B6#5DE#614#61C#631#681#6D2#714#736#792#7A4#80A#819#843#86C
+;~F#88F#8D6#8DD#8EB#907#91C#939#956#963#975#9B4#9DE#A30#A86#A99#AB8#B60#BC6#BD5#C11
+;~F#C19#C27#C3C#C78#C97#CA7#CBF#CEB#CFE#D20#D48#D9A#DC6#DED#DF4#DF9#E30#E5F#E74#EA8
+;~F#F26#F47#FBC#1014#103F#1090#1099#1132#113B#1140#114F#115E#119F#11C3#11D3#11E4#11F0#11F5#1280#1286
+;~F#1293#12E9#13C1#1DE1#1DF8
+;~B#1229
 ;~C#Blitz3D

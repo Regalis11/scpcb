@@ -1,3 +1,10 @@
 *FastExt.bb
 *FastText_Unicode.bb
 *FastImage.bb
+*.DS_Store
+MapSystem.bb.rej
+UpdateEvents.bb.rej
+*.bb_bak*
+Saves/*
+error_log_*
+RMesh_Model_Viewer.bb

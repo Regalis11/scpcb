@@ -45,18 +45,26 @@ Function GiveAchievement(achvname%, showMessage%=True)
 End Function
 
 Function AchievementTooltip(achvno%)
-	Local scale# = GraphicHeight/768.0
-	
-	Local width = (AAStringWidth(AchievementStrings(achvno)))*MenuScale
-	
-	Color 25,25,25
-	Rect(ScaledMouseX()+20,ScaledMouseY()+20,width,38*scale,True)
-	Color 150,150,150
-	Rect(ScaledMouseX()+20,ScaledMouseY()+20,width,38*scale,False)
-	AASetFont Font3
-	AAText(ScaledMouseX()+(20*MenuScale)+(width/2),ScaledMouseY()+(40*MenuScale), AchievementStrings(achvno), True, True)
-	AASetFont Font1
-	AAText(ScaledMouseX()+(20*MenuScale)+(width/2),ScaledMouseY()+(60*MenuScale), AchievementDescs(achvno), True, True)
+    Local scale# = GraphicHeight/768.0
+    
+    AASetFont Font3
+    Local width = AAStringWidth(AchievementStrings(achvno))
+    AASetFont Font1
+    If (AAStringWidth(AchievementDescs(achvno))>width) Then
+        width = AAStringWidth(AchievementDescs(achvno))
+    EndIf
+    width = width+20*MenuScale
+    
+    Local height = 38*scale
+    
+    Color 25,25,25
+    Rect(ScaledMouseX()+(20*MenuScale),ScaledMouseY()+(20*MenuScale),width,height,True)
+    Color 150,150,150
+    Rect(ScaledMouseX()+(20*MenuScale),ScaledMouseY()+(20*MenuScale),width,height,False)
+    AASetFont Font3
+    AAText(ScaledMouseX()+(20*MenuScale)+(width/2),ScaledMouseY()+(35*MenuScale), AchievementStrings(achvno), True, True)
+    AASetFont Font1
+    AAText(ScaledMouseX()+(20*MenuScale)+(width/2),ScaledMouseY()+(55*MenuScale), AchievementDescs(achvno), True, True)
 End Function
 
 Function DrawAchvIMG(x%, y%, achvno%)

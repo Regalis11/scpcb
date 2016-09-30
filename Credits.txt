@@ -1,0 +1,220 @@
+
+*********************************************************
+
+	A big thank you to everyone who's supported the project during these years 
+	- it would have	never gotten to where it is now without your help. 
+	
+	SCP-CB has been a big collaborative effort with dozens (maybe even hundreds?) 
+	of people creating material and giving ideas and feedback for the game, and 
+	I'm sure I've forgotten to mention some of you here. If you've contributed 
+	something to the game and would like your name to be added here, drop 
+	me a message on the Undertow Games forum or contact@undertowgames.com!
+	
+	- Joonas Rikkonen ("Regalis")
+
+**** CREDITS ********************************************
+
+
+	The game is based on the works of the SCP Foundation community (http://www.scp-wiki.net//).
+
+		The SCP-CB logo and SCP logo are based on the logo created by "far2" (http://www.scp-wiki.net/forum/t-89371#post-289530)
+		SCP-008 is based on "SCP-008 - Zombie Plague" by "Lee Byron" (http://www.scp-wiki.net/scp-008)
+		SCP-012 is based on "SCP-012 - A Bad Composition", author unknown (http://www.scp-wiki.net/scp-012)		
+		SCP-035 is based on "SCP-035 - Possessive Mask", by "Kain Pathos Crow" (http://www.scp-wiki.net/scp-035)
+		SCP-049 is based on "SCP-049 - Plague Doctor", by "Gabriel Jade" (http://www.scp-wiki.net/scp-049)
+		SCP-066 is based on "SCP-066 - Eric's Toy", by "Scantron" (http://www.scp-wiki.net//scp-066)
+		SCP-079 is based on "SCP-079 - Old AI", author unknown (http://www.scp-wiki.net/scp-079)
+		SCP-096 is based on "SCP-096 - The 'Shy Guy'" by "Dr Dan" (http://www.scp-wiki.net/scp-096)
+		SCP-106 is based on "SCP-106 - The Old Man" by "Dr Gears" (http://www.scp-wiki.net/scp-106)
+		SCP-148 is based on "SCP-148 - The "Telekill" Alloy", by "Lt Masipag" (http://www.scp-wiki.net/scp-148)
+		SCP-173 is based on "SCP-173 - The Sculpture", by "Moto42" (http://www.scp-wiki.net/scp-173)
+		SCP-178 is based on "SCP-178 - "3-D" Specs", by "Dr Wartheim" (http://www.scp-wiki.net/scp-178)				
+		SCP-205 is based on "SCP-205 - Shadow Lamps", by "Sorts" (http://www.scp-wiki.net/scp-205)
+		SCP-294 is based on "SCP-294 - The Coffee Machine", by "far2" (http://www.scp-wiki.net/scp-294)
+		SCP-372 is based on "SCP-372 - Peripheral Jumper" by "Sylocat" (http://www.scp-wiki.net/scp-372)
+		SCP-420-J is based on "SCP-420-J - The Best ____ in the World" by "Quikngruvn" (http://www.scp-wiki.net/scp-420-j)
+		SCP-500 is based on "SCP-500 - Panacea" by "far2" (http://www.scp-wiki.net/scp-500)
+		SCP-513-1 is based on "SCP-513 - A Cowbell" by "beefwit" (http://www.scp-wiki.net/scp-513)
+		SCP-714 is based on "SCP-714 - The Jaded Ring" by "Arcalane" (http://www.scp-wiki.net/scp-714)
+		SCP-682 is based on "SCP-682 - Hard-to-Destroy Reptile" by "Dr. Gears" (http://www.scp-wiki.net/scp-682)
+		SCP-789-J is based on "SCP-789-J - the butt ghost!!" by "Salman Corbette" (http://www.scp-wiki.net/scp-789-j)
+		SCP-860 is based on "SCP-860 - Blue Key" by "Enma Ai" (http://www.scp-wiki.net/scp-860)
+		SCP-895 is based on "SCP-895 - Camera Disruption" by "Aelanna" (http://www.scp-wiki.net/scp-895)
+		SCP-914 is based on "SCP-914 - The Clockworks" by "Dr. Gears" (http://www.scp-wiki.net/scp-914)
+		SCP-939 is based on "SCP-939 - With Many Voices" by "Adam Smascher" (http://www.scp-wiki.net/scp-939)
+		SCP-966 is based on "SCP-966 - Sleep Killer" by "Enma Ai" (http://www.scp-wiki.net/scp-966)
+		SCP-970 is based on "SCP-970 - The Recursive Room" by "Freudian" (http://www.scp-wiki.net/scp-970)		
+		SCP-1025 is based on "SCP-1025 - Encyclopedia of Diseases" by "Lasergoose" (http://www.scp-wiki.net//scp-1025)
+		SCP-1048 is based on "SCP-1048 - Builder Bear" by "Researcher Dios" (http://www.scp-wiki.net/scp-1048)
+		SCP-1074  is based on "SCP-1074 - Stendhal's Nightmare" by "Smapti" (http://www.scp-wiki.net/scp-1074)
+		SCP-1123 is based on "SCP-1123 - Atrocity Skull" by "sandrewswann" (http://www.scp-wiki.net/scp-1123)
+		SCP-1162 is based on "SCP-1162 - A Hole in the Wall" by "Dedaluminus" (http://www.scp-wiki.net/scp-1162)
+		SCP-1499 is based on "SCP-1499 - The Gas Mask" by "Trasknari" (http://www.scp-wiki.net/scp-1499)
+		
+		The Anomalous Ducks are based on "Log of Anomalous Ducks" by "Skara Brae" (http://www.scp-wiki.net/log-of-anomalous-ducks)
+
+	Programmers
+
+		Joonas Rikkonen ("Regalis")
+			Main developer.
+
+		MonocleBios
+			Bug fixes and optimizations.
+
+		Juanjpro
+			Blitz3D modifications, countless bug fixes and optimizations, SCP-178, anti-aliased text, maintenance tunnel generation algorithm.
+
+		Ryan Stillings
+			Bug fixes and SCP-860-1's generation algorithm.
+
+		ENDSHN
+			GFX, SFX, animations.
+			
+		Vane Brain 
+			Room modeling, GFX, music, ideas.
+
+		InnocentSam
+			SCP-008, SCP-500, skybox code.
+			
+		CommanderMark
+			Bug fixes and grammar.
+
+	3D Modellers
+
+		Reilly Grindle ("Mirocaine")
+			SCP-035
+			SCP-106
+			SCP-205
+			SCP-939
+			SCP-966
+			SCP-1048 and 1048-A
+
+		Night (http://exidelo.deviantart.com/)
+			SCP-096
+			Mobile Task Force
+
+		Hakkla
+			SCP-079 and SCP-294
+
+		Prosth
+			SCP-106's rig.
+			SCP-860 sprite.
+
+		Micro
+			SCP-106
+
+		GamerEntitlement
+			SCP-173
+
+		Atomicsneak
+			SCP-173's previous model.
+
+		James Bear
+			SCP-860-1 Monster
+
+		Kenneth Crooker
+			SCP-860-1 monster animations.
+		
+		Redbull.Ivan and TheKMan
+			SCP-1499
+
+		Brandon Smith
+			Various 3D props.
+
+		Tom Malinowski
+
+		SaitoFox
+
+	Sound Effects and Music
+
+		Kevin MacLeod (http://incompetech.com/) 
+			The Dread, Bump in the Night, Satiate, Mandeville, Medusa, Blue Feather
+
+		Slagar
+			SCP-012 Theme
+			SCP-049 Theme
+			SCP-895 Theme
+
+		revo794 
+			SCP-1499 Themes
+
+		Tim Morrison
+			Menu Ambience
+
+		Class401
+			Sound effects and SCP-079 theme.
+
+		FireFox
+			Various ambient pieces.
+
+		phlip45
+			Femur breaker sound effects.
+		
+		Caleb Yu ("Omniary")
+
+		gmodfan11
+
+		Walach
+
+	Voice Actors
+
+		Aaron Mckee ("TheVolgun")
+
+		Brendan Sussman ("DukeLovesYou")
+
+		ItsDuke
+
+		Tallfellow
+
+		Joshofsouls
+
+		Hunter
+	
+		SolidBaker
+	
+	Graphics and Sprites
+
+		KyoteeWilliams 
+			Some of the HUD elements.
+		
+		Brokami
+			Updated HUD icons.
+		
+		Anon4743
+			Keycard textures.
+
+		Orgil Pount ("Destructoid")
+			Guard visor textures.
+
+	Other
+	
+		Dr. Gears
+			Writing (backstory, documents and computer screens), ideas.
+
+		Steelpoint 
+			Documents, character ideas.
+
+		Gage Allen ("Lotims")
+			The official trailers, the character Jim Gonzales and his backstory.
+
+		Turtle Sandwich/Catnipbuddy 
+			"Airlock.ogg" and "body1.jpg".
+
+		Christian Rieß
+			Version 1.3 quality assurance.
+
+		Caleb Yu ("Omniary")
+			Some of the documents and SCP-513-1's texture.
+
+		Irontaco 
+			Various ideas for different game mechanics.
+
+		/v/ and everyone in the SCP-CB forum
+			Ideas & support.
+
+		Haversine 
+			Without his SCP-087 game, SCP-CB would not exist.
+
+
+	SCP-1074, SCP-1123, SCP-178, Night Vision Goggles, Clipboard, Achievement system and other minor additions 
+	are from the Box of Horrors mod (http://undertowgames.com/forum/viewtopic.php?f=11&t=3404)

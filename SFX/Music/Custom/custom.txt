@@ -1,0 +1,3 @@
+Place .ogg/.wav files in this folder to play them as custom music while in game.
+
+Simply go into the console and type "playmusic $filename.ogg/.wav".

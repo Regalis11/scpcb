@@ -105,11 +105,7 @@ Function CreateItemTemplate.ItemTemplates(name$, tempname$, objpath$, invimgpath
 	it\name = name
 	
 	it\sound = 1
-	
-	EntityRadius it\obj, 0.01
-	EntityPickMode it\obj, 1, False
-	;MakeCollBox(it\obj)
-	
+
 	HideEntity it\obj
 	
 	Return it
@@ -252,7 +248,7 @@ Function InitItemTemplates()
 	it = CreateItemTemplate("Smelly Joint", "420s", "GFX\items\420.x", "GFX\items\INV420.jpg", "", 0.0004) : it\sound = 2
 	
 	it = CreateItemTemplate("Severed Hand", "hand", "GFX\items\severedhand.b3d", "GFX\items\INVhand.jpg", "", 0.04) : it\sound = 2
-	it = CreateItemTemplate("Severed Hand", "hand2", "GFX\items\severedhand.b3d", "GFX\items\INVhand2.jpg", "", 0.04, "GFX\items\shand2.png") : it\sound = 2
+	it = CreateItemTemplate("Black Severed Hand", "hand2", "GFX\items\severedhand.b3d", "GFX\items\INVhand2.jpg", "", 0.04, "GFX\items\shand2.png") : it\sound = 2
 	
 	CreateItemTemplate("18V Battery", "18vbat", "GFX\items\battery.x", "GFX\items\INVbattery.jpg", "", 0.0003)
 	
@@ -279,8 +275,8 @@ Function InitItemTemplates()
 	it = CreateItemTemplate("SCP-178", "scp178", "GFX\items\scp178.b3d", "GFX\items\INV178.jpg", "", 0.02,"","",1)
 	
 	it = CreateItemTemplate("Document SCP-1123", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\doc1123.jpg", 0.003) : it\sound = 0
-	it = CreateItemTemplate("Document SCP-1074", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\doc1074.jpg", 0.003) : it\sound = 0
-	it = CreateItemTemplate("SCP-1074 Containment Notice", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\doc_arce.jpg", 0.003) : it\sound = 0
+	;it = CreateItemTemplate("Document SCP-1074", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\doc1074.jpg", 0.003) : it\sound = 0
+	;it = CreateItemTemplate("SCP-1074 Containment Notice", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\doc_arce.jpg", 0.003) : it\sound = 0
 	
 	it = CreateItemTemplate("Night Vision Goggles", "supernv", "GFX\items\NVG.b3d", "GFX\items\INVsupernightvision.jpg", "", 0.02) : it\sound = 2
 	it = CreateItemTemplate("Night Vision Goggles", "nvgoggles", "GFX\items\NVG.b3d", "GFX\items\INVnightvision.jpg", "", 0.02) : it\sound = 2
@@ -301,6 +297,7 @@ Function InitItemTemplates()
 	
 	CreateItemTemplate("Old Badge", "badge", "GFX\items\badge.x", "GFX\items\INVoldbadge.jpg", "GFX\items\badge2.png", 0.0001, "GFX\items\badge2_tex.png","",0,1+2+8)
 	
+	it = CreateItemTemplate("Night Vision Goggles", "veryfinenvgoggles", "GFX\items\NVG.b3d", "GFX\items\INVveryfinenightvision.jpg", "", 0.02) : it\sound = 2
 	
 	For it = Each ItemTemplates
 		If (it\tex<>0) Then
@@ -321,7 +318,7 @@ End Function
 
 Type Items
 	Field name$
-	Field obj%
+	Field collider%,model%
 	Field itemtemplate.ItemTemplates
 	Field DropSpeed#
 	
@@ -346,8 +343,10 @@ Type Items
 End Type 
 
 Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,invSlots%=0)
+	CatchErrors("Uncaught (CreateItem)")
 	
-	Local i.Items = New Items, it.ItemTemplates
+	Local i.Items = New Items
+	Local it.ItemTemplates
 	
 	name = Lower(name)
 	tempname = Lower (tempname)
@@ -356,19 +355,25 @@ Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,in
 		If Lower(it\name) = name Then
 			If Lower(it\tempname) = tempname Then
 				i\itemtemplate = it
-				i\obj = CopyEntity(it\obj)
+				i\collider = CreatePivot()			
+				EntityRadius i\collider, 0.01
+				EntityPickMode i\collider, 1, False
+				i\model = CopyEntity(it\obj,i\collider)
 				i\name = it\name
-				ShowEntity i\obj
+				ShowEntity i\collider
+				ShowEntity i\model
 			EndIf
 		EndIf
 	Next 
 	
+	i\WontColl = False
+	
 	If i\itemtemplate = Null Then RuntimeError("Item template not found ("+name+", "+tempname+")")
 	
-	ResetEntity i\obj		
-	PositionEntity(i\obj, x, y, z)
-	RotateEntity (i\obj, 0, Rand(360), 0)
-	i\dist = EntityDistance(Collider, i\obj)
+	ResetEntity i\collider		
+	PositionEntity(i\collider, x, y, z, True)
+	RotateEntity (i\collider, 0, Rand(360), 0)
+	i\dist = EntityDistance(Collider, i\collider)
 	i\DropSpeed = 0.0
 	
 	If tempname = "cup" Then
@@ -379,8 +384,8 @@ Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,in
 		
 		Local liquid = CopyEntity(LiquidObj)
 		ScaleEntity liquid, i\itemtemplate\scale,i\itemtemplate\scale,i\itemtemplate\scale,True
-		PositionEntity liquid, EntityX(i\obj,True),EntityY(i\obj,True),EntityZ(i\obj,True)
-		EntityParent liquid, i\obj
+		PositionEntity liquid, EntityX(i\collider,True),EntityY(i\collider,True),EntityZ(i\collider,True)
+		EntityParent liquid, i\model
 		EntityColor liquid, r,g,b
 		
 		If a < 0 Then 
@@ -397,7 +402,7 @@ Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,in
 	i\invimg = i\itemtemplate\invimg
 	If (tempname="clipboard") And (invSlots=0) Then
 		invSlots = 10
-		SetAnimTime i\obj,17.0
+		SetAnimTime i\model,17.0
 		i\invimg = i\itemtemplate\invimg2
 	EndIf
 	
@@ -406,13 +411,14 @@ Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,in
 	i\ID=LastItemID+1
 	LastItemID=i\ID
 	
+	CatchErrors("CreateItem")
 	Return i
-	
 End Function
 
 Function RemoveItem(i.Items)
+	CatchErrors("Uncaught (RemoveItem)")
 	Local n
-	FreeEntity(i\obj) : i\obj = 0
+	FreeEntity(i\model) : FreeEntity(i\collider) : i\collider = 0
 	
 	For n% = 0 To MaxItemAmount - 1
 		If Inventory(n) = i Then Inventory(n) = Null
@@ -440,59 +446,94 @@ Function RemoveItem(i.Items)
 		i\itemtemplate\img = 0
 	EndIf
 	Delete i
+	
+	CatchErrors("RemoveItem")
 End Function
 
 
 Function UpdateItems()
+	CatchErrors("Uncaught (UpdateItems)")
 	Local n, i.Items
 	Local xtemp#, ytemp#, ztemp#
 	Local temp%, np.NPCs
 	
 	Local HideDist = HideDistance*0.5
+	Local deletedItem% = False
 	
 	ClosestItem = Null
 	For i.Items = Each Items
 		i\Dropped = 0
 		
 		If (Not i\Picked) Then
-			If i\disttimer < MilliSecs() Then
-				i\dist = EntityDistance(Collider, i\obj)
-				i\disttimer = MilliSecs() + Rand(600,800)
-				If i\dist < HideDist Then ShowEntity i\obj
+			If i\disttimer < MilliSecs2() Then
+				i\dist = EntityDistance(Collider, i\collider)
+				i\disttimer = MilliSecs2() + Rand(600,800)
+				If i\dist < HideDist Then ShowEntity i\collider
 			EndIf
 			
 			If i\dist < HideDist Then
-				ShowEntity i\obj
+				ShowEntity i\collider
 				
-				If (Not EntityVisible(i\obj,Camera)) Then
+				If (Not EntityVisible(i\collider,Camera)) Then
 					;the player can't grab this
-					If (Not EntityVisible(i\obj,Collider)) Then i\dist = 2.5
+					If (Not EntityVisible(i\collider,Collider)) Then i\dist = 2.5
 				EndIf
 				
 				If i\dist < 1.2 Then
 					If ClosestItem = Null Then
-						If EntityInView(i\obj, Camera) Then ClosestItem = i
-					Else If ClosestItem = i Or i\dist < EntityDistance(Collider, ClosestItem\obj) Then 
-						If EntityInView(i\obj, Camera) Then ClosestItem = i
+						If EntityInView(i\model, Camera) Then ClosestItem = i
+					Else If ClosestItem = i Or i\dist < EntityDistance(Collider, ClosestItem\collider) Then 
+						If EntityInView(i\model, Camera) Then ClosestItem = i
 					End If
 				EndIf					
 				
-				If EntityCollided(i\obj, HIT_MAP) Then
+				If EntityCollided(i\collider, HIT_MAP) Then
 					i\DropSpeed = 0
 					i\xspeed = 0.0
 					i\zspeed = 0.0
 				Else
 					i\DropSpeed = i\DropSpeed - 0.0004 * FPSfactor
-					TranslateEntity i\obj, i\xspeed*FPSfactor, i\DropSpeed * FPSfactor, i\zspeed*FPSfactor
-					If i\WontColl Then ResetEntity(i\obj)
+					TranslateEntity i\collider, i\xspeed*FPSfactor, i\DropSpeed * FPSfactor, i\zspeed*FPSfactor
+					If i\WontColl Then ResetEntity(i\collider)
 				EndIf
 				
-				If EntityY(i\obj) < - 35.0 Then DebugLog "remove: " + i\itemtemplate\name:RemoveItem(i)
+				If i\dist<HideDist*0.2 Then
+					For i2.Items = Each Items
+						If i<>i2 And (Not i2\Picked) And i2\dist<HideDist*0.2 Then
+							
+							xtemp# = (EntityX(i2\collider,True)-EntityX(i\collider,True))
+							ytemp# = (EntityY(i2\collider,True)-EntityY(i\collider,True))
+							ztemp# = (EntityZ(i2\collider,True)-EntityZ(i\collider,True))
+							
+							ed# = (xtemp*xtemp+ztemp*ztemp)
+							If ed<0.07 And Abs(ytemp)<0.25 Then
+								;items are too close together, push away
+								
+								xtemp = xtemp*(0.07-ed)
+								ztemp = ztemp*(0.07-ed)
+								
+								While Abs(xtemp)+Abs(ztemp)<0.001
+									xtemp = xtemp+Rnd(-0.002,0.002)
+									ztemp = ztemp+Rnd(-0.002,0.002)
+								Wend
+								
+								TranslateEntity i2\collider,xtemp,0,ztemp
+								TranslateEntity i\collider,-xtemp,0,-ztemp
+							EndIf
+						EndIf
+					Next
+				EndIf
+				
+				If EntityY(i\collider) < - 35.0 Then DebugLog "remove: " + i\itemtemplate\name:RemoveItem(i):deletedItem=True
 			Else
-				HideEntity i\obj
+				HideEntity i\collider
 			EndIf
 		EndIf
 		
+		If Not deletedItem Then
+			CatchErrors(Chr(34)+i\itemtemplate\name+Chr(34)+" item")
+		EndIf
+		deletedItem = False
 	Next
 	
 	If ClosestItem <> Null Then
@@ -506,12 +547,13 @@ End Function
 Function PickItem(item.Items)
 	Local n% = 0
 	
+	CatchErrors("Uncaught (PickItem)")
 	If ItemAmount < MaxItemAmount Then
 		For n% = 0 To MaxItemAmount - 1
 			If Inventory(n) = Null Then
 				Select item\itemtemplate\tempname
 					Case "scp178"
-						SetAnimTime item\obj,19.0
+						SetAnimTime item\model,19.0
 					Case "1123"
 						If Not (Wearing714=1) Then
 							For e.Events = Each Events
@@ -519,7 +561,7 @@ Function PickItem(item.Items)
 									If e\eventstate = 0 Then
 										ShowEntity Light
 										LightFlash = 3
-										PlaySound_Strict(LoadTempSound("SFX\mindwipe.ogg"))											
+										PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))											
 									EndIf
 									e\eventstate = Max(1, e\eventstate)
 									Exit
@@ -532,8 +574,8 @@ Function PickItem(item.Items)
 						ShowEntity Light
 						LightFlash = 1.0
 						PlaySound_Strict(IntroSFX(11))
-						DeathMSG = "Subject D-9431 found dead inside SCP-914's output booth next to what appears to be an ordinary 9V battery. The subject is covered in severe "
-						DeathMSG = DeathMSG + "electrical burns, and assumed to be killed by an electrical shock caused by the battery. The battery has been stored for further study."
+						DeathMSG = "Subject D-9341 found dead inside SCP-914's output booth next to what appears to be an ordinary nine-volt battery. The subject is covered in severe "
+						DeathMSG = DeathMSG + "electrical burns, and assumed to be killed via an electrical shock caused by the battery. The battery has been stored for further study."
 						Kill()
 					Case "scp148"
 						GiveAchievement(Achv148)	
@@ -544,13 +586,33 @@ Function PickItem(item.Items)
 					Case "key6"
 						GiveAchievement(AchvOmni)
 					Case "veryfinevest"
-						Msg = "The vest is too heavy to pick up"
+						Msg = "The vest is too heavy to pick up."
 						MsgTimer = 70*6
 						Exit
 					Case "firstaid", "finefirstaid", "veryfinefirstaid", "firstaid2"
 						item\state = 0
 					Case "navigator", "nav"
 						If item\itemtemplate\name = "S-NAV Navigator Ultimate" Then GiveAchievement(AchvSNAV)
+					Case "hazmatsuit", "hazmatsuit2", "hazmatsuit3"
+						Msg = "You put on the hazmat suit."
+						TakeOffStuff(16)
+						MsgTimer = 70 * 5
+						If item\itemtemplate\tempname="hazmatsuit3" Then
+							WearingHazmat = 3
+						ElseIf item\itemtemplate\tempname="hazmatsuit2"
+							WearingHazmat = 2
+						Else
+							WearingHazmat = 1
+						EndIf
+						
+						For z% = 0 To MaxItemAmount - 1
+							If Inventory(z) <> Null Then
+								If Inventory(z)\itemtemplate\tempname="hazmatsuit" Or Inventory(z)\itemtemplate\tempname="hazmatsuit2" Or Inventory(z)\itemtemplate\tempname="hazmatsuit3" Then
+									DropItem(Inventory(z))
+								EndIf
+							EndIf
+						Next
+						
 				End Select
 				
 				If item\itemtemplate\sound <> 66 Then PlaySound_Strict(PickSFX(item\itemtemplate\sound))
@@ -560,49 +622,51 @@ Function PickItem(item.Items)
 				item\itemtemplate\found=True
 				
 				Inventory(n) = item
-				HideEntity(item\obj)
+				HideEntity(item\collider)
 				Exit
 			EndIf
 		Next
 	Else
-		Msg = "You can't carry any more items"
+		Msg = "You cannot carry any more items."
 		MsgTimer = 70 * 5
 	EndIf
+	CatchErrors("PickItem")
 End Function
 
 Function DropItem(item.Items)
+	CatchErrors("Uncaught (DropItem)")
 	If item\itemtemplate\sound <> 66 Then PlaySound_Strict(PickSFX(item\itemtemplate\sound))
 	
 	item\Dropped = 1
 	
-	ShowEntity(item\obj)
-	PositionEntity(item\obj, EntityX(Camera), EntityY(Camera), EntityZ(Camera))
-	RotateEntity(item\obj, EntityPitch(Camera), EntityYaw(Camera)+Rnd(-20,20), 0)
-	MoveEntity(item\obj, 0, -0.1, 0.1)
-	RotateEntity(item\obj, 0, EntityYaw(Camera)+Rnd(-110,110), 0)
+	ShowEntity(item\collider)
+	PositionEntity(item\collider, EntityX(Camera), EntityY(Camera), EntityZ(Camera))
+	RotateEntity(item\collider, EntityPitch(Camera), EntityYaw(Camera)+Rnd(-20,20), 0)
+	MoveEntity(item\collider, 0, -0.1, 0.1)
+	RotateEntity(item\collider, 0, EntityYaw(Camera)+Rnd(-110,110), 0)
 	
-	ResetEntity (item\obj)
+	ResetEntity (item\collider)
 	
 	;move the item so that it doesn't overlap with other items
-	For it.Items = Each Items
-		If it <> item And it\Picked = False Then
-			x = Abs(EntityX(item\obj, True)-EntityX(it\obj, True))
-			;If x < 0.2 Then 
-			If x < 0.01 Then
-				z = Abs(EntityZ(item\obj, True)-EntityZ(it\obj, True))
-				;If z < 0.2 Then
-				If z < 0.01 Then
-					;While (x+z)<0.25
-					While (x+z)<0.05
-						;MoveEntity(item\obj, 0, 0, 0.025)
-						MoveEntity(item\obj, 0, 0, 0.005)
-						x = Abs(EntityX(item\obj, True)-EntityX(it\obj, True))
-						z = Abs(EntityZ(item\obj, True)-EntityZ(it\obj, True))
-					Wend
-				EndIf
-			EndIf
-		EndIf
-	Next
+	;For it.Items = Each Items
+	;	If it <> item And it\Picked = False Then
+	;		x = Abs(EntityX(item\collider, True)-EntityX(it\collider, True))
+	;		;If x < 0.2 Then 
+	;		If x < 0.01 Then
+	;			z = Abs(EntityZ(item\obj, True)-EntityZ(it\collider, True))
+	;			;If z < 0.2 Then
+	;			If z < 0.01 Then
+	;				;While (x+z)<0.25
+	;				While (x+z)<0.05
+	;					;MoveEntity(item\obj, 0, 0, 0.025)
+	;					MoveEntity(item\collider, 0, 0, 0.005)
+	;					x = Abs(EntityX(item\collider, True)-EntityX(it\collider, True))
+	;					z = Abs(EntityZ(item\collider, True)-EntityZ(it\collider, True))
+	;				Wend
+	;			EndIf
+	;		EndIf
+	;	EndIf
+	;Next
 	
 	item\Picked = False
 	For z% = 0 To MaxItemAmount - 1
@@ -625,8 +689,16 @@ Function DropItem(item.Items)
 		Case "scp1499","super1499"
 			Wearing1499 = False
 	End Select
+	
+	CatchErrors("DropItem")
+	
 End Function
 
+
+
+
+
+
 ;~IDEal Editor Parameters:
-;~F#B#1E#76#140#15A#19B#1B6#1F2#235
+;~F#B#1E
 ;~C#Blitz3D

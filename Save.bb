@@ -1,6 +1,7 @@
 
 
 Function SaveGame(file$)
+	CatchErrors("Uncaught (SaveGame)")
 	If Not Playable Then Return ;don't save if the player can't move at all
 	
 	If DropSpeed#>0.02*FPSfactor Or DropSpeed#<-0.02*FPSfactor Then Return
@@ -183,6 +184,10 @@ Function SaveGame(file$)
 		WriteFloat f, n\PathX
 		WriteFloat f, n\PathZ
 		WriteInt f, n\HP
+		WriteString f, n\Model
+		WriteFloat f, n\ModelScaleX#
+		WriteFloat f, n\ModelScaleY#
+		WriteFloat f, n\ModelScaleZ#
 	Next
 	
 	WriteFloat f, MTFtimer
@@ -233,7 +238,7 @@ Function SaveGame(file$)
 		
 		For i=0 To 10
 			If r\Levers[i]<>0 Then
-				If EntityPitch(r\Levers[i],True) > 0 Then ;päällä
+				If EntityPitch(r\Levers[i],True) > 0 Then ;pï¿½ï¿½llï¿½
 					WriteByte(f,1)
 				Else
 					WriteByte(f,0)
@@ -347,6 +352,7 @@ Function SaveGame(file$)
 		WriteFloat f, e\EventState3	
 		WriteFloat f, EntityX(e\room\obj)
 		WriteFloat f, EntityZ(e\room\obj)
+		WriteString f, e\EventStr
 	Next
 	
 	temp = 0
@@ -360,17 +366,17 @@ Function SaveGame(file$)
 		
 		WriteString f, it\name
 		
-		WriteFloat f, EntityX(it\obj, True)
-		WriteFloat f, EntityY(it\obj, True)
-		WriteFloat f, EntityZ(it\obj, True)
+		WriteFloat f, EntityX(it\collider, True)
+		WriteFloat f, EntityY(it\collider, True)
+		WriteFloat f, EntityZ(it\collider, True)
 		
 		WriteByte f, it\r
 		WriteByte f, it\g
 		WriteByte f, it\b
 		WriteFloat f, it\a
 		
-		WriteFloat f, EntityPitch(it\obj)
-		WriteFloat f, EntityYaw(it\obj)
+		WriteFloat f, EntityPitch(it\collider)
+		WriteFloat f, EntityYaw(it\collider)
 		
 		WriteFloat f, it\state
 		WriteByte f, it\Picked
@@ -383,7 +389,7 @@ Function SaveGame(file$)
 		If ItemFound Then WriteByte f, i Else WriteByte f, 66
 		
 		If it\itemtemplate\isAnim<>0 Then
-			WriteFloat f, AnimTime(it\obj)
+			WriteFloat f, AnimTime(it\model)
 		EndIf
 		WriteByte f,it\invSlots
 		WriteInt f,it\ID
@@ -421,14 +427,22 @@ Function SaveGame(file$)
 	
 	CloseFile f
 	
-	PlaySound_Strict(LoadTempSound("SFX/save.ogg"))
+	If Not MenuOpen Then
+		If SelectedDifficulty\saveType = SAVEONSCREENS Then
+			PlaySound_Strict(LoadTempSound("SFX\General\Save2.ogg"))
+		Else
+			PlaySound_Strict(LoadTempSound("SFX\General\Save1.ogg"))
+		EndIf
+		
+		Msg = "Game progress saved."
+		MsgTimer = 70 * 4
+	EndIf
 	
-	Msg = "Game saved"
-	MsgTimer = 70 * 4
-	
+	CatchErrors("SaveGame")
 End Function
 
 Function LoadGame(file$)
+	CatchErrors("Uncaught (LoadGame)")
 	DebugLog "---------------------------------------------------------------------------"
 	
 	DropSpeed=0.0
@@ -609,10 +623,22 @@ Function LoadGame(file$)
 				SetAnimTime(n\obj, frame)
 		End Select
 		
+		n\Frame = frame
+		
 		n\IsDead = ReadInt(f)
 		n\PathX = ReadFloat(f)
 		n\PathZ = ReadFloat(f)
 		n\HP = ReadInt(f)
+		n\Model = ReadString(f)
+		n\ModelScaleX# = ReadFloat(f)
+		n\ModelScaleY# = ReadFloat(f)
+		n\ModelScaleZ# = ReadFloat(f)
+		If n\Model <> ""
+			FreeEntity n\obj
+			n\obj = LoadAnimMesh_Strict(n\Model)
+			ScaleEntity n\obj,n\ModelScaleX,n\ModelScaleY,n\ModelScaleZ
+			SetAnimTime n\obj,frame
+		EndIf
 	Next
 	
 	For n.NPCs = Each NPCs
@@ -878,12 +904,29 @@ Function LoadGame(file$)
 				Exit
 			EndIf
 		Next
+		e\EventStr = ReadString(f)
 	Next
 	
 	For e.Events = Each Events
-		If e\EventName = "dimension1499" Or e\EventName = "room2sl"
+		;Reset for the monitor loading and stuff for room2sl
+		If e\EventName = "room2sl"
 			e\EventState = 0.0
+			e\EventStr = ""
 			DebugLog "Reset Eventstate in "+e\EventName
+		;Only reset if the dimension has already been generated and the player wasn't saving in it
+		ElseIf e\EventName = "dimension1499"
+			If e\EventState = 1.0
+				e\EventState = 0.0
+				e\EventStr = ""
+				For n.NPCs = Each NPCs
+					If n\NPCtype = NPCtype1499
+						If n\InFacility = 0
+							RemoveNPC(n)
+						EndIf
+					EndIf
+				Next
+				DebugLog "Reset Eventstate in "+e\EventName
+			EndIf
 		EndIf
 	Next
 	
@@ -910,15 +953,15 @@ Function LoadGame(file$)
 		it.Items = CreateItem(ittName, tempName, x, y, z, red,green,blue,a)
 		it\name = Name
 		
-		EntityType it\obj, HIT_ITEM
+		EntityType it\collider, HIT_ITEM
 		
 		x = ReadFloat(f)
 		y = ReadFloat(f)
-		RotateEntity(it\obj, x, y, 0)
+		RotateEntity(it\collider, x, y, 0)
 		
 		it\state = ReadFloat(f)
 		it\Picked = ReadByte(f)
-		If it\Picked Then HideEntity(it\obj)
+		If it\Picked Then HideEntity(it\collider)
 		
 		nt = ReadByte(f)
 		If nt = True Then SelectedItem = it
@@ -928,7 +971,7 @@ Function LoadGame(file$)
 		
 		For itt.ItemTemplates = Each ItemTemplates
 			If (itt\tempname = tempName) And (itt\name = ittName) Then
-				If itt\isAnim<>0 Then SetAnimTime it\obj,ReadFloat(f) : Exit
+				If itt\isAnim<>0 Then SetAnimTime it\model,ReadFloat(f) : Exit
 			EndIf
 		Next
 		it\invSlots = ReadByte(f)
@@ -1038,9 +1081,11 @@ Function LoadGame(file$)
 		Next
 	Next
 	
+	CatchErrors("LoadGame")
 End Function
 
 Function LoadGameQuick(file$)
+	CatchErrors("Uncaught (LoadGameQuick)")
 	DebugLog "---------------------------------------------------------------------------"
 	
 	DebugHUD = False
@@ -1257,10 +1302,22 @@ Function LoadGameQuick(file$)
 				SetAnimTime(n\obj, frame)
 		End Select		
 		
+		n\Frame = frame
+		
 		n\IsDead = ReadInt(f)
 		n\PathX = ReadFloat(f)
 		n\PathZ = ReadFloat(f)
 		n\HP = ReadInt(f)
+		n\Model = ReadString(f)
+		n\ModelScaleX# = ReadFloat(f)
+		n\ModelScaleY# = ReadFloat(f)
+		n\ModelScaleZ# = ReadFloat(f)
+		If n\Model <> ""
+			FreeEntity n\obj
+			n\obj = LoadAnimMesh_Strict(n\Model)
+			ScaleEntity n\obj,n\ModelScaleX,n\ModelScaleY,n\ModelScaleZ
+			SetAnimTime n\obj,frame
+		EndIf
 	Next
 	
 	For n.NPCs = Each NPCs
@@ -1493,6 +1550,7 @@ Function LoadGameQuick(file$)
 				Exit
 			EndIf
 		Next	
+		e\EventStr = ReadString(f)
 	Next
 	
 	Local it.Items
@@ -1518,15 +1576,15 @@ Function LoadGameQuick(file$)
 		it.Items = CreateItem(ittName, tempName, x, y, z, red,green,blue,a)
 		it\name = Name
 		
-		EntityType it\obj, HIT_ITEM
+		EntityType it\collider, HIT_ITEM
 		
 		x = ReadFloat(f)
 		y = ReadFloat(f)
-		RotateEntity(it\obj, x, y, 0)
+		RotateEntity(it\collider, x, y, 0)
 		
 		it\state = ReadFloat(f)
 		it\Picked = ReadByte(f)
-		If it\Picked Then HideEntity(it\obj)
+		If it\Picked Then HideEntity(it\collider)
 		
 		nt = ReadByte(f)
 		If nt = True Then SelectedItem = it
@@ -1536,7 +1594,7 @@ Function LoadGameQuick(file$)
 		
 		For itt.ItemTemplates = Each ItemTemplates
 			If itt\tempname = tempName Then
-				If itt\isAnim<>0 Then SetAnimTime it\obj,ReadFloat(f) : Exit
+				If itt\isAnim<>0 Then SetAnimTime it\model,ReadFloat(f) : Exit
 			EndIf
 		Next
 		it\invSlots = ReadByte(f)
@@ -1611,10 +1669,14 @@ Function LoadGameQuick(file$)
 	
 	CloseFile f
 	
+	CatchErrors("LoadGameQuick")
 End Function
 
 Function LoadSaveGames()
+	CatchErrors("Uncaught (LoadSaveGames)")
 	SaveGameAmount = 0
+	If FileType(SavePath)=1 Then RuntimeError "Can't create dir "+Chr(34)+SavePath+Chr(34)
+	If FileType(SavePath)=0 Then CreateDir(SavePath)
 	myDir=ReadDir(SavePath) 
 	Repeat 
 		file$=NextFile$(myDir) 
@@ -1656,10 +1718,13 @@ Function LoadSaveGames()
 		SaveGameDate(i - 1) = ReadString(f)
 		CloseFile f
 	Next
+	
+	CatchErrors("LoadSaveGames")
 End Function
 
 
 Function LoadSavedMaps()
+	CatchErrors("Uncaught (LoadSavedMaps)")
 	Local i, Dir, file$
 	
 	For i = 0 To MAXSAVEDMAPS-1
@@ -1686,11 +1751,11 @@ Function LoadSavedMaps()
 		End If 
 	Forever 
 	CloseDir Dir 
-	
+	CatchErrors("LoadSavedMaps")
 End Function
 
 Function LoadMap(file$)
-	
+	CatchErrors("Uncaught (LoadMap)")
 	Local f%, x%, y%, name$, angle%, prob#
 	Local r.Rooms, rt.RoomTemplates, e.Events
 	
@@ -1813,7 +1878,16 @@ Function LoadMap(file$)
 		Next
 	Next
 	
+	CatchErrors("LoadMap")
 End Function
+
+
+
+
+
+
+
+
+
 ;~IDEal Editor Parameters:
-;~F#2#1AE#412#64E#67C#69A
 ;~C#Blitz3D

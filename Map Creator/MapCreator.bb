@@ -62,7 +62,7 @@ EndIf
 
 ChangeDir ".."
 
-Global ButtonSFX% = LoadSound_Strict("SFX\Button.ogg")
+Global ButtonSFX% = LoadSound_Strict("SFX\Interact\Button.ogg")
 
 ChangeDir "Map Creator"
 
@@ -1268,7 +1268,10 @@ End Function
 Function GetZone(y%)
 	Return Min(Floor((Float(MapWidth-y)/MapWidth*ZONEAMOUNT)),ZONEAMOUNT-1)
 End Function
+
+
+
 ;~IDEal Editor Parameters:
-;~F#93#9C#A5#D0#313#341#352#369#37C#388#3D1#3E6#403#41B#42B#440#44E#454#458#45C
-;~F#466#46A#46F#4BF#4CD#4D5#4DE#4E8
+;~F#93#9C#A5#D0#352#369#37C#388#3D1#3E6#403#41B#42B#440#44E#454#458#45C#466#46A
+;~F#46F#4BF#4CD#4D5#4DE#4E8
 ;~C#Blitz3D

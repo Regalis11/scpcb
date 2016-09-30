@@ -1,0 +1,3 @@
+Place .ogg/.wav files in this folder to play them through the radio. Go into the options menu and click the "Check user tracks" button to have the game re-check this directory for new files.
+
+When you find a radio, go to channel 1 to listen to your tracks.

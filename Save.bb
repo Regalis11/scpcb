@@ -578,6 +578,12 @@ Function LoadGame(file$)
 		Select NPCtype
 			Case NPCtype173
 				Curr173 = n
+				HalloweenTex = Instr(Lower(CurrentDate()),"31 oct")>0
+				If HalloweenTex Then
+					Local tex = LoadTexture_Strict("GFX\npcs\173h.pt", 1)
+					EntityTexture Curr173\obj, tex, 0, 0
+					FreeTexture tex
+				EndIf
 			Case NPCtypeOldMan
 				Curr106 = n
 			Case NPCtype096
@@ -1259,6 +1265,12 @@ Function LoadGameQuick(file$)
 		Select NPCtype
 			Case NPCtype173
 				Curr173 = n
+				HalloweenTex = Instr(Lower(CurrentDate()),"31 oct")>0
+				If HalloweenTex Then
+					Local tex = LoadTexture_Strict("GFX\npcs\173h.pt", 1)
+					EntityTexture Curr173\obj, tex, 0, 0
+					FreeTexture tex
+				EndIf
 			Case NPCtypeOldMan
 				Curr106 = n
 			Case NPCtype096

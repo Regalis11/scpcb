@@ -6706,6 +6706,13 @@ Function InitNewGame()
 	DrawLoading(79)
 	
 	Curr173 = CreateNPC(NPCtype173, 0, -30.0, 0)
+	HalloweenTex = Instr(Lower(CurrentDate()),"31 oct")>0
+	If HalloweenTex Then
+		Local tex = LoadTexture_Strict("GFX\npcs\173h.pt", 1)
+		EntityTexture Curr173\obj, tex, 0, 0
+		FreeTexture tex
+	EndIf
+	
 	Curr106 = CreateNPC(NPCtypeOldMan, 0, -30.0, 0)
 	Curr106\State = 70 * 60 * Rand(12,17)
 	

@@ -8,6 +8,7 @@
  CommandLine=""
 </Settings>
 <Folders>
+ AbsPath="\Map Creator" Expanded="False"
 </Folders>
 <Files>
  AbsPath="\AAText.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
@@ -29,6 +30,7 @@
  AbsPath="\LightMapPNG.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\LoadAllSounds.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Main.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
+ AbsPath="\Map Creator\mapcreator_new.bb" PrjFolder="\Map Creator" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\MapSystem.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Menu.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\MusicPlayer.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
@@ -40,4 +42,5 @@
  AbsPath="\StrictLoads.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Update.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\UpdateEvents.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
+ AbsPath="\Map Creator\window3d.bb" PrjFolder="\Map Creator" Line="0" Column="0" Tip="0" Visible="False"
 </Files>

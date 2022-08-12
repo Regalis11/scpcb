@@ -5738,7 +5738,7 @@ Function AddLight%(room.Rooms, x#, y#, z#, ltype%, range#, r%, g%, b%)
 				ScaleSprite(room\LightSprites[i], 0.13 , 0.13)
 				EntityTexture(room\LightSprites[i], LightSpriteTex(0))
 				EntityBlend (room\LightSprites[i], 3)
-				
+				EntityColor(room\LightSprites[i], r%, g%, b%)
 				EntityParent(room\LightSprites[i], room\obj)
 				
 				room\LightSpritesPivot[i] = CreatePivot()
@@ -8742,10 +8742,6 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#2#A#35#102#111#118#11F#126#13F#147#14F#2F4#304#315#33D#34B#35B#360#36B#413
-;~F#51E#53F#563#57F#58A#5C6#5D6#5FF#63B#643#658#6A7#6B1#136A#13EC#13F8#143D#1448#1459#145E
-;~F#146D#1484#1505#150E#15D0#15ED#15F4#15FA#1608#162B#1650#1683#17CA#1803#1818#190C#19E1#19E6#19F6#1CA3
-;~F#1CC2#1CC9#1D2A#1DA6#1DD1#1DF2#1E05#1E1C#1E2F#1E36#1E6A#1E75#1E9D#1EFA#1F06#1F11#1F17#1F21#1F27#1F3D
-;~F#1F51#1F6F
+;~F#2#A#35#102#111#118#11F#126#13F#147#14F#143D#145E
 ;~B#1230
 ;~C#Blitz3D

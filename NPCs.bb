@@ -4176,13 +4176,7 @@ Function UpdateNPCs()
 								If (WearingNightVision>0) Then GiveAchievement(Achv966)
 								
 								If (Not Wearing714) And (WearingGasMask<3) And (WearingHazmat<3) And dist<16 Then
-									BlinkEffect = Max(BlinkEffect, 1.5)
-									BlinkEffectTimer = 1000
-									
-									StaminaEffect = 2.0
-									StaminaEffectTimer = 1000
-									
-									If MsgTimer<=0 And StaminaEffect<1.5 Then
+									If StaminaEffect<1.5 Then
 										Select Rand(4)
 											Case 1
 												Msg = "You feel exhausted."
@@ -4196,6 +4190,12 @@ Function UpdateNPCs()
 										
 										MsgTimer = 7*70
 									EndIf
+									
+									BlinkEffect = Max(BlinkEffect, 1.5)
+									BlinkEffectTimer = 1000
+									
+									StaminaEffect = 2.0
+									StaminaEffectTimer = 1000
 								EndIf							
 							EndIf
 							
@@ -7453,9 +7453,5 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#0#A#4F#6B#85#95#C5#D5#DE#EC#FB#10F#12F#159#16D#18A#1CB#1E2#203#226
-;~F#230#248#25C#27C#2AC#3A0#49B#5FE#803#89E#9FB#A00#A37#AD9#B15#BA8#C14#D28#DF7#EAE
-;~F#F61#107F#1088#1248#126F#127A#12A2#12B5#12B6#1313#1472#15BE#1640#169F#171F#174F#1775#178E#180E#18BC
-;~F#1946#1957#1971#1982#198C#19AD#1A18#1A99#1AB2#1ACB#1AD9#1AF5#1B07#1B2B#1B4E#1B5C
 ;~B#197#12A9#1343#13DC#1590#169B#185C#18B8
 ;~C#Blitz3D

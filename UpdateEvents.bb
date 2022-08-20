@@ -18,31 +18,43 @@ Function UpdateEvents()
 		Select e\EventName
 			Case "exit1"
 				;[Block]
-				If RemoteDoorOn=False Then
-					e\room\RoomDoors[4]\locked=True
-				ElseIf RemoteDoorOn And e\EventState3=0
-					e\room\RoomDoors[4]\locked=False
-					If e\room\RoomDoors[4]\open Then 
-						If e\room\RoomDoors[4]\openstate > 50 Or EntityDistance(Collider, e\room\RoomDoors[4]\frameobj)<0.5 Then
-							e\room\RoomDoors[4]\openstate = Min(e\room\RoomDoors[4]\openstate,50)
-							e\room\RoomDoors[4]\open = False
-							PlaySound2 (LoadTempSound("SFX\Door\DoorError.ogg"), Camera, e\room\RoomDoors[4]\frameobj)
-						EndIf							
+				If PlayerRoom = e\room Then
+					Local RoomExists = False
+					For r.Rooms = Each Rooms
+						If r\RoomTemplate\Name = "room2ccont" Then
+							RoomExists = True
+							Exit
+						EndIf
+					Next
+					If (Not RoomExists) Then
+						e\EventState3 = 1
 					EndIf
-				Else
-					e\room\RoomDoors[4]\locked=False
-					
-					If Curr096 <> Null Then
-						If Curr096\State = 0 Or Curr096\State = 5 Then
-							e\EventState2 = UpdateElevators(e\EventState2, e\room\RoomDoors[0], e\room\RoomDoors[1], e\room\Objects[8], e\room\Objects[9], e)
-						Else
-							e\EventState2 = Update096ElevatorEvent(e,e\EventState2,e\room\RoomDoors[0],e\room\Objects[8])
+					If RemoteDoorOn=False Then
+						e\room\RoomDoors[4]\locked=True
+					ElseIf RemoteDoorOn And e\EventState3=0
+						e\room\RoomDoors[4]\locked=False
+						If e\room\RoomDoors[4]\open Then 
+							If e\room\RoomDoors[4]\openstate > 50 Or EntityDistance(Collider, e\room\RoomDoors[4]\frameobj)<0.5 Then
+								e\room\RoomDoors[4]\openstate = Min(e\room\RoomDoors[4]\openstate,50)
+								e\room\RoomDoors[4]\open = False
+								PlaySound2 (LoadTempSound("SFX\Door\DoorError.ogg"), Camera, e\room\RoomDoors[4]\frameobj)
+							EndIf							
 						EndIf
 					Else
-						e\EventState2 = UpdateElevators(e\EventState2, e\room\RoomDoors[0], e\room\RoomDoors[1], e\room\Objects[8], e\room\Objects[9], e)
+						e\room\RoomDoors[4]\locked=False
+						
+						If Curr096 <> Null Then
+							If Curr096\State = 0 Or Curr096\State = 5 Then
+								e\EventState2 = UpdateElevators(e\EventState2, e\room\RoomDoors[0], e\room\RoomDoors[1], e\room\Objects[8], e\room\Objects[9], e)
+							Else
+								e\EventState2 = Update096ElevatorEvent(e,e\EventState2,e\room\RoomDoors[0],e\room\Objects[8])
+							EndIf
+						Else
+							e\EventState2 = UpdateElevators(e\EventState2, e\room\RoomDoors[0], e\room\RoomDoors[1], e\room\Objects[8], e\room\Objects[9], e)
+						EndIf
+						
+						EntityAlpha Fog, 1.0						
 					EndIf
-					
-					EntityAlpha Fog, 1.0						
 				EndIf
 				;[End Block]
 			Case "alarm" ;the alarm in the starting room
@@ -1871,6 +1883,16 @@ Function UpdateEvents()
 			Case "gateaentrance"
 				;[Block]
 				If PlayerRoom = e\room Then 
+					RoomExists = False
+					For r.Rooms = Each Rooms
+						If r\RoomTemplate\Name = "room2ccont" Then
+							RoomExists = True
+							Exit
+						EndIf
+					Next
+					If (Not RoomExists) Then
+						e\EventState3 = 1
+					EndIf
 					If RemoteDoorOn=False Then
 						e\room\RoomDoors[1]\locked=True
 					ElseIf RemoteDoorOn And e\EventState3=0
@@ -10174,9 +10196,6 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#1#14#29#13B#343#535#545#5B1#630#68D#6B4#6C2#6CC#6D9#8CA#8EB#93F#976#983#9BD
-;~F#9CE#9EE#9F7#A01#A10#B0B#B2D#DE2#E29#E3F#E4B#E68#EB9#ED2#FA1#10A3#1123#113C#115B#11C6
-;~F#11D3#11EC#1284#1439#152D#1581#1633#16D4#1796#17A9#187A#18A7#18C4#18EB#191B#1941#1969#19BB#19F8#1A29
-;~F#1A3C#1AFD#1B6A#1B7D#1B8B#1BCF#1BF0#1CDE#1D53#1E50#1ED1#1F1F#1F24#1F73#1F79#213E
-;~B#10D3#1DD1
+;~F#A26
+;~B#10E9#1DE7
 ;~C#Blitz3D

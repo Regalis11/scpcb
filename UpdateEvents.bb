@@ -8973,7 +8973,7 @@ Function UpdateDimension1499()
 				If QuickLoadPercent = 100 Or QuickLoadPercent = -1
 					UpdateChunks(e\room,15)
 					ShowEntity NTF_1499Sky
-					Update1499Sky()
+					UpdateSky(NTF_1499Sky)
 					ShouldPlay = 18
 					If EntityY(Collider)<800.0
 						PositionEntity Collider,EntityX(Collider),800.5,EntityZ(Collider),True
@@ -9240,7 +9240,7 @@ Function UpdateEndings()
 							DrawLoading(100,True)
 						Else
 							
-							UpdateSky()
+							UpdateSky(Sky)
 							
 							If e\EventState < 2.0 And SelectedEnding = "" Then 
 								If e\room\NPC[0]\State = 2 Then
@@ -9733,7 +9733,7 @@ Function UpdateEndings()
 							EndIf
 						Next
 						
-						UpdateSky()
+						UpdateSky(Sky)
 						
 						If e\EventState=>350 Then
 							If Contained106=False Then
@@ -10174,9 +10174,6 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#1#14#29#13B#343#535#545#5B1#630#68D#6B4#6C2#6CC#6D9#8CA#8EB#93F#976#983#9BD
-;~F#9CE#9EE#9F7#A01#A10#B0B#B2D#DE2#E29#E3F#E4B#E68#EB9#ED2#FA1#10A3#1123#113C#115B#11C6
-;~F#11D3#11EC#1284#1439#152D#1581#1633#16D4#1796#17A9#187A#18A7#18C4#18EB#191B#1941#1969#19BB#19F8#1A29
-;~F#1A3C#1AFD#1B6A#1B7D#1B8B#1BCF#1BF0#1CDE#1D53#1E50#1ED1#1F1F#1F24#1F73#1F79#213E
+;~F#A10
 ;~B#10D3#1DD1
 ;~C#Blitz3D

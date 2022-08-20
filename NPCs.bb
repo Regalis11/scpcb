@@ -4218,7 +4218,7 @@ Function UpdateNPCs()
 							EndIf
 							
 							;If n\Frame>1393.0 And prevFrame<=1393.0 Or n\Frame>1589.0 And prevFrame<=1589.0 Or n\Frame>2000.0 And prevFrame<=2000.0 Then
-							If n\Frame>271.0 And prevFrame<=271.0 Or n\Frame>354 Or n\Frame>314.0 And prevFrame<=314.0 Or n\Frame>301.0 And prevFrame<=301.0
+							If (n\Frame>271.0 And prevFrame<=271.0) Or (n\Frame>314.0 And prevFrame<=314.0) Or (n\Frame>301.0 And prevFrame<=301.0)
 								PlaySound2(LoadTempSound("SFX\SCP\966\Idle"+Rand(1,3)+".ogg"), Camera, n\Collider)
 							EndIf
 							
@@ -4226,7 +4226,7 @@ Function UpdateNPCs()
 							RotateEntity n\Collider,0.0,CurveAngle(angle,EntityYaw(n\Collider),20.0),0.0
 						Case 5,6,8 ;walking or chasing
 							;If n\Frame<2343.0 Then
-							If n\Frame<580.0 And n\Frame>214.0 ;start walking
+							If n\Frame>214.0 And n\Frame<580.0 ;start walking
 								;AnimateNPC(n, 2319, 2343, 0.5, False)
 								AnimateNPC(n, 556, 580, 0.25, False)
 							Else
@@ -4375,7 +4375,7 @@ Function UpdateNPCs()
 							
 							If dist<1.0 Then
 								;If n\Frame>2173.0 And prevFrame<=2173.0 Or n\Frame>2203.0 And prevFrame<=2203.0 Or n\Frame>2227.0 And prevFrame<=2227.0 Then
-								If n\Frame>470.0 And prevFrame<=470.0 Or n\Frame>500.0 And prevFrame<=500.0 Or n\Frame>527.0 And prevFrame<=527.0
+								If (n\Frame>470.0 And prevFrame<=470.0) Or (n\Frame>500.0 And prevFrame<=500.0) Or (n\Frame>527.0 And prevFrame<=527.0)
 									PlaySound2(LoadTempSound("SFX\General\Slash"+Rand(1,2)+".ogg"), Camera, n\Collider)
 									Injuries = Injuries + Rnd(0.5,1.0)								
 								EndIf	
@@ -7453,9 +7453,5 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#0#A#4F#6B#85#95#C5#D5#DE#EC#FB#10F#12F#159#16D#18A#1CB#1E2#203#226
-;~F#230#248#25C#27C#2AC#3A0#49B#5FE#803#89E#9FB#A00#A37#AD9#B15#BA8#C14#D28#DF7#EAE
-;~F#F61#107F#1088#1248#126F#127A#12A2#12B5#12B6#1313#1472#15BE#1640#169F#171F#174F#1775#178E#180E#18BC
-;~F#1946#1957#1971#1982#198C#19AD#1A18#1A99#1AB2#1ACB#1AD9#1AF5#1B07#1B2B#1B4E#1B5C
 ;~B#197#12A9#1343#13DC#1590#169B#185C#18B8
 ;~C#Blitz3D

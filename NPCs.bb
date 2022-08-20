@@ -3583,7 +3583,7 @@ Function UpdateNPCs()
 							EndIf
 							
 							;535, 568
-							If (prevFrame < 533 And n\Frame=>533) Or (prevFrame > 568 And n\Frame<2) Then
+							If (prevFrame < 533 And n\Frame=>533) Or (prevFrame < 568 And n\Frame=>568) Then
 								PlaySound2(Step2SFX(Rand(3,5)), Camera, n\Collider, 15.0, 0.6)
 							EndIf
 							
@@ -7453,9 +7453,5 @@ End Function
 
 
 ;~IDEal Editor Parameters:
-;~F#0#A#4F#6B#85#95#C5#D5#DE#EC#FB#10F#12F#159#16D#18A#1CB#1E2#203#226
-;~F#230#248#25C#27C#2AC#3A0#49B#5FE#803#89E#9FB#A00#A37#AD9#B15#BA8#C14#D28#DF7#EAE
-;~F#F61#107F#1088#1248#126F#127A#12A2#12B5#12B6#1313#1472#15BE#1640#169F#171F#174F#1775#178E#180E#18BC
-;~F#1946#1957#1971#1982#198C#19AD#1A18#1A99#1AB2#1ACB#1AD9#1AF5#1B07#1B2B#1B4E#1B5C
 ;~B#197#12A9#1343#13DC#1590#169B#185C#18B8
 ;~C#Blitz3D

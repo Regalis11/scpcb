@@ -755,7 +755,7 @@ Function LoadGame(file$)
 			EndIf
 		Next
 		
-		For x=0 To 11
+		For x=0 To 10
 			id = ReadByte(f)
 			If id=2 Then
 				Exit
@@ -1583,7 +1583,7 @@ Function LoadGameQuick(file$)
 			EndIf
 		Next
 		
-		For x=0 To 11
+		For x=0 To 10
 			id = ReadByte(f)
 			If id=2 Then
 				Exit

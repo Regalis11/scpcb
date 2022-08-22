@@ -6743,8 +6743,8 @@ Function DrawGUI()
 							If SelectedItem\itemtemplate\name = "S-NAV Navigator Ultimate" And (MilliSecs2() Mod 600) < 400 Then
 								If Curr173<>Null Then
 									Local dist# = EntityDistance(Camera, Curr173\obj)
-									dist = Ceil(dist / 8.0) * 8.0
 									If dist < 8.0 * 4 Then
+										dist = Ceil(dist / 8.0) * 8.0
 										Color 100, 0, 0
 										Oval(x - dist * 3, y - 7 - dist * 3, dist * 3 * 2, dist * 3 * 2, False)
 										AAText(x - width / 2 + 10, y - height / 2 + 30, "SCP-173")

@@ -250,8 +250,8 @@ Global viewport_center_x% = GraphicWidth / 2, viewport_center_y% = GraphicHeight
 Global mouselook_x_inc# = 0.3 ; This sets both the sensitivity and direction (+/-) of the mouse on the X axis.
 Global mouselook_y_inc# = 0.3 ; This sets both the sensitivity and direction (+/-) of the mouse on the Y axis.
 ; Used to limit the mouse movement to within a certain number of pixels (250 is used here) from the center of the screen. This produces smoother mouse movement than continuously moving the mouse back to the center each loop.
-Global mouse_left_limit% = 250, mouse_right_limit% = GraphicsWidth () - 250
-Global mouse_top_limit% = 150, mouse_bottom_limit% = GraphicsHeight () - 150 ; As above.
+Global mouse_left_limit% = 250 * MenuScale, mouse_right_limit% = GraphicWidth - 250 * MenuScale
+Global mouse_top_limit% = 150 * MenuScale, mouse_bottom_limit% = GraphicHeight - 150 * MenuScale ; As above.
 Global mouse_x_speed_1#, mouse_y_speed_1#
 
 Global KEY_RIGHT = GetINIInt(OptionFile, "binds", "Right key")
@@ -4495,7 +4495,7 @@ Function MouseLook()
 	EndIf
 	
 	; -- Limit the mouse;s movement. Using this method produces smoother mouselook movement than centering the mouse Each loop.
-	If (MouseX() > mouse_right_limit) Or (MouseX() < mouse_left_limit) Or (MouseY() > mouse_bottom_limit) Or (MouseY() < mouse_top_limit)
+	If (ScaledMouseX() > mouse_right_limit) Or (ScaledMouseX() < mouse_left_limit) Or (ScaledMouseY() > mouse_bottom_limit) Or (ScaledMouseY() < mouse_top_limit)
 		MoveMouse viewport_center_x, viewport_center_y
 	EndIf
 	

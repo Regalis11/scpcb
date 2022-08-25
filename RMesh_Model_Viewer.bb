@@ -709,7 +709,7 @@ End Function
 
 Print "RMesh Viewer"
 Print "Enter RMesh path and name with extension"
-Print "Example: GFX/map/4tunnels.rmesh"
+Print "Example: GFX/map/173bright_opt.rmesh"
 Print ""
 Local fname$ = Input("RMesh To load: ")
 

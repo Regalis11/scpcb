@@ -208,7 +208,7 @@ Function UpdateMainMenu()
 						;FMOD_CloseStream(CurrMusicStream)
 						;FMOD_Close()
 						;FMOD_StopStream(CurrMusicStream)
-						FSOUND_Stream_Stop(CurrMusicStream)
+						StopStream_Strict(MusicCHN)
 						;FSOUND_Close()
 						End
 					EndIf

@@ -1590,7 +1590,7 @@ Music(25) = "SaveMeFrom"
 Global MusicVolume# = GetINIFloat(OptionFile, "audio", "music volume")
 ;Global MusicCHN% = StreamSound_Strict("SFX\Music\"+Music(2)+".ogg", MusicVolume, CurrMusicStream)
 
-Global CurrMusicStream, MusicCHN
+Global MusicCHN
 MusicCHN = StreamSound_Strict("SFX\Music\"+Music(2)+".ogg",MusicVolume,Mode)
 
 Global CurrMusicVolume# = 1.0, NowPlaying%=2, ShouldPlay%=11

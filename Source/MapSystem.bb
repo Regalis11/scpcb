@@ -826,7 +826,7 @@ Const max_deviation_distance% = 3
 Const return_chance% = 27
 Const center = 5 ;(gridsize-1) / 2
 
-Include "Drawportals.bb"
+Include "Source/Drawportals.bb"
 
 Type Forest
 	Field TileMesh%[6]
@@ -7900,7 +7900,7 @@ End Function
 
 
 
-Include "Skybox.bb"
+Include "Source/Skybox.bb"
 
 Global UpdateRoomLightsTimer# = 0.0
 

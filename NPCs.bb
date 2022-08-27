@@ -765,7 +765,7 @@ Function UpdateNPCs()
 								;more than 6 room lengths away from the player -> teleport to a room closer to the player
 								If dist > 50 Then
 									If Rand(70)=1 Then
-										If PlayerRoom\RoomTemplate\Name <> "exit1" And PlayerRoom\RoomTemplate\Name <> "gatea" And PlayerRoom\RoomTemplate\Name <> "pocketdimension" Then
+										If (PlayerRoom\RoomTemplate\Name <> "exit1" Or EntityY(Collider) =< 1040 * RoomScale) And PlayerRoom\RoomTemplate\Name <> "gatea" And PlayerRoom\RoomTemplate\Name <> "pocketdimension" Then
 											For w.waypoints = Each WayPoints
 												If w\door=Null And Rand(5)=1 Then
 													x = Abs(EntityX(Collider)-EntityX(w\obj,True))

@@ -16,20 +16,20 @@ If Len(InitErrorStr)>0 Then
 	RuntimeError "The following DLLs were not found in the game directory:"+Chr(13)+Chr(10)+Chr(13)+Chr(10)+InitErrorStr
 EndIf
 
-Include "FMod.bb"
+Include "Source/FMod.bb"
 
-Include "StrictLoads.bb"
-Include "fullscreen_window_fix.bb"
-Include "KeyName.bb"
+Include "Source/StrictLoads.bb"
+Include "Source/fullscreen_window_fix.bb"
+Include "Source/KeyName.bb"
 
 Global OptionFile$ = "options.ini"
 
-Include "Blitz_Basic_Bank.bb"
-Include "Blitz_File_FileName.bb"
-Include "Blitz_File_ZipApi.bb"
-Include "Update.bb"
+Include "Source/Blitz_Basic_Bank.bb"
+Include "Source/Blitz_File_FileName.bb"
+Include "Source/Blitz_File_ZipApi.bb"
+Include "Source/Update.bb"
 
-Include "DevilParticleSystem.bb"
+Include "Source/DevilParticleSystem.bb"
 
 Global ErrorFile$ = "error_log_"
 Local ErrorFileInd% = 0
@@ -105,7 +105,7 @@ Global SFXVolume# = GetINIFloat(OptionFile, "audio", "sound volume")
 
 Global Bit16Mode = GetINIInt(OptionFile, "options", "16bit")
 
-Include "AAText.bb"
+Include "Source/AAText.bb"
 
 If LauncherEnabled Then 
 	AspectRatioRatio = 1.0
@@ -301,7 +301,7 @@ Global Injuries#, Bloodloss#, Infect#, HealTimer#
 
 Global RefinedItems%
 
-Include "Achievements.bb"
+Include "Source/Achievements.bb"
 
 ;player coordinates, angle, speed, movement etc ---------------------------------------------------------------------
 Global DropSpeed#, HeadDropSpeed#, CurrSpeed#
@@ -345,7 +345,7 @@ Dim DrawArrowIcon%(4)
 
 ;misc ---------------------------------------------------------------------------------------------------------------
 
-Include "Difficulty.bb"
+Include "Source/Difficulty.bb"
 
 Global MTFtimer#, MTFrooms.Rooms[10], MTFroomState%[10]
 
@@ -1543,7 +1543,7 @@ Global MouseSens# = GetINIFloat("options.ini", "options", "mouse sensitivity")
 
 Global EnableVRam% = GetINIInt("options.ini", "options", "enable vram")
 
-Include "dreamfilter.bb"
+Include "Source/dreamfilter.bb"
 
 Dim LightSpriteTex(10)
 
@@ -1816,11 +1816,11 @@ DrawLoading(35, True)
 
 ;----------------------------------------------  Items  -----------------------------------------------------
 
-Include "Items.bb"
+Include "Source/Items.bb"
 
 ;--------------------------------------- Particles ------------------------------------------------------------
 
-Include "Particles.bb"
+Include "Source/Particles.bb"
 
 ;-------------------------------------  Doors --------------------------------------------------------------
 
@@ -2424,11 +2424,11 @@ End Function
 
 DrawLoading(40,True)
 
-Include "MapSystem.bb"
+Include "Source/MapSystem.bb"
 
 DrawLoading(80,True)
 
-Include "NPCs.bb"
+Include "Source/NPCs.bb"
 
 ;-------------------------------------  Events --------------------------------------------------------------
 
@@ -2685,7 +2685,7 @@ Function InitEvents()
 	
 End Function
 
-Include "UpdateEvents.bb"
+Include "Source/UpdateEvents.bb"
 
 Function RemoveEvent(e.Events)
 	If e\Sound<>0 Then FreeSound_Strict e\Sound
@@ -2753,7 +2753,7 @@ Global MTF_CameraCheckDetected% = False
 
 ;---------------------------------------------------------------------------------------------------
 
-Include "menu.bb"
+Include "Source/menu.bb"
 MainMenuOpen = True
 
 ;---------------------------------------------------------------------------------------------------
@@ -7820,7 +7820,7 @@ End Function
 
 ;----------------------------------------------------------------------------------------------
 
-Include "LoadAllSounds.bb"
+Include "Source/LoadAllSounds.bb"
 Function LoadEntities()
 	CatchErrors("Uncaught (LoadEntities)")
 	DrawLoading(0)
@@ -8916,7 +8916,7 @@ Function NullGame(playbuttonsfx%=True)
 	CatchErrors("NullGame")
 End Function
 
-Include "save.bb"
+Include "Source/save.bb"
 
 ;--------------------------------------- music & sounds ----------------------------------------------
 

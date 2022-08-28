@@ -34,8 +34,7 @@ Function SaveGame(file$)
 	WriteFloat f, EntityPitch(Collider)
 	WriteFloat f, EntityYaw(Collider)
 	
-	;WriteString f, VersionNumber
-	WriteString f, CompatibleNumber
+	WriteString f, VersionNumber
 	
 	WriteFloat f, BlinkTimer
 	WriteFloat f, BlinkEffect
@@ -505,8 +504,8 @@ Function LoadGame(file$)
 	y = ReadFloat(f)
 	RotateEntity(Collider, x, y, 0, 0)
 	
-	strtemp = ReadString(f)
-	version = strtemp
+	version = ReadString(f)
+	If CompareVersions(version, OldestSupportedVersion) < 0 Then RuntimeError "Save file version not supported"
 	
 	BlinkTimer = ReadFloat(f)
 	BlinkEffect = ReadFloat(f)	
@@ -708,7 +707,7 @@ Function LoadGame(file$)
 	room2gw_x = ReadFloat(f)
 	room2gw_z = ReadFloat(f)
 	
-	If version = CompatibleNumber Then
+	If CompareVersions(version, "1.3.11") >= 0 Then
 		I_Zone\Transition[0] = ReadByte(f)
 		I_Zone\Transition[1] = ReadByte(f)
 		I_Zone\HasCustomForest = ReadByte(f)
@@ -1340,8 +1339,8 @@ Function LoadGameQuick(file$)
 	y = ReadFloat(f)
 	RotateEntity(Collider, x, y, 0, 0)
 	
-	strtemp = ReadString(f)
-	version = strtemp
+	version = ReadString(f)
+	If CompareVersions(version, OldestSupportedVersion) < 0 Then RuntimeError "Save file version not supported"
 	
 	BlinkTimer = ReadFloat(f)
 	BlinkEffect = ReadFloat(f)	
@@ -1547,7 +1546,7 @@ Function LoadGameQuick(file$)
 	room2gw_x = ReadFloat(f)
 	room2gw_z = ReadFloat(f)
 	
-	If version = CompatibleNumber Then
+	If CompareVersions(version, "1.3.11") >= 0 Then
 		I_Zone\Transition[0] = ReadByte(f)
 		I_Zone\Transition[1] = ReadByte(f)
 		I_Zone\HasCustomForest = ReadByte(f)
@@ -2043,7 +2042,7 @@ Function LoadSaveGames()
 		Local f% = ReadFile(SavePath + SaveGames(i - 1) + "\save.txt")
 		SaveGameTime(i - 1) = ReadString(f)
 		SaveGameDate(i - 1) = ReadString(f)
-		;Skip all data until the CompatibleVersion number
+		;Skip all data until the version number
 		ReadInt(f)
 		For j = 0 To 5
 			ReadFloat(f)

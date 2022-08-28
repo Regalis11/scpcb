@@ -119,6 +119,7 @@ Function SaveGame(file$)
 	WriteByte f, SoundTransmission
 	WriteByte f, Contained106
 	
+	WriteByte f, MAXACHIEVEMENTS
 	For i = 0 To MAXACHIEVEMENTS-1
 		WriteByte f, Achievements(i)
 	Next
@@ -581,9 +582,30 @@ Function LoadGame(file$)
 	SoundTransmission = ReadByte(f)	
 	Contained106 = ReadByte(f)	
 	
-	For i = 0 To MAXACHIEVEMENTS-1
+	If CompareVersions(version, "1.3.12") >= 0 Then
+		temp = ReadByte(f)
+	Else
+		temp = 37
+	EndIf
+	For i = 0 To temp-1
 		Achievements(i)=ReadByte(f)
 	Next
+	If CompareVersions(version, "1.3.12") < 0 Then
+		Achievements(37)=Achievements(36)
+		Achievements(36)=Achievements(31)
+		Achievements(31)=Achievements(28)
+		Achievements(28)=Achievements(34)
+		Achievements(34)=Achievements(32)
+		Achievements(32)=Achievements(29)
+		Achievements(29)=Achievements(35)
+		Achievements(35)=Achievements(33)
+		Achievements(33)=Achievements(30)
+		Achievements(30)=Achievements(27)
+		For i = 27 To 6 Step -1
+			Achievements(i)=Achievements(i-1)
+		Next
+		Achievements(5)=False
+	EndIf
 	RefinedItems = ReadInt(f)
 	
 	MapWidth = ReadInt(f)
@@ -1416,9 +1438,30 @@ Function LoadGameQuick(file$)
 	SoundTransmission = ReadByte(f)	
 	Contained106 = ReadByte(f)	
 	
-	For i = 0 To MAXACHIEVEMENTS-1
+	If CompareVersions(version, "1.3.12") >= 0 Then
+		temp = ReadByte(f)
+	Else
+		temp = 37
+	EndIf
+	For i = 0 To temp-1
 		Achievements(i)=ReadByte(f)
 	Next
+	If CompareVersions(version, "1.3.12") < 0 Then
+		Achievements(37)=Achievements(36)
+		Achievements(36)=Achievements(31)
+		Achievements(31)=Achievements(28)
+		Achievements(28)=Achievements(34)
+		Achievements(34)=Achievements(32)
+		Achievements(32)=Achievements(29)
+		Achievements(29)=Achievements(35)
+		Achievements(35)=Achievements(33)
+		Achievements(33)=Achievements(30)
+		Achievements(30)=Achievements(27)
+		For i = 27 To 6 Step -1
+			Achievements(i)=Achievements(i-1)
+		Next
+		Achievements(5)=False
+	EndIf
 	RefinedItems = ReadInt(f)
 	
 	MapWidth = ReadInt(f)

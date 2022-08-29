@@ -4765,10 +4765,12 @@ Function DrawGUI()
 		Color 0, 0, 0
 		Rect(x - 50, y, 30, 30)
 		
-		If EyeIrritation > 0 Then
+		If BlurTimer > 600 Or BlinkEffect > 1 Or LightFlash > 0 Or LightBlink > 0 Or EyeIrritation > 0 Then
 			Color 200, 0, 0
-			Rect(x - 50 - 3, y - 3, 30 + 6, 30 + 6)
+		ElseIf BlinkEffect < 1
+			Color 0, 200, 0
 		End If
+		Rect(x - 50 - 3, y - 3, 30 + 6, 30 + 6)
 		
 		Color 255, 255, 255
 		Rect(x - 50 - 1, y - 1, 30 + 2, 30 + 2, False)
@@ -4784,6 +4786,13 @@ Function DrawGUI()
 		
 		Color 0, 0, 0
 		Rect(x - 50, y, 30, 30)
+		
+		If PlayerRoom\RoomTemplate\Name = "pocketdimension" Or Wearing714 = True Or Injuries >= 1.5 Or StaminaEffect > 1 Or WearingHazmat = 1 Or WearingVest = 2 Then
+			Color 200, 0, 0
+		ElseIf InfiniteStamina Or StaminaEffect < 1 Or WearingGasMask = 2 Or Wearing1499 = 2 Or WearingHazmat = 2
+			Color 0, 200, 0
+		End If
+		Rect(x - 50 - 3, y - 3, 30 + 6, 30 + 6)
 		
 		Color 255, 255, 255
 		Rect(x - 50 - 1, y - 1, 30 + 2, 30 + 2, False)

@@ -458,7 +458,7 @@ Function UpdateMainMenu()
 				
 				DrawFrame(x+70*MenuScale,y+440*MenuScale,width-140*MenuScale,60*MenuScale)
 				
-				AAText(x+(width/2.0),y+470*MenuScale,"Page "+Int(Max((CurrLoadGamePage+1),1))+"/"+Int(Max((Int(Ceil(Float(SaveGameAmount)/5.0))),1)),True,True)
+				AAText(x+(width/2.0),y+470*MenuScale,"PAGE "+Int(Max((CurrLoadGamePage+1),1))+"/"+Int(Max((Int(Ceil(Float(SaveGameAmount)/5.0))),1)),True,True)
 				
 				AASetFont Font1
 				
@@ -641,7 +641,7 @@ Function UpdateMainMenu()
 					;Local prevGamma# = ScreenGamma
 					ScreenGamma = (SlideBar(x + 310*MenuScale, y+6*MenuScale, 150*MenuScale, ScreenGamma*50.0)/50.0)
 					Color 255,255,255
-					AAText(x + 20 * MenuScale, y, "Screen gamma")
+					AAText(x + 20 * MenuScale, y, "Screen gamma:")
 					If MouseOn(x+310*MenuScale,y+6*MenuScale,150*MenuScale+14,20) And OnSliderID=0
 						DrawOptionsTooltip(tx,ty,tw,th,"gamma",ScreenGamma)
 					EndIf
@@ -865,11 +865,11 @@ Function UpdateMainMenu()
 					InputBox(x + 470 * MenuScale, y + 20 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_BLINK,210)),7)				
 					AAText(x + 280 * MenuScale, y + 40 * MenuScale, "Sprint")
 					InputBox(x + 470 * MenuScale, y + 40 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_SPRINT,210)),8)
-					AAText(x + 280 * MenuScale, y + 60 * MenuScale, "Open/Close Inventory")
+					AAText(x + 280 * MenuScale, y + 60 * MenuScale, "Toggle Inventory")
 					InputBox(x + 470 * MenuScale, y + 60 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_INV,210)),9)
 					AAText(x + 280 * MenuScale, y + 80 * MenuScale, "Crouch")
 					InputBox(x + 470 * MenuScale, y + 80 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CROUCH,210)),10)	
-					AAText(x + 280 * MenuScale, y + 100 * MenuScale, "Open/Close Console")
+					AAText(x + 280 * MenuScale, y + 100 * MenuScale, "Toggle Console")
 					InputBox(x + 470 * MenuScale, y + 100 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CONSOLE,210)),12)
 					
 					If MouseOn(x+20*MenuScale,y,width-40*MenuScale,120*MenuScale)

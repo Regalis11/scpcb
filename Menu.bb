@@ -56,7 +56,7 @@ LoadSaveGames()
 Global CurrLoadGamePage% = 0
 
 Function UpdateMainMenu()
-	Local x%, y%, width%, height%, temp%
+	Local x%, y%, width%, height%, temp%, strtemp$
 	
 	Color 0,0,0
 	Rect 0,0,GraphicWidth,GraphicHeight,True
@@ -308,11 +308,11 @@ Function UpdateMainMenu()
 					
 					Color (255, 0,0)
 					If Len(SelectedMap)>15 Then
-						TempStr$=Left(SelectedMap,14)+"..."
+						strtemp=Left(SelectedMap,14)+"..."
 					Else
-						TempStr$=SelectedMap
+						strtemp=SelectedMap
 					EndIf
-					AAText(x+150*MenuScale + 100*MenuScale, y+55*MenuScale + 15*MenuScale, TempStr$, True, True)
+					AAText(x+150*MenuScale + 100*MenuScale, y+55*MenuScale + 15*MenuScale, strtemp, True, True)
 					
 					If DrawButton(x+370*MenuScale, y+55*MenuScale, 120*MenuScale, 30*MenuScale, "DESELECT", False) Then
 						SelectedMap=""
@@ -364,13 +364,13 @@ Function UpdateMainMenu()
 					Color 255,255,255
 					Select SelectedDifficulty\otherFactors
 						Case EASY
-							TempStr$ = "Easy"
+							strtemp = "Easy"
 						Case NORMAL
-							TempStr$ = "Normal"
+							strtemp = "Normal"
 						Case HARD
-							TempStr$ = "Hard"
+							strtemp = "Hard"
 					End Select
-					AAText(x + 200 * MenuScale, y + 255 * MenuScale, "Other difficulty factors: " + TempStr$)
+					AAText(x + 200 * MenuScale, y + 255 * MenuScale, "Other difficulty factors: " + strtemp)
 				Else
 					RowText(SelectedDifficulty\description, x+160*MenuScale, y+160*MenuScale, (410-20)*MenuScale, 200)					
 				EndIf
@@ -482,10 +482,10 @@ Function UpdateMainMenu()
 								Color 255,255,255
 							EndIf
 							
-							AAText(x + 20 * MenuScale, y + 10 * MenuScale, SaveGames(i - 1))
-							AAText(x + 20 * MenuScale, y + (10+18) * MenuScale, SaveGameTime(i - 1)) ;y + (10+23) * MenuScale
-							AAText(x + 120 * MenuScale, y + (10+18) * MenuScale, SaveGameDate(i - 1))
-							AAText(x + 20 * MenuScale, y + (10+36) * MenuScale, SaveGameVersion(i - 1))
+							AAText(x + 20 * MenuScale, y + 6 * MenuScale, SaveGames(i - 1))
+							AAText(x + 20 * MenuScale, y + (6+20) * MenuScale, SaveGameTime(i - 1)) ;y + (10+23) * MenuScale
+							AAText(x + 120 * MenuScale, y + (6+20) * MenuScale, SaveGameDate(i - 1))
+							AAText(x + 20 * MenuScale, y + (6+40) * MenuScale, SaveGameVersion(i - 1))
 							
 							If SaveMSG = "" Then
 								If SaveGameVersion(i - 1) <> CompatibleNumber And SaveGameVersion(i - 1) <> "1.3.10" Then
@@ -771,11 +771,11 @@ Function UpdateMainMenu()
 						AAText x + 20 * MenuScale, y, "User track mode:"
 						UserTrackMode = DrawTick(x + 310 * MenuScale, y + MenuScale, UserTrackMode)
 						If UserTrackMode
-							TempStr$ = "Repeat"
+							strtemp = "Repeat"
 						Else
-							TempStr$ = "Random"
+							strtemp = "Random"
 						EndIf
-						AAText x + 350 * MenuScale, y + MenuScale, TempStr$
+						AAText x + 350 * MenuScale, y + MenuScale, strtemp
 						If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 							DrawOptionsTooltip(tx,ty,tw,th,"usertrackmode")
 						EndIf
@@ -1086,11 +1086,11 @@ Function UpdateMainMenu()
 							DrawFrame(x,y,540* MenuScale, 70* MenuScale)
 							
 							If Len(SavedMaps(i - 1)) > 20 Then
-								AAText(x + 20 * MenuScale, y + 15 * MenuScale, Left(SavedMaps(i - 1), 19) + "...")
+								AAText(x + 20 * MenuScale, y + 13 * MenuScale, Left(SavedMaps(i - 1), 19) + "...")
 							Else
-								AAText(x + 20 * MenuScale, y + 15 * MenuScale, SavedMaps(i - 1))
+								AAText(x + 20 * MenuScale, y + 13 * MenuScale, SavedMaps(i - 1))
 							EndIf
-							AAText(x + 20 * MenuScale, y + 45 * MenuScale, SavedMapsAuthor(i - 1))
+							AAText(x + 20 * MenuScale, y + 39 * MenuScale, SavedMapsAuthor(i - 1))
 							
 							If SaveMSG = "" Then
 								If DrawButton(x + 280 * MenuScale, y + 20 * MenuScale, 100 * MenuScale, 30 * MenuScale, "LOAD", False) Then
@@ -1817,9 +1817,9 @@ Function SlideBar#(x%, y%, width%, value#)
 	
 	DrawImage(BlinkMeterIMG, x + width * value / 100.0 +3, y+3)
 	
-	Color 170,170,170 
-	AAText (x - 50 * MenuScale, y + 4*MenuScale, "LOW")					
-	AAText (x + width + 38 * MenuScale, y+4*MenuScale, "HIGH")	
+	Color 170,170,170
+	AAText (x - 50 * MenuScale, y, "LOW")
+	AAText (x + width + 34 * MenuScale, y, "HIGH")
 	
 	Return value
 	

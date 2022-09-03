@@ -3780,7 +3780,7 @@ Function DrawEnding()
 				
 				Color(255, 255, 255)
 				AASetFont Font2
-				AAText(x + width / 2 + 40*MenuScale, y + 20*MenuScale, "THE END", True)
+				AAText(x + width / 2 + 47*MenuScale, y + 48*MenuScale, "THE END", True, True)
 				AASetFont Font1
 				
 				If AchievementsMenu=0 Then 
@@ -7140,7 +7140,7 @@ End Function
 Function DrawMenu()
 	CatchErrors("Uncaught (DrawMenu)")
 	
-	Local x%, y%, width%, height%
+	Local x%, y%, width%, height%, strtemp$
 	If api_GetFocus() = 0 Then ;Game is out of focus -> pause the game
 		If (Not Using294) Then
 			MenuOpen = True
@@ -7181,36 +7181,29 @@ Function DrawMenu()
 		
 		DrawImage PauseMenuIMG, x, y
 		
-		Color(255, 255, 255)
-		
-		x = x+132*MenuScale
-		y = y+122*MenuScale	
+		Color(255, 255, 255)	
 		
 		If (Not MouseDown1)
 			OnSliderID = 0
 		EndIf
 		
 		If AchievementsMenu > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "ACHIEVEMENTS",False,True)
-			AASetFont Font1
+			strtemp = "ACHIEVEMENTS"
 		ElseIf OptionsMenu > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "OPTIONS",False,True)
-			AASetFont Font1
+			strtemp = "OPTIONS"
 		ElseIf QuitMSG > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "QUIT?",False,True)
-			AASetFont Font1
+			strtemp = "QUIT?"
 		ElseIf KillTimer >= 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "PAUSED",False,True)
-			AASetFont Font1
+			strtemp = "PAUSED"
 		Else
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "YOU DIED",False,True)
-			AASetFont Font1
-		End If		
+			strtemp = "YOU DIED"
+		End If
+		AASetFont Font2
+		AAText(x + width / 2 + 47*MenuScale, y + 48*MenuScale, strtemp, True, True)
+		AASetFont Font1
+		
+		x = x+132*MenuScale
+		y = y+122*MenuScale
 		
 		Local AchvXIMG% = (x + (22*MenuScale))
 		Local scale# = GraphicHeight/768.0
@@ -7222,15 +7215,15 @@ Function DrawMenu()
 			AAText x, y, "Difficulty: "+SelectedDifficulty\name
 			AAText x, y+20*MenuScale, "Save: "+CurrSave
 			If SelectedMap = "" Then
-				TempStr$ = "Map seed: "+RandomSeed
+				strtemp = "Map seed: "+RandomSeed
 			Else
 				If Len(SelectedMap) > 15 Then
-					TempStr$ = "Selected map: "+Left(SelectedMap,14)+"..."
+					strtemp = "Selected map: "+Left(SelectedMap,14)+"..."
 				Else
-					TempStr$ = "Selected map: "+SelectedMap
+					strtemp = "Selected map: "+SelectedMap
 				EndIf
 			EndIf
-			AAText x, y+40*MenuScale,TempStr$
+			AAText x, y+40*MenuScale,strtemp
 		ElseIf AchievementsMenu <= 0 And OptionsMenu > 0 And QuitMSG <= 0 And KillTimer >= 0
 			If DrawButton(x + 101 * MenuScale, y + 430 * MenuScale, 230 * MenuScale, 60 * MenuScale, "BACK") Then
 				AchievementsMenu = 0
@@ -7402,11 +7395,11 @@ Function DrawMenu()
 						AAText x, y, "User track mode:"
 						UserTrackMode = DrawTick(x + 270 * MenuScale, y + MenuScale, UserTrackMode)
 						If UserTrackMode
-							TempStr$ = "Repeat"
+							strtemp = "Repeat"
 						Else
-							TempStr$ = "Random"
+							strtemp = "Random"
 						EndIf
-						AAText x, y + 20 * MenuScale, TempStr$
+						AAText x + 310 * MenuScale, y + MenuScale, strtemp
 						If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 							DrawOptionsTooltip(tx,ty,tw,th,"usertrackmode")
 						EndIf

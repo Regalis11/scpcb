@@ -18,7 +18,7 @@
  AbsPath="\Source\Blitz_File_FileName.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Source\Blitz_File_ZipApi.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Converter.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
- AbsPath="\Source\CPU_Details.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
+ AbsPath="\CPU_Details.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Source\DevilParticleSystem.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Source\Difficulty.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"
  AbsPath="\Source\DrawPortals – Kopio.bb" PrjFolder="" Line="0" Column="0" Tip="0" Visible="False"

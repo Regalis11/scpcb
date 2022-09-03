@@ -17,6 +17,15 @@ http://creativecommons.org/licenses/by-sa/3.0/
 
 Copy the [userlibs](userlibs) to the userlibs folder in your Mavless B3D install.
 
+---
+
+### Quick note
+You don't need to copy BlitzAL, cpuid, or FreeImage. They aren't needed for the main game.
+
+BlitzAL for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
+
+---
+
 If you've recompiled the game, run [change_icon.bat](change_icon.bat) to change the exe icon.
 
 If you want to package the game, run [dist.bat](dist.bat).

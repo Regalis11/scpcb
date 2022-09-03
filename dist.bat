@@ -16,6 +16,7 @@ copy "options.ini" "dist\"
 copy "*.exe" "dist\"
 
 del "dist\MavlessB3DSetup.exe"
+del "dist\cpuid.dll"
 del "dist\Map Creator\*.bb"
 
 pause

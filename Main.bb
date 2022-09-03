@@ -3789,8 +3789,11 @@ Function DrawEnding()
 					
 					Local roomamount = 0, roomsfound = 0
 					For r.Rooms = Each Rooms
-						roomamount = roomamount + 1
-						roomsfound = roomsfound + r\found
+						Local RN$ = r\RoomTemplate\Name$
+						If RN$ <> "dimension1499" And RN$ <> "gatea" And RN$ <> "pocketdimension" Then 
+							roomamount = roomamount + 1
+							roomsfound = roomsfound + r\found
+						EndIf
 					Next
 					
 					Local docamount=0, docsfound=0
@@ -4162,33 +4165,27 @@ Function MovePlayer()
 				If CurrStepSFX=0 Then
 					temp = GetStepSound(Collider)
 					
-					If Sprint = 1.0 Then
+					If Sprint = 2.5 Then
 						PlayerSoundVolume = Max(4.0,PlayerSoundVolume)
 						tempchn% = PlaySound_Strict(StepSFX(temp, 0, Rand(0, 7)))
-						ChannelVolume tempchn, (1.0-(Crouch*0.6))*SFXVolume#
 					Else
 						PlayerSoundVolume = Max(2.5-(Crouch*0.6),PlayerSoundVolume)
 						tempchn% = PlaySound_Strict(StepSFX(temp, 1, Rand(0, 7)))
-						ChannelVolume tempchn, (1.0-(Crouch*0.6))*SFXVolume#
 					End If
 				ElseIf CurrStepSFX=1
 					tempchn% = PlaySound_Strict(Step2SFX(Rand(0, 2)))
-					ChannelVolume tempchn, (1.0-(Crouch*0.4))*SFXVolume#
 				ElseIf CurrStepSFX=2
 					tempchn% = PlaySound_Strict(Step2SFX(Rand(3,5)))
-					ChannelVolume tempchn, (1.0-(Crouch*0.4))*SFXVolume#
 				ElseIf CurrStepSFX=3
-					If Sprint = 1.0 Then
+					If Sprint = 2.5 Then
 						PlayerSoundVolume = Max(4.0,PlayerSoundVolume)
 						tempchn% = PlaySound_Strict(StepSFX(0, 0, Rand(0, 7)))
-						ChannelVolume tempchn, (1.0-(Crouch*0.6))*SFXVolume#
 					Else
 						PlayerSoundVolume = Max(2.5-(Crouch*0.6),PlayerSoundVolume)
 						tempchn% = PlaySound_Strict(StepSFX(0, 1, Rand(0, 7)))
-						ChannelVolume tempchn, (1.0-(Crouch*0.6))*SFXVolume#
 					End If
 				EndIf
-				
+				If tempchn <> 0 Then ChannelVolume tempchn, (1.0-(Crouch*0.6))*SFXVolume#
 			EndIf	
 		EndIf
 	Else ;noclip on
@@ -10103,89 +10100,91 @@ Function Use294()
 			xtemp = Floor((ScaledMouseX()-x-228) / 35.5)
 			ytemp = Floor((ScaledMouseY()-y-342) / 36.5)
 			
-			If ytemp => 0 And ytemp < 5 Then
-				If xtemp => 0 And xtemp < 10 Then PlaySound_Strict ButtonSFX
-			EndIf
-			
-			strtemp = ""
-			
 			temp = False
 			
-			Select ytemp
-				Case 0
-					strtemp = (xtemp + 1) Mod 10
-				Case 1
-					Select xtemp
+			If ytemp => 0 And ytemp < 5 Then
+				If xtemp => 0 And xtemp < 10 Then
+					PlaySound_Strict ButtonSFX
+					
+					strtemp = ""
+					
+					Select ytemp
 						Case 0
-							strtemp = "Q"
+							strtemp = (xtemp + 1) Mod 10
 						Case 1
-							strtemp = "W"
+							Select xtemp
+								Case 0
+									strtemp = "Q"
+								Case 1
+									strtemp = "W"
+								Case 2
+									strtemp = "E"
+								Case 3
+									strtemp = "R"
+								Case 4
+									strtemp = "T"
+								Case 5
+									strtemp = "Y"
+								Case 6
+									strtemp = "U"
+								Case 7
+									strtemp = "I"
+								Case 8
+									strtemp = "O"
+								Case 9
+									strtemp = "P"
+							End Select
 						Case 2
-							strtemp = "E"
+							Select xtemp
+								Case 0
+									strtemp = "A"
+								Case 1
+									strtemp = "S"
+								Case 2
+									strtemp = "D"
+								Case 3
+									strtemp = "F"
+								Case 4
+									strtemp = "G"
+								Case 5
+									strtemp = "H"
+								Case 6
+									strtemp = "J"
+								Case 7
+									strtemp = "K"
+								Case 8
+									strtemp = "L"
+								Case 9 ;dispense
+									temp = True
+							End Select
 						Case 3
-							strtemp = "R"
+							Select xtemp
+								Case 0
+									strtemp = "Z"
+								Case 1
+									strtemp = "X"
+								Case 2
+									strtemp = "C"
+								Case 3
+									strtemp = "V"
+								Case 4
+									strtemp = "B"
+								Case 5
+									strtemp = "N"
+								Case 6
+									strtemp = "M"
+								Case 7
+									strtemp = "-"
+								Case 8
+									strtemp = " "
+								Case 9
+									Input294 = Left(Input294, Max(Len(Input294)-1,0))
+							End Select
 						Case 4
-							strtemp = "T"
-						Case 5
-							strtemp = "Y"
-						Case 6
-							strtemp = "U"
-						Case 7
-							strtemp = "I"
-						Case 8
-							strtemp = "O"
-						Case 9
-							strtemp = "P"
-					End Select
-				Case 2
-					Select xtemp
-						Case 0
-							strtemp = "A"
-						Case 1
-							strtemp = "S"
-						Case 2
-							strtemp = "D"
-						Case 3
-							strtemp = "F"
-						Case 4
-							strtemp = "G"
-						Case 5
-							strtemp = "H"
-						Case 6
-							strtemp = "J"
-						Case 7
-							strtemp = "K"
-						Case 8
-							strtemp = "L"
-						Case 9 ;dispense
-							temp = True
-					End Select
-				Case 3
-					Select xtemp
-						Case 0
-							strtemp = "Z"
-						Case 1
-							strtemp = "X"
-						Case 2
-							strtemp = "C"
-						Case 3
-							strtemp = "V"
-						Case 4
-							strtemp = "B"
-						Case 5
-							strtemp = "N"
-						Case 6
-							strtemp = "M"
-						Case 7
-							strtemp = "-"
-						Case 8
 							strtemp = " "
-						Case 9
-							Input294 = Left(Input294, Max(Len(Input294)-1,0))
 					End Select
-				Case 4
-					strtemp = " "
-			End Select
+				EndIf
+			EndIf
 			
 			Input294 = Input294 + strtemp
 			
@@ -12022,12 +12021,14 @@ Function CanUseItem(canUseWithHazmat%, canUseWithGasMask%, canUseWithEyewear%)
 		Msg = "You can't use that item while wearing a hazmat suit."
 		MsgTimer = 70*5
 		Return False
-	Else If (canUseWithGasMask = False And (WearingGasMask Or Wearing1499))
+	ElseIf (canUseWithGasMask = False And (WearingGasMask Or Wearing1499))
 		Msg = "You can't use that item while wearing a gas mask."
 		MsgTimer = 70*5
 		Return False
-	Else If (canUseWithEyewear = False And (WearingNightVision))
+	ElseIf (canUseWithEyewear = False And (WearingNightVision))
 		Msg = "You can't use that item while wearing headgear."
+		MsgTimer = 70*5
+		Return False
 	EndIf
 	
 	Return True

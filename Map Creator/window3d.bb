@@ -951,7 +951,7 @@ Function CreateRoom.Rooms(zone%, roomshape%, x#, y#, z#, name$ = "")
 				PositionEntity(r\obj, x, y, z)
 				
 				If name = "scp-860-1 door" Then
-					r\forestwallobj = LoadMesh("..\GFX\map\forest\wall.b3d")
+					r\forestwallobj = LoadRMesh("..\GFX\map\forest\wall.rmesh",Null)
 					ScaleEntity r\forestwallobj,RoomScale,RoomScale,RoomScale
 					PositionEntity r\forestwallobj,x,y,z,True
 					EntityParent r\forestwallobj,r\obj

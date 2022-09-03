@@ -391,10 +391,13 @@ Function UpdateMainMenu()
 					
 					SeedRnd GenerateSeedNumber(RandomSeed)
 					
-					Local SameFound% = False
+					Local SameFound% = 0
 					
 					For i% = 1 To SaveGameAmount
-						If SaveGames(i - 1) = CurrSave Then SameFound = SameFound + 1
+						If (SameFound = 0 And SaveGames(i - 1) = CurrSave) Or (SameFound > 0 And SaveGames(i - 1) = CurrSave + " (" + (SameFound + 1) + ")") Then
+							SameFound = SameFound + 1
+							i = 0
+						EndIf
 					Next
 						
 					If SameFound > 0 Then CurrSave = CurrSave + " (" + (SameFound + 1) + ")"
@@ -1344,11 +1347,10 @@ Function DrawTiledImageRect(img%, srcX%, srcY%, srcwidth#, srcheight#, x%, y%, w
 	
 	Local x2% = x
 	While x2 < x+width
+		If x2 + srcwidth > x + width Then srcwidth = (x + width) - x2
 		Local y2% = y
 		While y2 < y+height
-			If x2 + srcwidth > x + width Then srcwidth = srcwidth - Max((x2 + srcwidth) - (x + width), 1)
-			If y2 + srcheight > y + height Then srcheight = srcheight - Max((y2 + srcheight) - (y + height), 1)
-			DrawImageRect(img, x2, y2, srcX, srcY, srcwidth, srcheight)
+			DrawImageRect(img, x2, y2, srcX, srcY, srcwidth, Min((y + height) - y2, srcheight))
 			y2 = y2 + srcheight
 		Wend
 		x2 = x2 + srcwidth

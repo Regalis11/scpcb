@@ -526,13 +526,13 @@ Function UpdateMainMenu()
 						y = 376 * MenuScale
 						DrawFrame(x, y, 420 * MenuScale, 200 * MenuScale)
 						RowText("Are you sure you want to delete this save?", x + 20 * MenuScale, y + 15 * MenuScale, 400 * MenuScale, 200 * MenuScale)
-						If DrawButton(x + 50 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
+						If DrawButton(x + 74 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
 							DeleteFile(CurrentDir() + SavePath + SaveMSG + "\save.txt")
 							DeleteDir(CurrentDir() + SavePath + SaveMSG)
 							SaveMSG = ""
 							LoadSaveGames()
 						EndIf
-						If DrawButton(x + 250 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
+						If DrawButton(x + 246 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
 							SaveMSG = ""
 						EndIf
 					EndIf
@@ -1122,12 +1122,12 @@ Function UpdateMainMenu()
 						
 						DrawFrame(x, y, 420*MenuScale, 200*MenuScale)
 						RowText("Are you sure you want to delete this map?", x+20*MenuScale, y+15*MenuScale, 400*MenuScale, 200*MenuScale)
-						If DrawButton(x + 50 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
+						If DrawButton(x + 74 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
 							DeleteFile(CurrentDir() + "Map Creator\Maps\" + SaveMSG)
 							SaveMSG = ""
 							LoadSavedMaps()
 						EndIf
-						If DrawButton(x + 250 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
+						If DrawButton(x + 246 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
 							SaveMSG = ""
 						EndIf
 					EndIf

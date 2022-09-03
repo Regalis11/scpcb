@@ -3822,10 +3822,10 @@ Function DrawEnding()
 					
 					x = GraphicWidth / 2 - width / 2
 					y = GraphicHeight / 2 - height / 2
-					x = x+width/2
-					y = y+height-100*MenuScale
+					x = x + 132*MenuScale
+					y = y + 432*MenuScale
 					
-					If DrawButton(x-170*MenuScale,y-200*MenuScale,430*MenuScale,60*MenuScale,"ACHIEVEMENTS", True) Then
+					If DrawButton(x,y,430*MenuScale,60*MenuScale,"ACHIEVEMENTS",True) Then
 						AchievementsMenu = 1
 					EndIf
 					
@@ -3841,7 +3841,9 @@ Function DrawEnding()
 ;						FlushKeys()
 ;					EndIf
 					
-					If DrawButton(x-170*MenuScale,y-100*MenuScale,430*MenuScale,60*MenuScale,"MAIN MENU", True)
+					y = y + 75*MenuScale
+					
+					If DrawButton(x,y,430*MenuScale,60*MenuScale,"MAIN MENU",True)
 						ShouldPlay = 24
 						NowPlaying = ShouldPlay
 						For i=0 To 9
@@ -7657,14 +7659,18 @@ Function DrawMenu()
 			If AchievementsMenu>0 Then
 				;DebugLog AchievementsMenu
 				If AchievementsMenu <= Floor(Float(MAXACHIEVEMENTS-1)/12.0) Then 
-					If DrawButton(x+341*MenuScale, y + 385*MenuScale, 50*MenuScale, 60*MenuScale, ">") Then
+					If DrawButton(x+341*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, ">") Then
 						AchievementsMenu = AchievementsMenu+1
 					EndIf
+				Else
+					DrawButton(x+341*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, ">", True, False, True, True)
 				EndIf
 				If AchievementsMenu > 1 Then
-					If DrawButton(x+41*MenuScale, y + 385*MenuScale, 50*MenuScale, 60*MenuScale, "<") Then
+					If DrawButton(x+31*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, "<") Then
 						AchievementsMenu = AchievementsMenu-1
 					EndIf
+				Else
+					DrawButton(x+31*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, "<", True, False, True, True)
 				EndIf
 				
 				For i=0 To 11

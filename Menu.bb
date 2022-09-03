@@ -56,7 +56,7 @@ LoadSaveGames()
 Global CurrLoadGamePage% = 0
 
 Function UpdateMainMenu()
-	Local x%, y%, width%, height%, temp%
+	Local x%, y%, width%, height%, temp%, strtemp$
 	
 	Color 0,0,0
 	Rect 0,0,GraphicWidth,GraphicHeight,True
@@ -275,7 +275,7 @@ Function UpdateMainMenu()
 				AASetFont Font2
 				AAText(x + width / 2, y + height / 2, "NEW GAME", True, True)
 				
-				x = 160 * MenuScale
+				x = 159 * MenuScale
 				y = y + height + 20 * MenuScale
 				width = 580 * MenuScale
 				height = 330 * MenuScale
@@ -308,11 +308,11 @@ Function UpdateMainMenu()
 					
 					Color (255, 0,0)
 					If Len(SelectedMap)>15 Then
-						TempStr$=Left(SelectedMap,14)+"..."
+						strtemp=Left(SelectedMap,14)+"..."
 					Else
-						TempStr$=SelectedMap
+						strtemp=SelectedMap
 					EndIf
-					AAText(x+150*MenuScale + 100*MenuScale, y+55*MenuScale + 15*MenuScale, TempStr$, True, True)
+					AAText(x+150*MenuScale + 100*MenuScale, y+55*MenuScale + 15*MenuScale, strtemp, True, True)
 					
 					If DrawButton(x+370*MenuScale, y+55*MenuScale, 120*MenuScale, 30*MenuScale, "DESELECT", False) Then
 						SelectedMap=""
@@ -364,13 +364,13 @@ Function UpdateMainMenu()
 					Color 255,255,255
 					Select SelectedDifficulty\otherFactors
 						Case EASY
-							TempStr$ = "Easy"
+							strtemp = "Easy"
 						Case NORMAL
-							TempStr$ = "Normal"
+							strtemp = "Normal"
 						Case HARD
-							TempStr$ = "Hard"
+							strtemp = "Hard"
 					End Select
-					AAText(x + 200 * MenuScale, y + 255 * MenuScale, "Other difficulty factors: " + TempStr$)
+					AAText(x + 200 * MenuScale, y + 255 * MenuScale, "Other difficulty factors: " + strtemp)
 				Else
 					RowText(SelectedDifficulty\description, x+160*MenuScale, y+160*MenuScale, (410-20)*MenuScale, 200)					
 				EndIf
@@ -458,7 +458,7 @@ Function UpdateMainMenu()
 				
 				DrawFrame(x+70*MenuScale,y+440*MenuScale,width-140*MenuScale,60*MenuScale)
 				
-				AAText(x+(width/2.0),y+470*MenuScale,"Page "+Int(Max((CurrLoadGamePage+1),1))+"/"+Int(Max((Int(Ceil(Float(SaveGameAmount)/5.0))),1)),True,True)
+				AAText(x+(width/2.0),y+470*MenuScale,"PAGE "+Int(Max((CurrLoadGamePage+1),1))+"/"+Int(Max((Int(Ceil(Float(SaveGameAmount)/5.0))),1)),True,True)
 				
 				AASetFont Font1
 				
@@ -482,10 +482,10 @@ Function UpdateMainMenu()
 								Color 255,255,255
 							EndIf
 							
-							AAText(x + 20 * MenuScale, y + 10 * MenuScale, SaveGames(i - 1))
-							AAText(x + 20 * MenuScale, y + (10+18) * MenuScale, SaveGameTime(i - 1)) ;y + (10+23) * MenuScale
-							AAText(x + 120 * MenuScale, y + (10+18) * MenuScale, SaveGameDate(i - 1))
-							AAText(x + 20 * MenuScale, y + (10+36) * MenuScale, SaveGameVersion(i - 1))
+							AAText(x + 20 * MenuScale, y + 6 * MenuScale, SaveGames(i - 1))
+							AAText(x + 20 * MenuScale, y + (6+20) * MenuScale, SaveGameTime(i - 1)) ;y + (10+23) * MenuScale
+							AAText(x + 120 * MenuScale, y + (6+20) * MenuScale, SaveGameDate(i - 1))
+							AAText(x + 20 * MenuScale, y + (6+40) * MenuScale, SaveGameVersion(i - 1))
 							
 							If SaveMSG = "" Then
 								If SaveGameVersion(i - 1) <> CompatibleNumber And SaveGameVersion(i - 1) <> "1.3.10" Then
@@ -522,17 +522,17 @@ Function UpdateMainMenu()
 					Next
 					
 					If SaveMSG <> ""
-						x = 740 * MenuScale
+						x = 739 * MenuScale
 						y = 376 * MenuScale
 						DrawFrame(x, y, 420 * MenuScale, 200 * MenuScale)
 						RowText("Are you sure you want to delete this save?", x + 20 * MenuScale, y + 15 * MenuScale, 400 * MenuScale, 200 * MenuScale)
-						If DrawButton(x + 50 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
+						If DrawButton(x + 74 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
 							DeleteFile(CurrentDir() + SavePath + SaveMSG + "\save.txt")
 							DeleteDir(CurrentDir() + SavePath + SaveMSG)
 							SaveMSG = ""
 							LoadSaveGames()
 						EndIf
-						If DrawButton(x + 250 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
+						If DrawButton(x + 246 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
 							SaveMSG = ""
 						EndIf
 					EndIf
@@ -554,7 +554,7 @@ Function UpdateMainMenu()
 				AASetFont Font2
 				AAText(x + width / 2, y + height / 2, "OPTIONS", True, True)
 				
-				x = 160 * MenuScale
+				x = 159 * MenuScale
 				y = y + height + 20 * MenuScale
 				width = 580 * MenuScale
 				height = 60 * MenuScale
@@ -641,7 +641,7 @@ Function UpdateMainMenu()
 					;Local prevGamma# = ScreenGamma
 					ScreenGamma = (SlideBar(x + 310*MenuScale, y+6*MenuScale, 150*MenuScale, ScreenGamma*50.0)/50.0)
 					Color 255,255,255
-					AAText(x + 20 * MenuScale, y, "Screen gamma")
+					AAText(x + 20 * MenuScale, y, "Screen gamma:")
 					If MouseOn(x+310*MenuScale,y+6*MenuScale,150*MenuScale+14,20) And OnSliderID=0
 						DrawOptionsTooltip(tx,ty,tw,th,"gamma",ScreenGamma)
 					EndIf
@@ -771,11 +771,11 @@ Function UpdateMainMenu()
 						AAText x + 20 * MenuScale, y, "User track mode:"
 						UserTrackMode = DrawTick(x + 310 * MenuScale, y + MenuScale, UserTrackMode)
 						If UserTrackMode
-							TempStr$ = "Repeat"
+							strtemp = "Repeat"
 						Else
-							TempStr$ = "Random"
+							strtemp = "Random"
 						EndIf
-						AAText x + 350 * MenuScale, y + MenuScale, TempStr$
+						AAText x + 350 * MenuScale, y + MenuScale, strtemp
 						If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 							DrawOptionsTooltip(tx,ty,tw,th,"usertrackmode")
 						EndIf
@@ -865,11 +865,11 @@ Function UpdateMainMenu()
 					InputBox(x + 470 * MenuScale, y + 20 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_BLINK,210)),7)				
 					AAText(x + 280 * MenuScale, y + 40 * MenuScale, "Sprint")
 					InputBox(x + 470 * MenuScale, y + 40 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_SPRINT,210)),8)
-					AAText(x + 280 * MenuScale, y + 60 * MenuScale, "Open/Close Inventory")
+					AAText(x + 280 * MenuScale, y + 60 * MenuScale, "Toggle Inventory")
 					InputBox(x + 470 * MenuScale, y + 60 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_INV,210)),9)
 					AAText(x + 280 * MenuScale, y + 80 * MenuScale, "Crouch")
 					InputBox(x + 470 * MenuScale, y + 80 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CROUCH,210)),10)	
-					AAText(x + 280 * MenuScale, y + 100 * MenuScale, "Open/Close Console")
+					AAText(x + 280 * MenuScale, y + 100 * MenuScale, "Toggle Console")
 					InputBox(x + 470 * MenuScale, y + 100 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CONSOLE,210)),12)
 					
 					If MouseOn(x+20*MenuScale,y,width-40*MenuScale,120*MenuScale)
@@ -1086,11 +1086,11 @@ Function UpdateMainMenu()
 							DrawFrame(x,y,540* MenuScale, 70* MenuScale)
 							
 							If Len(SavedMaps(i - 1)) > 20 Then
-								AAText(x + 20 * MenuScale, y + 15 * MenuScale, Left(SavedMaps(i - 1), 19) + "...")
+								AAText(x + 20 * MenuScale, y + 13 * MenuScale, Left(SavedMaps(i - 1), 19) + "...")
 							Else
-								AAText(x + 20 * MenuScale, y + 15 * MenuScale, SavedMaps(i - 1))
+								AAText(x + 20 * MenuScale, y + 13 * MenuScale, SavedMaps(i - 1))
 							EndIf
-							AAText(x + 20 * MenuScale, y + 45 * MenuScale, SavedMapsAuthor(i - 1))
+							AAText(x + 20 * MenuScale, y + 39 * MenuScale, SavedMapsAuthor(i - 1))
 							
 							If SaveMSG = "" Then
 								If DrawButton(x + 280 * MenuScale, y + 20 * MenuScale, 100 * MenuScale, 30 * MenuScale, "LOAD", False) Then
@@ -1117,17 +1117,17 @@ Function UpdateMainMenu()
 					Next
 					
 					If SaveMSG <> "" Then
-						x = 740 * MenuScale
+						x = 739 * MenuScale
 						y = 376 * MenuScale
 						
 						DrawFrame(x, y, 420*MenuScale, 200*MenuScale)
 						RowText("Are you sure you want to delete this map?", x+20*MenuScale, y+15*MenuScale, 400*MenuScale, 200*MenuScale)
-						If DrawButton(x + 50 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
+						If DrawButton(x + 74 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "YES", False) Then
 							DeleteFile(CurrentDir() + "Map Creator\Maps\" + SaveMSG)
 							SaveMSG = ""
 							LoadSavedMaps()
 						EndIf
-						If DrawButton(x + 250 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
+						If DrawButton(x + 246 * MenuScale, y + 150 * MenuScale, 100 * MenuScale, 30 * MenuScale, "NO", False) Then
 							SaveMSG = ""
 						EndIf
 					EndIf
@@ -1817,9 +1817,9 @@ Function SlideBar#(x%, y%, width%, value#)
 	
 	DrawImage(BlinkMeterIMG, x + width * value / 100.0 +3, y+3)
 	
-	Color 170,170,170 
-	AAText (x - 50 * MenuScale, y + 4*MenuScale, "LOW")					
-	AAText (x + width + 38 * MenuScale, y+4*MenuScale, "HIGH")	
+	Color 170,170,170
+	AAText (x - 50 * MenuScale, y, "LOW")
+	AAText (x + width + 34 * MenuScale, y, "HIGH")
 	
 	Return value
 	

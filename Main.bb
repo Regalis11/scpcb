@@ -3780,7 +3780,7 @@ Function DrawEnding()
 				
 				Color(255, 255, 255)
 				AASetFont Font2
-				AAText(x + width / 2 + 40*MenuScale, y + 20*MenuScale, "THE END", True)
+				AAText(x + width / 2 + 47*MenuScale, y + 48*MenuScale, "THE END", True, True)
 				AASetFont Font1
 				
 				If AchievementsMenu=0 Then 
@@ -3822,10 +3822,10 @@ Function DrawEnding()
 					
 					x = GraphicWidth / 2 - width / 2
 					y = GraphicHeight / 2 - height / 2
-					x = x+width/2
-					y = y+height-100*MenuScale
+					x = x + 132*MenuScale
+					y = y + 432*MenuScale
 					
-					If DrawButton(x-170*MenuScale,y-200*MenuScale,430*MenuScale,60*MenuScale,"ACHIEVEMENTS", True) Then
+					If DrawButton(x,y,430*MenuScale,60*MenuScale,"ACHIEVEMENTS",True) Then
 						AchievementsMenu = 1
 					EndIf
 					
@@ -3841,7 +3841,9 @@ Function DrawEnding()
 ;						FlushKeys()
 ;					EndIf
 					
-					If DrawButton(x-170*MenuScale,y-100*MenuScale,430*MenuScale,60*MenuScale,"MAIN MENU", True)
+					y = y + 75*MenuScale
+					
+					If DrawButton(x,y,430*MenuScale,60*MenuScale,"MAIN MENU",True)
 						ShouldPlay = 24
 						NowPlaying = ShouldPlay
 						For i=0 To 9
@@ -7140,7 +7142,7 @@ End Function
 Function DrawMenu()
 	CatchErrors("Uncaught (DrawMenu)")
 	
-	Local x%, y%, width%, height%
+	Local x%, y%, width%, height%, strtemp$
 	If api_GetFocus() = 0 Then ;Game is out of focus -> pause the game
 		If (Not Using294) Then
 			MenuOpen = True
@@ -7181,36 +7183,29 @@ Function DrawMenu()
 		
 		DrawImage PauseMenuIMG, x, y
 		
-		Color(255, 255, 255)
-		
-		x = x+132*MenuScale
-		y = y+122*MenuScale	
+		Color(255, 255, 255)	
 		
 		If (Not MouseDown1)
 			OnSliderID = 0
 		EndIf
 		
 		If AchievementsMenu > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "ACHIEVEMENTS",False,True)
-			AASetFont Font1
+			strtemp = "ACHIEVEMENTS"
 		ElseIf OptionsMenu > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "OPTIONS",False,True)
-			AASetFont Font1
+			strtemp = "OPTIONS"
 		ElseIf QuitMSG > 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "QUIT?",False,True)
-			AASetFont Font1
+			strtemp = "QUIT?"
 		ElseIf KillTimer >= 0 Then
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "PAUSED",False,True)
-			AASetFont Font1
+			strtemp = "PAUSED"
 		Else
-			AASetFont Font2
-			AAText(x, y-(122-45)*MenuScale, "YOU DIED",False,True)
-			AASetFont Font1
-		End If		
+			strtemp = "YOU DIED"
+		End If
+		AASetFont Font2
+		AAText(x + width / 2 + 47*MenuScale, y + 48*MenuScale, strtemp, True, True)
+		AASetFont Font1
+		
+		x = x+132*MenuScale
+		y = y+122*MenuScale
 		
 		Local AchvXIMG% = (x + (22*MenuScale))
 		Local scale# = GraphicHeight/768.0
@@ -7222,17 +7217,17 @@ Function DrawMenu()
 			AAText x, y, "Difficulty: "+SelectedDifficulty\name
 			AAText x, y+20*MenuScale, "Save: "+CurrSave
 			If SelectedMap = "" Then
-				TempStr$ = "Map seed: "+RandomSeed
+				strtemp = "Map seed: "+RandomSeed
 			Else
 				If Len(SelectedMap) > 15 Then
-					TempStr$ = "Selected map: "+Left(SelectedMap,14)+"..."
+					strtemp = "Selected map: "+Left(SelectedMap,14)+"..."
 				Else
-					TempStr$ = "Selected map: "+SelectedMap
+					strtemp = "Selected map: "+SelectedMap
 				EndIf
 			EndIf
-			AAText x, y+40*MenuScale,TempStr$
+			AAText x, y+40*MenuScale,strtemp
 		ElseIf AchievementsMenu <= 0 And OptionsMenu > 0 And QuitMSG <= 0 And KillTimer >= 0
-			If DrawButton(x + 101 * MenuScale, y + 430 * MenuScale, 230 * MenuScale, 60 * MenuScale, "Back") Then
+			If DrawButton(x + 101 * MenuScale, y + 430 * MenuScale, 230 * MenuScale, 60 * MenuScale, "BACK") Then
 				AchievementsMenu = 0
 				OptionsMenu = 0
 				QuitMSG = 0
@@ -7309,7 +7304,7 @@ Function DrawMenu()
 					
 					ScreenGamma = (SlideBar(x + 270*MenuScale, y+6*MenuScale, 100*MenuScale, ScreenGamma*50.0)/50.0)
 					Color 255,255,255
-					AAText(x, y, "Screen gamma")
+					AAText(x, y, "Screen gamma:")
 					If MouseOn(x+270*MenuScale,y+6*MenuScale,100*MenuScale+14,20) And OnSliderID=0
 						DrawOptionsTooltip(tx,ty,tw,th,"gamma",ScreenGamma)
 					EndIf
@@ -7402,11 +7397,11 @@ Function DrawMenu()
 						AAText x, y, "User track mode:"
 						UserTrackMode = DrawTick(x + 270 * MenuScale, y + MenuScale, UserTrackMode)
 						If UserTrackMode
-							TempStr$ = "Repeat"
+							strtemp = "Repeat"
 						Else
-							TempStr$ = "Random"
+							strtemp = "Random"
 						EndIf
-						AAText x, y + 20 * MenuScale, TempStr$
+						AAText x + 310 * MenuScale, y + MenuScale, strtemp
 						If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 							DrawOptionsTooltip(tx,ty,tw,th,"usertrackmode")
 						EndIf
@@ -7465,13 +7460,13 @@ Function DrawMenu()
 					InputBox(x + 200 * MenuScale, y + 100 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_BLINK,210)),7)				
 					AAText(x, y + 120 * MenuScale, "Sprint")
 					InputBox(x + 200 * MenuScale, y + 120 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_SPRINT,210)),8)
-					AAText(x, y + 140 * MenuScale, "Open/Close Inventory")
+					AAText(x, y + 140 * MenuScale, "Toggle Inventory")
 					InputBox(x + 200 * MenuScale, y + 140 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_INV,210)),9)
 					AAText(x, y + 160 * MenuScale, "Crouch")
 					InputBox(x + 200 * MenuScale, y + 160 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CROUCH,210)),10)
 					AAText(x, y + 180 * MenuScale, "Quick Save")
 					InputBox(x + 200 * MenuScale, y + 180 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_SAVE,210)),11)	
-					AAText(x, y + 200 * MenuScale, "Open/Close Console")
+					AAText(x, y + 200 * MenuScale, "Toggle Console")
 					InputBox(x + 200 * MenuScale, y + 200 * MenuScale,100*MenuScale,20*MenuScale,KeyName(Min(KEY_CONSOLE,210)),12)
 					
 					If MouseOn(x,y,300*MenuScale,220*MenuScale)
@@ -7664,14 +7659,18 @@ Function DrawMenu()
 			If AchievementsMenu>0 Then
 				;DebugLog AchievementsMenu
 				If AchievementsMenu <= Floor(Float(MAXACHIEVEMENTS-1)/12.0) Then 
-					If DrawButton(x+341*MenuScale, y + 385*MenuScale, 50*MenuScale, 60*MenuScale, ">") Then
+					If DrawButton(x+341*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, ">") Then
 						AchievementsMenu = AchievementsMenu+1
 					EndIf
+				Else
+					DrawButton(x+341*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, ">", True, False, True, True)
 				EndIf
 				If AchievementsMenu > 1 Then
-					If DrawButton(x+41*MenuScale, y + 385*MenuScale, 50*MenuScale, 60*MenuScale, "<") Then
+					If DrawButton(x+31*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, "<") Then
 						AchievementsMenu = AchievementsMenu-1
 					EndIf
+				Else
+					DrawButton(x+31*MenuScale, y + 385*MenuScale, 60*MenuScale, 60*MenuScale, "<", True, False, True, True)
 				EndIf
 				
 				For i=0 To 11

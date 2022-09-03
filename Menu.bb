@@ -411,8 +411,7 @@ Function UpdateMainMenu()
 					LoadAllSounds()
 					InitNewGame()
 					MainMenuOpen = False
-					FlushKeys()
-					FlushMouse()
+					ResetInput()
 					
 					PutINIValue(OptionFile, "options", "intro enabled", IntroEnabled%)
 					
@@ -1422,6 +1421,7 @@ End Function
 
 
 Function DrawLoading(percent%, shortloading=False)
+	HidePointer()
 	
 	Local x%, y%
 	
@@ -1580,8 +1580,7 @@ Function DrawLoading(percent%, shortloading=False)
 			If firstloop And SelectedLoadingScreen\title <> "CWM" Then PlaySound_Strict LoadTempSound(("SFX\Horror\Horror8.ogg"))
 			AAText(GraphicWidth / 2, GraphicHeight - 50, "PRESS ANY KEY TO CONTINUE", True, True)
 		Else
-			FlushKeys()
-			FlushMouse()
+			ResetInput()
 		EndIf
 		
 		If BorderlessWindowed Then

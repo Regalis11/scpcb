@@ -2774,8 +2774,7 @@ End Type
 
 Global m.MEMORYSTATUS = New MEMORYSTATUS
 
-FlushKeys()
-FlushMouse()
+ResetInput()
 
 DrawLoading(100, True)
 
@@ -3853,7 +3852,7 @@ Function DrawEnding()
 						StopStream_Strict(MusicCHN)
 						MusicCHN = StreamSound_Strict("SFX\Music\"+Music(NowPlaying)+".ogg",0.0,Mode)
 						SetStreamVolume_Strict(MusicCHN,1.0*MusicVolume)
-						FlushKeys()
+						ResetInput()
 						EndingTimer=-2000
 						InitCredits()
 					EndIf
@@ -3997,7 +3996,7 @@ Function DrawCredits()
         MainMenuOpen = True
         MainMenuTab = 0
         CurrSave = ""
-        FlushKeys()
+        ResetInput()
 	EndIf
     
 End Function
@@ -7649,7 +7648,7 @@ Function DrawMenu()
 						MainMenuOpen = True
 						MainMenuTab = 0
 						CurrSave = ""
-						FlushKeys()
+						ResetInput()
 					EndIf
 				EndIf
 			EndIf
@@ -7660,7 +7659,7 @@ Function DrawMenu()
 				MainMenuOpen = True
 				MainMenuTab = 0
 				CurrSave = ""
-				FlushKeys()
+				ResetInput()
 			EndIf
 			
 			If DrawButton(x+101*MenuScale, y + 385*MenuScale, 230*MenuScale, 60*MenuScale, "BACK") Then
@@ -7742,8 +7741,7 @@ Function DrawMenu()
 							AASetFont Font1
 							HidePointer ()
 							
-							FlushKeys()
-							FlushMouse()
+							ResetInput()
 							Playable=True
 							
 							UpdateRooms()
@@ -7773,7 +7771,7 @@ Function DrawMenu()
 							ResetInput()
 						EndIf
 					Else
-						DrawButton(x, y, 430*MenuScale, 60*MenuScale, "LOAD GAME", True, False, True, true)
+						DrawButton(x, y, 430*MenuScale, 60*MenuScale, "LOAD GAME", True, False, True, True)
 					EndIf
 					y = y + 75*MenuScale
 				EndIf
@@ -7796,8 +7794,7 @@ Function DrawMenu()
 							AASetFont Font1
 							HidePointer ()
 							
-							FlushKeys()
-							FlushMouse()
+							ResetInput()
 							Playable=True
 							
 							UpdateRooms()
@@ -7837,7 +7834,7 @@ Function DrawMenu()
 					MainMenuOpen = True
 					MainMenuTab = 0
 					CurrSave = ""
-					FlushKeys()
+					ResetInput()
 				EndIf
 			EndIf
 			
@@ -8580,7 +8577,6 @@ Function InitNewGame()
 	
 	For i% = 0 To 70
 		FPSfactor = 1.0
-		FlushKeys()
 		MovePlayer()
 		UpdateDoors()
 		UpdateNPCs()
@@ -8591,11 +8587,10 @@ Function InitNewGame()
 		EndIf
 	Next
 	
+	ResetInput()
+	
 	FreeTextureCache
 	DrawLoading(100)
-	
-	FlushKeys
-	FlushMouse
 	
 	DropSpeed = 0
 	

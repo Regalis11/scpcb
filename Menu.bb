@@ -55,6 +55,11 @@ LoadSaveGames()
 
 Global CurrLoadGamePage% = 0
 
+If (Not FullScreen) Then
+	Opt_AntiAlias = False
+	PutINIValue(OptionFile, "options", "antialias", Opt_AntiAlias)
+EndIf
+
 Function UpdateMainMenu()
 	Local x%, y%, width%, height%, temp%, strtemp$
 	
@@ -621,7 +626,7 @@ Function UpdateMainMenu()
 					
 					Color 255,255,255
 					AAText(x + 20 * MenuScale, y, "Anti-aliasing:")
-					Opt_AntiAlias = DrawTick(x + 310 * MenuScale, y + MenuScale, Opt_AntiAlias%)
+					Opt_AntiAlias = DrawTick(x + 310 * MenuScale, y + MenuScale, Opt_AntiAlias%, (Not FullScreen))
 					;AAText(x + 20 * MenuScale, y + 15 * MenuScale, "(fullscreen mode only)")
 					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale) And OnSliderID=0
 						DrawOptionsTooltip(tx,ty,tw,th,"antialias")
@@ -907,11 +912,7 @@ Function UpdateMainMenu()
 					;[End Block]
 				ElseIf MainMenuTab = 7 ;Advanced
 					;[Block]
-					If CurrFrameLimit > 0.0 Then
-						height = 280 * MenuScale
-					Else
-						height = 240 * MenuScale
-					EndIf
+					height = (300 + ((CurrFrameLimit > 0.0) * 40) - ((Not CanOpenConsole) * 30)) * MenuScale
 					DrawFrame(x, y, width, height)	
 					
 					y = y + 20*MenuScale
@@ -932,13 +933,15 @@ Function UpdateMainMenu()
 						DrawOptionsTooltip(tx,ty,tw,th,"consoleenable")
 					EndIf
 					
-					y = y + 30*MenuScale
-					
-					Color 255,255,255
-					AAText(x + 20 * MenuScale, y, "Open console on error:")
-					ConsoleOpening = DrawTick(x + 310 * MenuScale, y + MenuScale, ConsoleOpening)
-					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
-						DrawOptionsTooltip(tx,ty,tw,th,"consoleerror")
+					If CanOpenConsole Then
+						y = y + 30*MenuScale
+						
+						Color 255,255,255
+						AAText(x + 20 * MenuScale, y, "Open console on error:")
+						ConsoleOpening = DrawTick(x + 310 * MenuScale, y + MenuScale, ConsoleOpening)
+						If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+							DrawOptionsTooltip(tx,ty,tw,th,"consoleerror")
+						EndIf
 					EndIf
 					
 					y = y + 30*MenuScale
@@ -982,6 +985,24 @@ Function UpdateMainMenu()
 					EndIf
 					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 						DrawOptionsTooltip(tx,ty,tw,th,"antialiastext")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x + 20 * MenuScale, y, "Enable launcher:")
+					LauncherEnabled% = DrawTick(x + 310 * MenuScale, y + MenuScale, LauncherEnabled)
+					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"enablelauncher")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x + 20 * MenuScale, y, "Play startup videos:")
+					PlayStartup% = DrawTick(x + 310 * MenuScale, y + MenuScale, PlayStartup)
+					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"playstartup")
 					EndIf
 					
 					y = y + 30*MenuScale
@@ -1313,33 +1334,12 @@ Function UpdateLauncher()
 	
 	PutINIValue(OptionFile, "options", "width", GfxModeWidths(SelectedGFXMode))
 	PutINIValue(OptionFile, "options", "height", GfxModeHeights(SelectedGFXMode))
-	If Fullscreen Then
-		PutINIValue(OptionFile, "options", "fullscreen", "true")
-	Else
-		PutINIValue(OptionFile, "options", "fullscreen", "false")
-	EndIf
-	If LauncherEnabled Then
-		PutINIValue(OptionFile, "launcher", "launcher enabled", "true")
-	Else
-		PutINIValue(OptionFile, "launcher", "launcher enabled", "false")
-	EndIf
-	If BorderlessWindowed Then
-		PutINIValue(OptionFile, "options", "borderless windowed", "true")
-	Else
-		PutINIValue(OptionFile, "options", "borderless windowed", "false")
-	EndIf
-	If Bit16Mode Then
-		PutINIValue(OptionFile, "options", "16bit", "true")
-	Else
-		PutINIValue(OptionFile, "options", "16bit", "false")
-	EndIf
+	PutINIValue(OptionFile, "options", "fullscreen", FullScreen)
+	PutINIValue(OptionFile, "launcher", "launcher enabled", LauncherEnabled)
+	PutINIValue(OptionFile, "options", "borderless windowed", BorderlessWindowed)
+	PutINIValue(OptionFile, "options", "16bit", Bit16Mode)
 	PutINIValue(OptionFile, "options", "gfx driver", SelectedGFXDriver)
-	If UpdateCheckEnabled Then
-		PutINIValue(OptionFile, "options", "check for updates", "true")
-	Else
-		PutINIValue(OptionFile, "options", "check for updates", "false")
-	EndIf
-	
+	PutINIValue(OptionFile, "options", "check for updates", UpdateCheckEnabled)
 End Function
 
 
@@ -2189,6 +2189,12 @@ Function DrawOptionsTooltip(x%,y%,width%,height%,option$,value#=0,ingame%=False)
 			txt = Chr(34)+"Open console on error"+Chr(34)+" is self-explanatory."
 		Case "achpopup"
 			txt = "Displays a pop-up notification when an achievement is unlocked."
+		Case "antialiastext"
+			txt = Chr(34)+"Antialiased text"+Chr(34)+" smooths out the text before displaying. Makes text easier to read at high resolutions."
+		Case "enablelauncher"
+			txt = Chr(34)+"Enable launcher"+Chr(34)+" is self-explanatory."
+		Case "playstartup"
+			txt = Chr(34)+"Play startup videos"+Chr(34)+" is self-explanatory."
 		Case "showfps"
 			txt = "Displays the frames per second counter at the top left-hand corner."
 		Case "framelimit"
@@ -2198,8 +2204,6 @@ Function DrawOptionsTooltip(x%,y%,width%,height%,option$,value#=0,ingame%=False)
 				G = 255
 				txt2 = "Usually, 60 FPS or higher is preferred. If you are noticing excessive stuttering at this setting, try lowering it to make your framerate more consistent."
 			EndIf
-		Case "antialiastext"
-			txt = Chr(34)+"Antialiased text"+Chr(34)+" smooths out the text before displaying. Makes text easier to read at high resolutions."
 			;[End Block]
 	End Select
 	

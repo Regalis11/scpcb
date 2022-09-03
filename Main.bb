@@ -86,6 +86,7 @@ Global RealGraphicWidth%,RealGraphicHeight%
 Global AspectRatioRatio#
 
 Global EnableRoomLights% = GetINIInt(OptionFile, "options", "room lights enabled")
+Global PlayStartup% = GetINIInt(OptionFile, "options", "play startup video")
 
 Global TextureDetails% = GetINIInt(OptionFile, "options", "texture details")
 Global TextureFloat#
@@ -7286,7 +7287,7 @@ Function DrawMenu()
 					
 					Color 255,255,255
 					AAText(x, y, "Anti-aliasing:")
-					Opt_AntiAlias = DrawTick(x + 270 * MenuScale, y + MenuScale, Opt_AntiAlias%)
+					Opt_AntiAlias = DrawTick(x + 270 * MenuScale, y + MenuScale, Opt_AntiAlias%, (Not FullScreen))
 					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale) And OnSliderID=0
 						DrawOptionsTooltip(tx,ty,tw,th,"antialias")
 					EndIf
@@ -7523,13 +7524,15 @@ Function DrawMenu()
 						DrawOptionsTooltip(tx,ty,tw,th,"consoleenable")
 					EndIf
 					
-					y = y + 30*MenuScale
-					
-					Color 255,255,255
-					AAText(x, y, "Open console on error:")
-					ConsoleOpening = DrawTick(x + 270 * MenuScale, y + MenuScale, ConsoleOpening)
-					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
-						DrawOptionsTooltip(tx,ty,tw,th,"consoleerror")
+					If CanOpenConsole Then
+						y = y + 30*MenuScale
+						
+						Color 255,255,255
+						AAText(x, y, "Open console on error:")
+						ConsoleOpening = DrawTick(x + 270 * MenuScale, y + MenuScale, ConsoleOpening)
+						If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+							DrawOptionsTooltip(tx,ty,tw,th,"consoleerror")
+						EndIf
 					EndIf
 					
 					y = y + 30*MenuScale
@@ -7573,6 +7576,24 @@ Function DrawMenu()
 					EndIf
 					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 						DrawOptionsTooltip(tx,ty,tw,th,"antialiastext")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x, y, "Enable launcher:")
+					LauncherEnabled% = DrawTick(x + 270 * MenuScale, y, LauncherEnabled%)
+					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"enablelauncher")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x, y, "Play startup videos:")
+					PlayStartup% = DrawTick(x + 270 * MenuScale, y, PlayStartup%)
+					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"playstartup")
 					EndIf
 					
 					y = y + 30*MenuScale
@@ -11207,6 +11228,8 @@ Function SaveOptionsINI()
 	PutINIValue(OptionFile, "options", "particle amount", ParticleAmount)
 	PutINIValue(OptionFile, "options", "enable vram", EnableVRam)
 	PutINIValue(OptionFile, "options", "mouse smoothing", MouseSmooth)
+	PutINIValue(OptionFile, "options", "play startup video", PlayStartup)
+	PutINIValue(OptionFile, "launcher", "launcher enabled", LauncherEnabled)
 	
 	PutINIValue(OptionFile, "audio", "music volume", MusicVolume)
 	PutINIValue(OptionFile, "audio", "sound volume", PrevSFXVolume)

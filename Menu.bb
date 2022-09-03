@@ -275,7 +275,7 @@ Function UpdateMainMenu()
 				AASetFont Font2
 				AAText(x + width / 2, y + height / 2, "NEW GAME", True, True)
 				
-				x = 160 * MenuScale
+				x = 159 * MenuScale
 				y = y + height + 20 * MenuScale
 				width = 580 * MenuScale
 				height = 330 * MenuScale
@@ -522,7 +522,7 @@ Function UpdateMainMenu()
 					Next
 					
 					If SaveMSG <> ""
-						x = 740 * MenuScale
+						x = 739 * MenuScale
 						y = 376 * MenuScale
 						DrawFrame(x, y, 420 * MenuScale, 200 * MenuScale)
 						RowText("Are you sure you want to delete this save?", x + 20 * MenuScale, y + 15 * MenuScale, 400 * MenuScale, 200 * MenuScale)
@@ -554,7 +554,7 @@ Function UpdateMainMenu()
 				AASetFont Font2
 				AAText(x + width / 2, y + height / 2, "OPTIONS", True, True)
 				
-				x = 160 * MenuScale
+				x = 159 * MenuScale
 				y = y + height + 20 * MenuScale
 				width = 580 * MenuScale
 				height = 60 * MenuScale
@@ -1117,7 +1117,7 @@ Function UpdateMainMenu()
 					Next
 					
 					If SaveMSG <> "" Then
-						x = 740 * MenuScale
+						x = 739 * MenuScale
 						y = 376 * MenuScale
 						
 						DrawFrame(x, y, 420*MenuScale, 200*MenuScale)

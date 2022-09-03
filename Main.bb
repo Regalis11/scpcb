@@ -45,8 +45,9 @@ Global ConsoleFont%
 Global VersionNumber$ = "1.3.11"
 Global CompatibleNumber$ = "1.3.11" ;Only change this if the version given isn't working with the current build version - ENDSHN
 
-Global MenuWhite%, MenuBlack%
+Global MenuWhite%, MenuGray%, MenuBlack%
 Global ButtonSFX% = LoadSound_Strict("SFX\Interact\Button.ogg")
+Global ButtonSFX2% = LoadSound_Strict("SFX\Interact\Button2.ogg")
 
 Global EnableSFXRelease% = GetINIInt(OptionFile, "audio", "sfx release")
 Global EnableSFXRelease_Prev% = EnableSFXRelease%
@@ -1602,7 +1603,6 @@ Dim OpenDoorSFX%(3,3), CloseDoorSFX%(3,3)
 
 Global KeyCardSFX1 
 Global KeyCardSFX2 
-Global ButtonSFX2 
 Global ScannerSFX1
 Global ScannerSFX2 
 
@@ -7405,10 +7405,11 @@ Function DrawMenu()
 						AAText x, y, "User track mode:"
 						UserTrackMode = DrawTick(x + 270 * MenuScale, y + MenuScale, UserTrackMode)
 						If UserTrackMode
-							AAText x, y + 20 * MenuScale, "Repeat"
+							TempStr$ = "Repeat"
 						Else
-							AAText x, y + 20 * MenuScale, "Random"
+							TempStr$ = "Random"
 						EndIf
+						AAText x, y + 20 * MenuScale, TempStr$
 						If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 							DrawOptionsTooltip(tx,ty,tw,th,"usertrackmode")
 						EndIf
@@ -7551,41 +7552,6 @@ Function DrawMenu()
 					y = y + 30*MenuScale
 					
 					Color 255,255,255
-					AAText(x, y, "Show FPS:")
-					ShowFPS% = DrawTick(x + 270 * MenuScale, y, ShowFPS%)
-					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
-						DrawOptionsTooltip(tx,ty,tw,th,"showfps")
-					EndIf
-					
-					y = y + 30*MenuScale
-					
-					Color 255,255,255
-					AAText(x, y, "Framelimit:")
-					
-					Color 255,255,255
-					If DrawTick(x + 270 * MenuScale, y, CurrFrameLimit > 0.0) Then
-						;CurrFrameLimit# = (SlideBar(x + 150*MenuScale, y+30*MenuScale, 100*MenuScale, CurrFrameLimit#*50.0)/50.0)
-						;CurrFrameLimit = Max(CurrFrameLimit, 0.1)
-						;Framelimit% = CurrFrameLimit#*100.0
-						CurrFrameLimit# = (SlideBar(x + 150*MenuScale, y+30*MenuScale, 100*MenuScale, CurrFrameLimit#*99.0)/99.0)
-						CurrFrameLimit# = Max(CurrFrameLimit, 0.01)
-						Framelimit% = 19+(CurrFrameLimit*100.0)
-						Color 255,255,0
-						AAText(x + 5 * MenuScale, y + 25 * MenuScale, Framelimit%+" FPS")
-						If MouseOn(x+150*MenuScale,y+30*MenuScale,100*MenuScale+14,20)
-							DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
-						EndIf
-					Else
-						CurrFrameLimit# = 0.0
-						Framelimit = 0
-					EndIf
-					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
-						DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
-					EndIf
-					
-					y = y + 80*MenuScale
-					
-					Color 255,255,255
 					AAText(x, y, "Antialiased text:")
 					AATextEnable% = DrawTick(x + 270 * MenuScale, y + MenuScale, AATextEnable%)
 					If AATextEnable_Prev% <> AATextEnable
@@ -7615,6 +7581,41 @@ Function DrawMenu()
 					EndIf
 					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 						DrawOptionsTooltip(tx,ty,tw,th,"antialiastext")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x, y, "Show FPS:")
+					ShowFPS% = DrawTick(x + 270 * MenuScale, y, ShowFPS%)
+					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"showfps")
+					EndIf
+					
+					y = y + 30*MenuScale
+					
+					Color 255,255,255
+					AAText(x, y, "Framelimit:")
+					
+					Color 255,255,255
+					If DrawTick(x + 270 * MenuScale, y, CurrFrameLimit > 0.0) Then
+						;CurrFrameLimit# = (SlideBar(x + 150*MenuScale, y+30*MenuScale, 100*MenuScale, CurrFrameLimit#*50.0)/50.0)
+						;CurrFrameLimit = Max(CurrFrameLimit, 0.1)
+						;Framelimit% = CurrFrameLimit#*100.0
+						CurrFrameLimit# = (SlideBar(x + 150*MenuScale, y+30*MenuScale, 100*MenuScale, CurrFrameLimit#*99.0)/99.0)
+						CurrFrameLimit# = Max(CurrFrameLimit, 0.01)
+						Framelimit% = 19+(CurrFrameLimit*100.0)
+						Color 255,255,0
+						AAText(x + 5 * MenuScale, y + 30 * MenuScale, Framelimit%+" FPS")
+						If MouseOn(x+150*MenuScale,y+35*MenuScale,100*MenuScale+14,20)
+							DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
+						EndIf
+					Else
+						CurrFrameLimit# = 0.0
+						Framelimit = 0
+					EndIf
+					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
 					EndIf
 					;[End Block]
 			End Select
@@ -7755,10 +7756,7 @@ Function DrawMenu()
 							ResetInput()
 						EndIf
 					Else
-						DrawFrame(x,y,430*MenuScale, 60*MenuScale)
-						Color (100, 100, 100)
-						AASetFont Font2
-						AAText(x + (430*MenuScale) / 2, y + (60*MenuScale) / 2, "LOAD GAME", True, True)
+						DrawButton(x, y, 430*MenuScale, 60*MenuScale, "LOAD GAME", True, False, True, true)
 					EndIf
 					y = y + 75*MenuScale
 				EndIf
@@ -7812,10 +7810,7 @@ Function DrawMenu()
 							ResetInput()
 						EndIf
 					Else
-						DrawFrame(x,y,430*MenuScale, 60*MenuScale)
-						Color (100, 100, 100)
-						AASetFont Font2
-						AAText(x + (430*MenuScale) / 2, y + (60*MenuScale) / 2, "LOAD GAME", True, True)
+						DrawButton(x, y, 430*MenuScale, 60*MenuScale, "LOAD GAME", True, False, True, True)
 					EndIf
 					y = y + 75*MenuScale
 				EndIf

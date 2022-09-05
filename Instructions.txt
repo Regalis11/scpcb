@@ -6,7 +6,7 @@ After you have installed Mavless Blitz3D, you need to copy all of the .decls and
 in the repo into the userlibs folder of your Mavless Blitz3D install.
 
 Note: You don't need to copy BlitzAL, cpuid, or FreeImage. They aren't needed for the main game.
-BlitzAL for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
+BlitzAL, OpenAL, and wrap_oal for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
 
 Now you should be ready to edit and compile the source.
 

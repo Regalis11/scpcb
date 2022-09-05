@@ -8564,15 +8564,15 @@ Function CalculateRoomExtents(r.Rooms)
 	
 	;convert from the rooms local space to world space
 	TFormVector(r\RoomTemplate\MinX, r\RoomTemplate\MinY, r\RoomTemplate\MinZ, r\obj, 0)
-	r\MinX = TFormedX() + shrinkAmount + r\x
-	r\MinY = TFormedY() + shrinkAmount
-	r\MinZ = TFormedZ() + shrinkAmount + r\z
+	r\MinX = TFormedX() + r\x
+	r\MinY = TFormedY()
+	r\MinZ = TFormedZ() + r\z
 	
 	;convert from the rooms local space to world space
 	TFormVector(r\RoomTemplate\MaxX, r\RoomTemplate\MaxY, r\RoomTemplate\MaxZ, r\obj, 0)
-	r\MaxX = TFormedX() - shrinkAmount + r\x
-	r\MaxY = TFormedY() - shrinkAmount
-	r\MaxZ = TFormedZ() - shrinkAmount + r\z
+	r\MaxX = TFormedX() + r\x
+	r\MaxY = TFormedY()
+	r\MaxZ = TFormedZ() + r\z
 	
 	If (r\MinX > r\MaxX) Then
 		Local tempX# = r\MaxX
@@ -8584,6 +8584,10 @@ Function CalculateRoomExtents(r.Rooms)
 		r\MaxZ = r\MinZ
 		r\MinZ = tempZ
 	EndIf
+	
+	r\MinX = r\MinX + shrinkAmount : r\MaxX = r\MaxX - shrinkAmount
+	r\MinY = r\MinY + shrinkAmount : r\MaxY = r\MaxY - shrinkAmount
+	r\MinZ = r\MinZ + shrinkAmount : r\MaxZ = r\MaxZ - shrinkAmount
 	
 	DebugLog("roomextents: "+r\MinX+", "+r\MinY	+", "+r\MinZ	+", "+r\MaxX	+", "+r\MaxY+", "+r\MaxZ)
 End Function

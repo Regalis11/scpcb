@@ -5,7 +5,7 @@ The source code of the game is available on GitHub: https://github.com/Regalis11
 After you have installed Mavless Blitz3D, you need to copy all of the .decls and .dll files from the userlibs folder
 in the repo into the userlibs folder of your Mavless Blitz3D install.
 
-Note: You don't need to copy BlitzAL, cpuid, or FreeImage. They aren't needed for the main game.
+Note: You don't need to copy BlitzAL, OpenAL, wrap_oal, cpuid, or FreeImage. They aren't needed for the main game.
 BlitzAL, OpenAL, and wrap_oal for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
 
 Now you should be ready to edit and compile the source.

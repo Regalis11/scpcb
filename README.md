@@ -20,7 +20,7 @@ Copy the [userlibs](userlibs) to the userlibs folder in your Mavless B3D install
 ---
 
 ### Quick note
-You don't need to copy BlitzAL, cpuid, or FreeImage. They aren't needed for the main game.
+You don't need to copy BlitzAL, OpenAL, wrap_oal, cpuid, or FreeImage. They aren't needed for the main game.
 
 BlitzAL, OpenAL, and wrap_oal for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
 

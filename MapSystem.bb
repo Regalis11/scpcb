@@ -1740,7 +1740,7 @@ LoadRoomTemplates("Data\rooms.ini")
 
 Global RoomScale# = 8.0 / 2048.0
 Const ZONEAMOUNT = 3
-Global MapWidth% = GetINIInt("options.ini", "options", "map size"), MapHeight% = GetINIInt("options.ini", "options", "map size")
+Global MapWidth% = GetINIInt("options.ini", "options", "map width"), MapHeight% = GetINIInt("options.ini", "options", "map height")
 Dim MapTemp%(MapWidth+1, MapHeight+1)
 Dim MapFound%(MapWidth+1, MapHeight+1)
 
@@ -7045,7 +7045,7 @@ Function CreateMap()
 	Next
 	
 	Repeat
-		width = Rand(10, 15)
+		width = Rand(Floor(MapWidth*0.6), Floor(MapWidth*0.85))
 		
 		If x > MapWidth*0.6 Then
 			width = -width
@@ -7797,7 +7797,7 @@ Function SetRoom(room_name$,room_type%,pos%,min_pos%,max_pos%) ;place a room wit
 End Function
 
 Function GetZone(y%)
-	Return Min(Floor((Float(MapWidth-y)/MapWidth*ZONEAMOUNT)),ZONEAMOUNT-1)
+	Return Min(Floor((Float(MapHeight-y)/MapHeight*ZONEAMOUNT)),ZONEAMOUNT-1)
 End Function
 
 ;-------------------------------------------------------------------------------------------------------

@@ -15,7 +15,6 @@ Next
 
 KeyCardSFX1 = LoadSound_Strict("SFX\Interact\KeyCardUse1.ogg")
 KeyCardSFX2 = LoadSound_Strict("SFX\Interact\KeyCardUse2.ogg")
-ButtonSFX2 = LoadSound_Strict("SFX\Interact\Button2.ogg")
 ScannerSFX1 = LoadSound_Strict("SFX\Interact\ScannerUse1.ogg")
 ScannerSFX2 = LoadSound_Strict("SFX\Interact\ScannerUse2.ogg")
 

@@ -2,9 +2,13 @@ How to set up the source code:
 
 The source code of the game is available on GitHub: https://github.com/Regalis11/scpcb
 
-After you have installed Blitz3D v1.108c, you need to replace the directory "\Blitz3D\Bin\" with the bin folder
-inside the "mavless_bin.zip" file from the repository. Once you have replaced that, copy all of the .decls and .dll files from
-the repo into "\Blitz3D\userlibs\" and you should be ready to edit and compile the source.
+After you have installed Mavless Blitz3D, you need to copy all of the .decls and .dll files from the userlibs folder
+in the repo into the userlibs folder of your Mavless Blitz3D install.
+
+Note: You don't need to copy BlitzAL, OpenAL, wrap_oal, cpuid, or FreeImage. They aren't needed for the main game.
+BlitzAL, OpenAL, and wrap_oal for the music player, cpuid for the unused cpu details program, and FreeImage for LightMapPNG.
+
+Now you should be ready to edit and compile the source.
 
 ----------------------------------------------------------------------------------------
 

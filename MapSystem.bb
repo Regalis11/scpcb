@@ -3984,6 +3984,42 @@ Function FillRoom(r.Rooms)
 			de.Decals = CreateDecal(0, r\x + 456.0 * RoomScale, 0.005, r\z + 135.0 * RoomScale, 90, Rand(360), 0)
 			EntityParent(de\obj, r\obj)
 			
+			Local DecalID%
+			For i = 0 To 4
+			    Select i
+			        Case 0
+						xtemp = 4305
+			            ztemp = 1234.0
+			            DecalID = 4
+					Case 1
+						xtemp = 5190.0
+			            ztemp = 2270.0
+			            DecalID = 4
+					Case 2
+						xtemp = 5222.0
+			            ztemp = 1224.0  
+			            DecalID = 4
+					Case 3
+						xtemp = 4320.0 
+			            ztemp = 2000.0
+			            DecalID = 4
+					Case 4
+						xtemp = 4978.0
+			            ztemp = 1985.0
+						DecalID = 6
+				End Select
+			    de = CreateDecal(DecalID, r\x + xtemp * RoomScale, r\y + 386.0 * RoomScale, r\z + ztemp * RoomScale, 90.0, 45.0, 0.0)
+			    If i = 0 Then
+					de\Size = 0.44
+				ElseIf i = 1
+					de\Size = 1.2
+				Else
+					de\Size = 0.54
+				EndIf
+				de\Alpha = Rnd(0.8, 1.0)
+			    ScaleSprite(de\OBJ, de\Size, de\Size)
+			Next
+			
 			sc.SecurityCams = CreateSecurityCam(r\x - 336.0 * RoomScale, r\y + 352 * RoomScale, r\z + 48.0 * RoomScale, r, True)
 			sc\angle = 270
 			sc\turn = 45
@@ -3996,21 +4032,13 @@ Function FillRoom(r.Rooms)
 			EntityParent(sc\ScrObj, r\obj)
 			
 			r\Objects[2] = CreatePivot()
-			PositionEntity (r\Objects[2], EntityX(r\obj) + 40.0 * RoomScale, 460.0 * RoomScale, EntityZ(r\obj) + 1072.0 * RoomScale)
+			PositionEntity(r\Objects[2], EntityX(r\obj) - 200.0 * RoomScale, r\y + 440.0 * RoomScale, EntityZ(r\obj) + 1322.0 * RoomScale)
 			r\Objects[3] = CreatePivot()
-			PositionEntity (r\Objects[3], EntityX(r\obj) - 80.0 * RoomScale, 100.0 * RoomScale, EntityZ(r\obj) + 526.0 * RoomScale)
+			PositionEntity(r\Objects[3], EntityX(r\obj) + 1000.0 * RoomScale, r\y + 120.0 * RoomScale, EntityZ(r\obj) + 666.0 * RoomScale)
 			r\Objects[4] = CreatePivot()
-			PositionEntity (r\Objects[4], EntityX(r\obj) - 128.0 * RoomScale, 100.0 * RoomScale, EntityZ(r\obj) + 320.0 * RoomScale)
+			PositionEntity(r\Objects[4], EntityX(r\obj) + 628.0 * RoomScale, r\y + 120.0 * RoomScale, EntityZ(r\obj) + 320.0 * RoomScale)
 			
-			r\Objects[5] = CreatePivot()
-			PositionEntity (r\Objects[5], EntityX(r\obj) + 660.0 * RoomScale, 100.0 * RoomScale, EntityZ(r\obj) + 526.0 * RoomScale)
-			r\Objects[6] = CreatePivot()
-			PositionEntity (r\Objects[6], EntityX(r\obj) + 700 * RoomScale, 100.0 * RoomScale, EntityZ(r\obj) + 320.0 * RoomScale)
-			
-			r\Objects[7] = CreatePivot()
-			PositionEntity (r\Objects[7], EntityX(r\obj) + 1472.0 * RoomScale, 100.0 * RoomScale, EntityZ(r\obj) + 912.0 * RoomScale)
-			
-			For i = 2 To 7
+			For i = 2 To 4
 				EntityParent(r\Objects[i], r\obj)
 			Next
 			
@@ -4408,13 +4436,39 @@ Function FillRoom(r.Rooms)
 			de\Size = 1.2
 			ScaleSprite(de\obj, de\Size, de\Size)
 			
-			For xtemp% = 0 To 1
-				For ztemp% = 0 To 1
-					de.Decals = CreateDecal(Rand(4, 6), r\x + 700.0 * RoomScale + xtemp * 700.0 * RoomScale + Rnd(-0.5, 0.5), Rnd(0.001, 0.0018), r\z + 600 * ztemp * RoomScale + Rnd(-0.5, 0.5), 90, Rnd(360), 0)
-					de\Size = Rnd(0.5, 0.8)
-					de\Alpha = Rnd(0.8, 1.0)
-					ScaleSprite(de\obj, de\Size, de\Size)
-				Next
+			For i = 0 To 4
+			    Select i
+			        Case 0
+						xtemp = 1472.0
+			            ztemp = 912.0  
+						DecalID = 4
+					Case 1
+						xtemp = 587.0
+			            ztemp = -70.0
+			            DecalID = 4
+					Case 2
+						xtemp = 1504.0
+			            ztemp = -80.0
+						DecalID = 4
+					Case 3
+						xtemp = 602.0 
+			            ztemp = 642.0
+			            DecalID = 4
+					Case 4
+						xtemp = 1260.0
+			            ztemp = 627.0
+						DecalID = 6
+				End Select
+			    de = CreateDecal(DecalID, r\x + xtemp * RoomScale, r\y + 2.0 * RoomScale, r\z + ztemp * RoomScale, 90.0, 45.0, 0.0)
+				If i = 0 Then
+					de\Size = 1.2
+				ElseIf i = 1
+					de\Size = 0.44
+				Else
+					de\Size = 0.54
+				EndIf
+			    de\Alpha = Rnd(0.8, 1.0)
+			    ScaleSprite(de\OBJ, de\Size, de\Size)
 			Next
 			
 			;AddLight(r, r\x-224.0*RoomScale, r\y+640.0*RoomScale, r\z+128.0*RoomScale,2,2,200,200,200)
@@ -4485,7 +4539,8 @@ Function FillRoom(r.Rooms)
 				Next	
 			Next
 			
-			CreateItem("Class D Orientation Leaflet", "paper", r\x-(2914+1024)*RoomScale, 170.0*RoomScale, r\z+40*RoomScale)
+			it = CreateItem("Class D Orientation Leaflet", "paper", r\x-(2914+1024)*RoomScale, 170.0*RoomScale, r\z+40*RoomScale)
+			EntityParent(it\Collider, r\obj)
 			
 			sc.SecurityCams = CreateSecurityCam(r\x - 4048.0 * RoomScale, r\y - 32.0 * RoomScale, r\z - 1232.0 * RoomScale, r, True)
 			sc\angle = 270
@@ -4503,6 +4558,7 @@ Function FillRoom(r.Rooms)
 			EntityPickMode r\Objects[9],2
 			
 			r\Objects[10] = LoadMesh_Strict("GFX\map\intro_labels.b3d",r\obj)
+			PositionEntity(r\Objects[10], r\x, r\y - 15.0 * RoomScale, r\z, True)
 			;[End Block]
 		Case "room2ccont"
 			;[Block]

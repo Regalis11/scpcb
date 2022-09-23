@@ -621,7 +621,6 @@ Function PickItem(item.Items)
 					Case "1123"
 						If Not (Wearing714 = 1) Then
 							If PlayerRoom\RoomTemplate\Name <> "room1123" Then
-								ShowEntity Light
 								LightFlash = 7
 								PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))		
 								DeathMSG = "Subject D-9341 was shot dead after attempting to attack a member of Nine-Tailed Fox. Surveillance tapes show that the subject had been "
@@ -633,7 +632,6 @@ Function PickItem(item.Items)
 							For e.Events = Each Events
 								If e\eventname = "room1123" Then 
 									If e\eventstate = 0 Then
-										ShowEntity Light
 										LightFlash = 3
 										PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))
 									EndIf
@@ -646,7 +644,6 @@ Function PickItem(item.Items)
 						
 						Return
 					Case "killbat"
-						ShowEntity Light
 						LightFlash = 1.0
 						PlaySound_Strict(IntroSFX(11))
 						DeathMSG = "Subject D-9341 found dead inside SCP-914's output booth next to what appears to be an ordinary nine-volt battery. The subject is covered in severe "

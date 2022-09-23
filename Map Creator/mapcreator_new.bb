@@ -8,7 +8,7 @@ SetPanelImage(panelloading,"Assets\map_logo.jpg")
 
 ; create a window to put the toolbar in
 WinHandle=CreateWindow("SCP-CB Map Creator "+versionnumber,GraphicsWidth()/2-ResWidth/2, GraphicsHeight()/2-ResHeight/2,ResWidth,ResHeight,0, 13) 
-Global MainHwnd = GetActiveWindow();User32.dll
+Global MainHwnd = api_GetActiveWindow();User32.dll
 HideGadget WinHandle
 
 Global FileLocation$ = "..\Data\rooms.ini"
@@ -281,14 +281,14 @@ SetStatusText(Loadingwindow, "Executing 3D viewer...")
 ExecFile("window3d.exe")
 
 Repeat
-	vwprt = FindWindow("Blitz Runtime Class" , "MapCreator 3d view");User32.dll
+	vwprt = api_FindWindow("Blitz Runtime Class" , "MapCreator 3d view");User32.dll
 	ShowGadget Loadingwindow
 Until vwprt <> 0
 SetStatusText(Loadingwindow, "Creating 3D scene...")
 
-SetParent(vwprt,MainHwnd);User32.dll				
-api_SetWindowPos( vwprt , 0 , 5 , 30 , 895 , 560 , 1);User32.dll
-ShowWindow% (vwprt ,0) ;User32.dll
+api_SetParent(vwprt,MainHwnd);User32.dll				
+api_SetWindowPos(vwprt, 0, 5, 30, 895, 560, 1);User32.dll
+api_ShowWindow(vwprt, 0) ;User32.dll
 
 HideGadget Loadingwindow
 ShowGadget WinHandle
@@ -1160,7 +1160,7 @@ Repeat
             ;also in Abhangigkeit des Gadgets zeigen und verstecken
 			Select EventData()
 				Case 0
-                 	ShowWindow% (vwprt ,0)
+                 	api_ShowWindow(vwprt, 0)
                   	ShowGadget listbox 
 					ShowGadget event_desc 
 					ShowGadget txtbox 
@@ -1176,7 +1176,7 @@ Repeat
 					SetGadgetShape(tab, 0,5,ResWidth/4+20,ResHeight-60)
 					ShowGrid = True
 				Case 1
-					ShowWindow% (vwprt ,1) ;User32.dll
+					api_ShowWindow(vwprt, 1) ;User32.dll
               		HideGadget listbox 
 					HideGadget event_desc 
 					HideGadget txtbox 

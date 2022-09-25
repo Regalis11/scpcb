@@ -120,7 +120,7 @@ Next
 For i = 0 To 11
 	HorrorSFX(i) = LoadSound_Strict("SFX\Horror\Horror" + i + ".ogg")
 Next
-For i = 14 To 15
+For i = 13 To 14
 	HorrorSFX(i) = LoadSound_Strict("SFX\Horror\Horror" + i + ".ogg")
 Next
 

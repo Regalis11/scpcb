@@ -274,7 +274,7 @@ Function CreateNPC.NPCs(NPCtype%, x#, y#, z#)
 			
 			n\Sound = LoadSound_Strict("SFX\SCP\049\049Breath.ogg")
 			
-			If HorrorSFX(13)=0 Then HorrorSFX(13)=LoadSound_Strict("SFX\Horror\Horror13.ogg")
+			If HorrorSFX(12)=0 Then HorrorSFX(12)=LoadSound_Strict("SFX\Horror\Horror12.ogg")
 			
 			n\CanUseElevator = True
 			;[End Block]
@@ -754,7 +754,7 @@ Function UpdateNPCs()
 										Case 4
 											PlaySound_Strict(HorrorSFX(10))
 										Case 5
-											PlaySound_Strict(HorrorSFX(14))
+											PlaySound_Strict(HorrorSFX(13))
 									End Select
 								EndIf									
 									
@@ -1786,7 +1786,7 @@ Function UpdateNPCs()
 													DeathMSG = "An active instance of SCP-049-2 was discovered in [REDACTED]. Terminated by Nine-Tailed Fox."
 													Kill()
 												EndIf
-												PlaySound_Strict HorrorSFX(13)
+												PlaySound_Strict HorrorSFX(12)
 												If n\Sound2 <> 0 Then FreeSound_Strict(n\Sound2)
 												n\Sound2 = LoadSound_Strict("SFX\SCP\049\Kidnap"+Rand(1,2)+".ogg")
 												n\SoundChn2 = LoopSound2(n\Sound2,n\SoundChn2,Camera,n\obj)

@@ -2151,7 +2151,7 @@ Function UpdateDoors()
 					EndIf
 					If d\AutoClose And RemoteDoorOn = True Then
 						If EntityDistance(Camera, d\obj) < 2.1 Then
-							If (Not Wearing714) Then PlaySound_Strict HorrorSFX(7)
+							If (Not Wearing714) Then PlaySound_Strict HorrorSFX(6)
 							d\open = False : d\SoundCHN = PlaySound2(CloseDoorSFX(Min(d\dir,1), Rand(0, 2)), Camera, d\obj) : d\AutoClose = False
 						EndIf
 					EndIf				
@@ -7138,7 +7138,7 @@ Function DrawMenu()
 					StopHidingTimer = StopHidingTimer+FPSfactor
 					
 					If StopHidingTimer => 40 Then
-						PlaySound_Strict(HorrorSFX(15))
+						PlaySound_Strict(HorrorSFX(14))
 						Msg = "STOP HIDING"
 						MsgTimer = 6*70
 						MenuOpen = False

@@ -2049,7 +2049,7 @@ Function UpdateEvents()
 						
 						If e\EventState3 = 1 Or e\EventState3 = 2 Then ;the "trick room"
 							If e\EventState3 = 1 And (e\room\RoomDoors[0]\openstate>150 Or e\room\RoomDoors[1]\openstate>150) Then
-								PlaySound_Strict LoadTempSound("SFX\Horror\Horror16.ogg")
+								PlaySound_Strict LoadTempSound("SFX\Horror\Horror15.ogg")
 								BlurTimer = 800
 								e\EventState3=2
 							EndIf

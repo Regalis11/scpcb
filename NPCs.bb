@@ -272,7 +272,7 @@ Function CreateNPC.NPCs(NPCtype%, x#, y#, z#)
 			temp# = GetINIFloat("DATA\NPCs.ini", "SCP-049", "scale")
 			ScaleEntity n\obj, temp, temp, temp	
 			
-			n\Sound = LoadSound_Strict("SFX\Horror\Horror12.ogg")
+			n\Sound = LoadSound_Strict("SFX\SCP\049\049Breath.ogg")
 			
 			If HorrorSFX(13)=0 Then HorrorSFX(13)=LoadSound_Strict("SFX\Horror\Horror13.ogg")
 			

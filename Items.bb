@@ -203,9 +203,9 @@ Function InitItemTemplates()
 	it = CreateItemTemplate("Bulky Ballistic Vest", "veryfinevest", "GFX\items\vest.x", "GFX\items\INVvest.jpg", "", 0.025,"GFX\items\Vest.png")
 	it\sound = 2
 	
-	it = CreateItemTemplate("Hazmat Suit", "hazmatsuit", "GFX\items\hazmat.b3d", "GFX\items\INVhazmat.jpg", "", 0.013)
+	it = CreateItemTemplate("Hazmat Suit", "hazmatsuit", "GFX\items\hazmat.b3d", "GFX\items\INVhazmat.jpg", "", 0.013, "", "", 1)
 	it\sound = 2
-	it = CreateItemTemplate("Hazmat Suit", "hazmatsuit2", "GFX\items\hazmat.b3d", "GFX\items\INVhazmat.jpg", "", 0.013)
+	it = CreateItemTemplate("Hazmat Suit", "hazmatsuit2", "GFX\items\hazmat.b3d", "GFX\items\INVhazmat.jpg", "", 0.013, "", "", 1)
 	it\sound = 2
 	it = CreateItemTemplate("Heavy Hazmat Suit", "hazmatsuit3", "GFX\items\hazmat.b3d", "GFX\items\INVhazmat.jpg", "", 0.013)
 	it\sound = 2
@@ -775,6 +775,7 @@ Function DropItem(item.Items,playdropsound%=True)
 			WearingGasMask = False
 		Case "hazmatsuit",  "hazmatsuit2", "hazmatsuit3"
 			WearingHazmat = False
+			SetAnimTime(item\model, 4)
 		Case "vest", "finevest"
 			WearingVest = False
 		Case "nvgoggles"

@@ -7020,8 +7020,8 @@ End Function
 Function CreateMap()
 	DebugLog ("Generating a map using the seed "+RandomSeed)
 	
-	I_Zone\Transition[0] = 13
-	I_Zone\Transition[1] = 7
+	I_Zone\Transition[0] = Floor(MapHeight * (2.0 / 3.0)) + 1
+	I_Zone\Transition[1] = Floor(MapHeight * (1.0 / 3.0)) + 1
 	I_Zone\HasCustomForest = False
 	I_Zone\HasCustomMT = False
 	

@@ -4176,17 +4176,18 @@ Function FillRoom(r.Rooms)
 			r\Objects[1] = sc\ScrObj
 			
 			;[End Block]
-		Case "endroom"
+		Case "endroom", "endroom3"
 			;[Block]
-			r\RoomDoors[0] = CreateDoor(r\zone, r\x, 0, r\z + 1136 * RoomScale, 0, r, False, True, 6)
+			If r\RoomTemplate\Name = "endroom3" Then
+				ztemp = 1202
+			Else
+				ztemp = 1136
+			EndIf
+			
+			r\RoomDoors[0] = CreateDoor(r\zone, r\x, 0, r\z + ztemp * RoomScale, 0, r, False, True, 6)
 			r\RoomDoors[0]\AutoClose = False : r\RoomDoors[0]\open = False
 			FreeEntity r\RoomDoors[0]\buttons[0] : r\RoomDoors[0]\buttons[0]=0
 			FreeEntity r\RoomDoors[0]\buttons[1] : r\RoomDoors[0]\buttons[1]=0
-			;[End Block]
-		Case "endroomc"
-			;[Block]
-			d = CreateDoor(r\zone, r\x+1024*RoomScale, 0, r\z, 0, r, False, 2, False, "")
-			d\open = False : d\AutoClose = False : d\locked = True
 			;[End Block]
 		Case "coffin"
 			;[Block]

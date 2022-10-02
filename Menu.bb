@@ -912,7 +912,7 @@ Function UpdateMainMenu()
 					;[End Block]
 				ElseIf MainMenuTab = 7 ;Advanced
 					;[Block]
-					height = 320 * MenuScale
+					height = 350 * MenuScale
 					DrawFrame(x, y, width, height)	
 					
 					y = y + 20*MenuScale
@@ -985,7 +985,7 @@ Function UpdateMainMenu()
 						DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
 					EndIf
 					
-					y = y + 80*MenuScale
+					y = y + 50*MenuScale
 					
 					Color 255,255,255
 					AAText(x + 20 * MenuScale, y, "Antialiased text:")
@@ -1017,6 +1017,14 @@ Function UpdateMainMenu()
 					EndIf
 					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 						DrawOptionsTooltip(tx,ty,tw,th,"antialiastext")
+					EndIf
+
+					y = y + 50*MenuScale
+					Color 255,255,255
+					AAText(x + 20, y, "Use launcher:")
+					LauncherEnabled% = DrawTick(x + 310 * MenuScale, y + MenuScale, LauncherEnabled%)
+					If MouseOn(x+310*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"uselauncher")
 					EndIf
 					;[End Block]
 				EndIf
@@ -2151,6 +2159,8 @@ Function DrawOptionsTooltip(x%,y%,width%,height%,option$,value#=0,ingame%=False)
 			EndIf
 		Case "antialiastext"
 			txt = Chr(34)+"Antialiased text"+Chr(34)+" smooths out the text before displaying. Makes text easier to read at high resolutions."
+		Case "uselauncher"
+			txt = "Toggles the launcher window on startup which allows you to configure your resolution along with other settings that you cannot configure in-game."
 			;[End Block]
 	End Select
 	

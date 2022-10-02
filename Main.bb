@@ -7583,7 +7583,7 @@ Function DrawMenu()
 						DrawOptionsTooltip(tx,ty,tw,th,"framelimit",Framelimit)
 					EndIf
 					
-					y = y + 80*MenuScale
+					y = y + 50*MenuScale
 					
 					Color 255,255,255
 					AAText(x, y, "Antialiased text:")
@@ -7615,6 +7615,15 @@ Function DrawMenu()
 					EndIf
 					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
 						DrawOptionsTooltip(tx,ty,tw,th,"antialiastext")
+					EndIf
+
+					y = y + 50*MenuScale
+
+					Color 255,255,255
+					AAText(x, y, "Use launcher:")
+					LauncherEnabled% = DrawTick(x + 270 * MenuScale, y + MenuScale, LauncherEnabled%)
+					If MouseOn(x+270*MenuScale,y+MenuScale,20*MenuScale,20*MenuScale)
+						DrawOptionsTooltip(tx,ty,tw,th,"uselauncher")
 					EndIf
 					;[End Block]
 			End Select
@@ -11197,6 +11206,7 @@ Function SaveOptionsINI()
 	PutINIValue(OptionFile, "console", "enabled", CanOpenConsole%)
 	PutINIValue(OptionFile, "console", "auto opening", ConsoleOpening%)
 	PutINIValue(OptionFile, "options", "antialiased text", AATextEnable)
+	PutINIValue(OptionFile, "launcher", "launcher enabled", LauncherEnabled)
 	PutINIValue(OptionFile, "options", "particle amount", ParticleAmount)
 	PutINIValue(OptionFile, "options", "enable vram", EnableVRam)
 	PutINIValue(OptionFile, "options", "mouse smoothing", MouseSmooth)

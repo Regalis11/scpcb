@@ -292,6 +292,7 @@ Global SCP1025state#[6]
 Global HeartBeatRate#, HeartBeatTimer#, HeartBeatVolume#
 
 Global WearingGasMask%, WearingHazmat%, WearingVest%, Wearing714%, WearingNightVision%
+Global RemoveHazmatTimer#, Remove714Timer#
 Global NVTimer#
 
 Global SuperMan%, SuperManTimer#
@@ -8776,6 +8777,8 @@ Function NullGame(playbuttonsfx%=True)
 		CameraFogFar = StoredCameraFogFar
 		WearingNightVision = 0
 	EndIf
+	RemoveHazmatTimer = 0.0
+	Remove714Timer = 0.0
 	I_427\Using = 0
 	I_427\Timer = 0.0
 	

@@ -587,7 +587,7 @@ Function UpdateItems()
 		deletedItem = False
 	Next
 	
-	If ClosestItem <> Null Then
+	If ClosestItem <> Null And KillTimer >= 0 Then
 		;DrawHandIcon = True
 		
 		If MouseHit1 Then PickItem(ClosestItem)

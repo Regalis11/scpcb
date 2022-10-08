@@ -4710,7 +4710,7 @@ Function DrawGUI()
 		EndIf
 	EndIf
 	
-	If ClosestItem <> Null Then
+	If ClosestItem <> Null And KillTimer >= 0 Then
 		yawvalue# = -DeltaYaw(Camera, ClosestItem\collider)
 		If yawvalue > 90 And yawvalue <= 180 Then yawvalue = 90
 		If yawvalue > 180 And yawvalue < 270 Then yawvalue = 270

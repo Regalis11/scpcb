@@ -428,17 +428,8 @@ Function UpdateConsole()
 		If scrollbarHeight>height Then scrollbarHeight = height
 		If consoleHeight<height Then consoleHeight = height
 		
-		Color 50,50,50
-		inBar% = MouseOn(x+width-26*MenuScale,y,26*MenuScale,height)
-		If inBar Then Color 70,70,70
-		Rect x+width-26*MenuScale,y,26*MenuScale,height,True
-		
-		
-		Color 120,120,120
 		inBox% = MouseOn(x+width-23*MenuScale,y+height-scrollbarHeight+(ConsoleScroll*scrollbarHeight/height),20*MenuScale,scrollbarHeight)
-		If inBox Then Color 200,200,200
-		If ConsoleScrollDragging Then Color 255,255,255
-		Rect x+width-23*MenuScale,y+height-scrollbarHeight+(ConsoleScroll*scrollbarHeight/height),20*MenuScale,scrollbarHeight,True
+		DrawScrollBar(x+width-26*MenuScale,y,26*MenuScale,height,x+width-23*MenuScale,y+height-scrollbarHeight+(ConsoleScroll*scrollbarHeight/height),20*MenuScale,scrollbarHeight,ScrollBarY,1)
 		
 		If Not MouseDown(1) Then
 			ConsoleScrollDragging=False

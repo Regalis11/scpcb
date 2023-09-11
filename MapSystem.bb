@@ -3232,9 +3232,9 @@ Function FillRoom(r.Rooms)
 			;PositionEntity (d\buttons[0], EntityX(d\buttons[0],True), EntityY(d\buttons[0],True), r\z + 288.0 * RoomScale, True)
 			;PositionEntity (d\buttons[1], EntityX(d\buttons[1],True), EntityY(d\buttons[1],True), r\z + 320.0 * RoomScale, True)
 			
-			sc.SecurityCams = CreateSecurityCam(r\x-355.0 * RoomScale, r\y + 450*RoomScale, r\z + 321*RoomScale, r)
-			sc\angle = -45
-			sc\turn = 0
+			sc.SecurityCams = CreateSecurityCam(r\x-312.0 * RoomScale, r\y + 414*RoomScale, r\z + 656*RoomScale, r)
+			sc\angle = 225
+			sc\turn = 45
 			TurnEntity(sc\CameraObj, 20, 0, 0)
 			;sc\FollowPlayer = True
 			
@@ -3242,9 +3242,15 @@ Function FillRoom(r.Rooms)
 			PositionEntity(r\Objects[0], r\x, 0.5, r\z + 512.0 * RoomScale, True)
 			
 			r\Objects[1] = CreatePivot(r\obj)
-			PositionEntity(r\Objects[1], r\x, 0.5, r\z, True)
+			PositionEntity(r\Objects[1], r\x + 64.0 * RoomScale, 0.5, r\z - 640.0 * RoomScale, True)
 			
-			it = CreateItem("Night Vision Goggles", "nvgoggles", r\x + 173.0 * RoomScale, 0.5, r\z + 631.0 * RoomScale)
+			r\Objects[2] = CreatePivot(r\obj)
+			PositionEntity(r\Objects[2], r\x, 0.5, r\z, True)
+			
+			r\Objects[3] = CreatePivot(r\obj)
+			PositionEntity(r\Objects[3], r\x + 320.0 * RoomScale, 0.5, r\z + 704.0 * RoomScale, True)
+			
+			it = CreateItem("Night Vision Goggles", "nvgoggles", r\x + 320.0 * RoomScale, 0.5, r\z + 704.0 * RoomScale)
 			EntityParent(it\collider, r\obj)
 			it\state = 300
 			

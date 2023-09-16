@@ -42,7 +42,7 @@ Global UpdaterFont%
 Global Font1%, Font2%, Font3%, Font4%, Font5%
 Global ConsoleFont%
 
-Global VersionNumber$ = "1.3.12dev"
+Global VersionNumber$ = "1.3.12"
 Global OldestSupportedVersion$ = "1.3.10"
 
 Global MenuWhite%, MenuBlack%

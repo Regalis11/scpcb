@@ -2038,7 +2038,6 @@ Function CreateRoom.Rooms(zone%, roomshape%, x#, y#, z#, name$ = "")
 					AddLightCones(r)
 				EndIf
 				
-				CalculateRoomExtents(r)
 				Return r
 			EndIf
 		Next
@@ -2078,7 +2077,6 @@ Function CreateRoom.Rooms(zone%, roomshape%, x#, y#, z#, name$ = "")
 						AddLightCones(r)
 					EndIf
 					
-					CalculateRoomExtents(r)
 					Return r	
 				End If
 			EndIf
@@ -7558,6 +7556,7 @@ Function CreateMap()
 						r = CreateRoom(zone, ROOM4, x * 8, 0, y * 8, MapName(x, y))
 						MapRoomID(ROOM4)=MapRoomID(ROOM4)+1
 				End Select
+				CalculateRoomExtents(r)
 				
 			EndIf
 			
@@ -7565,17 +7564,21 @@ Function CreateMap()
 	Next		
 	
 	r = CreateRoom(0, ROOM1, (MapWidth-1) * 8, 500, 8, "gatea")
+	CalculateRoomExtents(r)
 	MapRoomID(ROOM1)=MapRoomID(ROOM1)+1
 	
 	r = CreateRoom(0, ROOM1, (MapWidth-1) * 8, 0, (MapHeight-1) * 8, "pocketdimension")
+	CalculateRoomExtents(r)
 	MapRoomID(ROOM1)=MapRoomID(ROOM1)+1	
 	
 	If IntroEnabled
 		r = CreateRoom(0, ROOM1, 8, 0, (MapHeight-1) * 8, "173")
+		CalculateRoomExtents(r)
 		MapRoomID(ROOM1)=MapRoomID(ROOM1)+1
 	EndIf
 	
 	r = CreateRoom(0, ROOM1, 8, 800, 0, "dimension1499")
+	CalculateRoomExtents(r)
 	MapRoomID(ROOM1)=MapRoomID(ROOM1)+1
 	
 	For r.Rooms = Each Rooms
@@ -8562,15 +8565,15 @@ Function CalculateRoomExtents(r.Rooms)
 	
 	;convert from the rooms local space to world space
 	TFormVector(r\RoomTemplate\MinX, r\RoomTemplate\MinY, r\RoomTemplate\MinZ, r\obj, 0)
-	r\MinX = TFormedX() + shrinkAmount + r\x
-	r\MinY = TFormedY() + shrinkAmount
-	r\MinZ = TFormedZ() + shrinkAmount + r\z
+	r\MinX = TFormedX()
+	r\MinY = TFormedY()
+	r\MinZ = TFormedZ()
 	
 	;convert from the rooms local space to world space
 	TFormVector(r\RoomTemplate\MaxX, r\RoomTemplate\MaxY, r\RoomTemplate\MaxZ, r\obj, 0)
-	r\MaxX = TFormedX() - shrinkAmount + r\x
-	r\MaxY = TFormedY() - shrinkAmount
-	r\MaxZ = TFormedZ() - shrinkAmount + r\z
+	r\MaxX = TFormedX()
+	r\MaxY = TFormedY()
+	r\MaxZ = TFormedZ()
 	
 	If (r\MinX > r\MaxX) Then
 		Local tempX# = r\MaxX
@@ -8582,6 +8585,14 @@ Function CalculateRoomExtents(r.Rooms)
 		r\MaxZ = r\MinZ
 		r\MinZ = tempZ
 	EndIf
+	
+	r\MinX = r\MinX + shrinkAmount + r\x
+	r\MinY = r\MinY + shrinkAmount
+	r\MinZ = r\MinZ + shrinkAmount + r\z
+	
+	r\MaxX = r\MaxX - shrinkAmount + r\x
+	r\MaxY = r\MaxY - shrinkAmount
+	r\MaxZ = r\MaxZ - shrinkAmount + r\z
 	
 	DebugLog("roomextents: "+r\MinX+", "+r\MinY	+", "+r\MinZ	+", "+r\MaxX	+", "+r\MaxY+", "+r\MaxZ)
 End Function
@@ -8713,8 +8724,6 @@ Function PreventRoomOverlap(r.Rooms)
 					PositionEntity r2\obj,r2\x,r2\y,r2\z
 					RotateEntity r2\obj,0,r2\angle,0
 					CalculateRoomExtents(r2)
-					
-					isIntersecting = False
 				EndIf
 			EndIf
 		EndIf

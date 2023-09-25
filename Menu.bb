@@ -478,7 +478,7 @@ Function UpdateMainMenu()
 						If i <= SaveGameAmount Then
 							DrawFrame(x,y,540* MenuScale, 70* MenuScale)
 							
-							If SaveGameVersion(i - 1) <> CompatibleNumber And SaveGameVersion(i - 1) <> "1.3.10" Then
+							If CompareVersions(SaveGameVersion(i - 1), OldestSupportedVersion) < 0 Then
 								Color 255,0,0
 							Else
 								Color 255,255,255
@@ -490,7 +490,7 @@ Function UpdateMainMenu()
 							AAText(x + 20 * MenuScale, y + (10+36) * MenuScale, SaveGameVersion(i - 1))
 							
 							If SaveMSG = "" Then
-								If SaveGameVersion(i - 1) <> CompatibleNumber And SaveGameVersion(i - 1) <> "1.3.10" Then
+								If CompareVersions(SaveGameVersion(i - 1), OldestSupportedVersion) < 0 Then
 									DrawFrame(x + 280 * MenuScale, y + 20 * MenuScale, 100 * MenuScale, 30 * MenuScale)
 									Color(255, 0, 0)
 									AAText(x + 330 * MenuScale, y + 34 * MenuScale, "Load", True, True)
@@ -512,7 +512,7 @@ Function UpdateMainMenu()
 								EndIf
 							Else
 								DrawFrame(x + 280 * MenuScale, y + 20 * MenuScale, 100 * MenuScale, 30 * MenuScale)
-								If SaveGameVersion(i - 1) <> CompatibleNumber And SaveGameVersion(i - 1) <> "1.3.10" Then
+								If CompareVersions(SaveGameVersion(i - 1), OldestSupportedVersion) < 0 Then
 									Color(255, 0, 0)
 								Else
 									Color(100, 100, 100)

@@ -34,8 +34,7 @@ Function SaveGame(file$)
 	WriteFloat f, EntityPitch(Collider)
 	WriteFloat f, EntityYaw(Collider)
 	
-	;WriteString f, VersionNumber
-	WriteString f, CompatibleNumber
+	WriteString f, VersionNumber
 	
 	WriteFloat f, BlinkTimer
 	WriteFloat f, BlinkEffect
@@ -120,6 +119,7 @@ Function SaveGame(file$)
 	WriteByte f, SoundTransmission
 	WriteByte f, Contained106
 	
+	WriteByte f, MAXACHIEVEMENTS
 	For i = 0 To MAXACHIEVEMENTS-1
 		WriteByte f, Achievements(i)
 	Next
@@ -505,8 +505,8 @@ Function LoadGame(file$)
 	y = ReadFloat(f)
 	RotateEntity(Collider, x, y, 0, 0)
 	
-	strtemp = ReadString(f)
-	version = strtemp
+	version = ReadString(f)
+	If CompareVersions(version, OldestSupportedVersion) < 0 Then RuntimeError "Save file version not supported"
 	
 	BlinkTimer = ReadFloat(f)
 	BlinkEffect = ReadFloat(f)	
@@ -582,9 +582,30 @@ Function LoadGame(file$)
 	SoundTransmission = ReadByte(f)	
 	Contained106 = ReadByte(f)	
 	
-	For i = 0 To MAXACHIEVEMENTS-1
+	If CompareVersions(version, "1.3.12") >= 0 Then
+		temp = ReadByte(f)
+	Else
+		temp = 37
+	EndIf
+	For i = 0 To temp-1
 		Achievements(i)=ReadByte(f)
 	Next
+	If CompareVersions(version, "1.3.12") < 0 Then
+		Achievements(37)=Achievements(36)
+		Achievements(36)=Achievements(31)
+		Achievements(31)=Achievements(28)
+		Achievements(28)=Achievements(34)
+		Achievements(34)=Achievements(32)
+		Achievements(32)=Achievements(29)
+		Achievements(29)=Achievements(35)
+		Achievements(35)=Achievements(33)
+		Achievements(33)=Achievements(30)
+		Achievements(30)=Achievements(27)
+		For i = 27 To 6 Step -1
+			Achievements(i)=Achievements(i-1)
+		Next
+		Achievements(5)=False
+	EndIf
 	RefinedItems = ReadInt(f)
 	
 	MapWidth = ReadInt(f)
@@ -708,7 +729,7 @@ Function LoadGame(file$)
 	room2gw_x = ReadFloat(f)
 	room2gw_z = ReadFloat(f)
 	
-	If version = CompatibleNumber Then
+	If CompareVersions(version, "1.3.11") >= 0 Then
 		I_Zone\Transition[0] = ReadByte(f)
 		I_Zone\Transition[1] = ReadByte(f)
 		I_Zone\HasCustomForest = ReadByte(f)
@@ -1340,8 +1361,8 @@ Function LoadGameQuick(file$)
 	y = ReadFloat(f)
 	RotateEntity(Collider, x, y, 0, 0)
 	
-	strtemp = ReadString(f)
-	version = strtemp
+	version = ReadString(f)
+	If CompareVersions(version, OldestSupportedVersion) < 0 Then RuntimeError "Save file version not supported"
 	
 	BlinkTimer = ReadFloat(f)
 	BlinkEffect = ReadFloat(f)	
@@ -1417,9 +1438,30 @@ Function LoadGameQuick(file$)
 	SoundTransmission = ReadByte(f)	
 	Contained106 = ReadByte(f)	
 	
-	For i = 0 To MAXACHIEVEMENTS-1
+	If CompareVersions(version, "1.3.12") >= 0 Then
+		temp = ReadByte(f)
+	Else
+		temp = 37
+	EndIf
+	For i = 0 To temp-1
 		Achievements(i)=ReadByte(f)
 	Next
+	If CompareVersions(version, "1.3.12") < 0 Then
+		Achievements(37)=Achievements(36)
+		Achievements(36)=Achievements(31)
+		Achievements(31)=Achievements(28)
+		Achievements(28)=Achievements(34)
+		Achievements(34)=Achievements(32)
+		Achievements(32)=Achievements(29)
+		Achievements(29)=Achievements(35)
+		Achievements(35)=Achievements(33)
+		Achievements(33)=Achievements(30)
+		Achievements(30)=Achievements(27)
+		For i = 27 To 6 Step -1
+			Achievements(i)=Achievements(i-1)
+		Next
+		Achievements(5)=False
+	EndIf
 	RefinedItems = ReadInt(f)
 	
 	MapWidth = ReadInt(f)
@@ -1547,7 +1589,7 @@ Function LoadGameQuick(file$)
 	room2gw_x = ReadFloat(f)
 	room2gw_z = ReadFloat(f)
 	
-	If version = CompatibleNumber Then
+	If CompareVersions(version, "1.3.11") >= 0 Then
 		I_Zone\Transition[0] = ReadByte(f)
 		I_Zone\Transition[1] = ReadByte(f)
 		I_Zone\HasCustomForest = ReadByte(f)
@@ -2043,7 +2085,7 @@ Function LoadSaveGames()
 		Local f% = ReadFile(SavePath + SaveGames(i - 1) + "\save.txt")
 		SaveGameTime(i - 1) = ReadString(f)
 		SaveGameDate(i - 1) = ReadString(f)
-		;Skip all data until the CompatibleVersion number
+		;Skip all data until the version number
 		ReadInt(f)
 		For j = 0 To 5
 			ReadFloat(f)

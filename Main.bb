@@ -42,8 +42,8 @@ Global UpdaterFont%
 Global Font1%, Font2%, Font3%, Font4%, Font5%
 Global ConsoleFont%
 
-Global VersionNumber$ = "1.3.11"
-Global CompatibleNumber$ = "1.3.11" ;Only change this if the version given isn't working with the current build version - ENDSHN
+Global VersionNumber$ = "1.3.12"
+Global OldestSupportedVersion$ = "1.3.10"
 
 Global MenuWhite%, MenuBlack%
 Global ButtonSFX% = LoadSound_Strict("SFX\Interact\Button.ogg")
@@ -10647,6 +10647,19 @@ Function UpdateInfect()
 	EndIf
 End Function
 
+Function CompareVersions%(v1$, v2$)
+	;Return -1 if v1 < v2
+	;Return 0 if v1 = v2
+	;Return 1 if v1 > v2
+	If v1 = v2 Then Return 0
+	While Int(v1) = Int(v2)
+		If Instr(v1, ".") Then v1 = Right(v1, Len(v1) - Instr(v1, ".")) Else v1 = ""
+		If Instr(v2, ".") Then v2 = Right(v2, Len(v2) - Instr(v2, ".")) Else v2 = ""
+		If v1 = "" And v2 = "" Then Return 0
+	Wend
+	If Int(v1) > Int(v2) Then Return 1 Else Return -1
+End Function
+
 ;--------------------------------------- math -------------------------------------------------------
 
 Function GenerateSeedNumber(seed$)
@@ -11766,7 +11779,6 @@ Function CatchErrors(location$)
 			errF = WriteFile(ErrorFile)
 			WriteLine errF,"An error occured in SCP - Containment Breach!"
 			WriteLine errF,"Version: "+VersionNumber
-			WriteLine errF,"Save compatible version: "+CompatibleNumber
 			WriteLine errF,"Date and time: "+CurrentDate()+" at "+CurrentTime()
 			WriteLine errF,"Total video memory (MB): "+TotalVidMem()/1024/1024
 			WriteLine errF,"Available video memory (MB): "+AvailVidMem()/1024/1024

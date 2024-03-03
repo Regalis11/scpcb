@@ -2711,6 +2711,7 @@ DrawLoading(90, True)
 
 Global FogTexture%, Fog%
 Global GasMaskTexture%, GasMaskOverlay%
+Global HazmatTexture%, HazmatOverlay%
 Global InfectTexture%, InfectOverlay%
 Global DarkTexture%, Dark%
 Global Collider%, Head%
@@ -4496,20 +4497,30 @@ Function MouseLook()
 		MoveMouse viewport_center_x, viewport_center_y
 	EndIf
 	
-	If WearingGasMask Or WearingHazmat Or Wearing1499 Then
+	If WearingGasMask Or Wearing1499 Then
 		If Wearing714 = False Then
-			If WearingGasMask = 2 Or Wearing1499 = 2 Or WearingHazmat = 2 Then
+			If WearingGasMask = 2 Or Wearing1499 = 2 Then
 				Stamina = Min(100, Stamina + (100.0-Stamina)*0.01*FPSfactor)
 			EndIf
 		EndIf
-		If WearingHazmat = 1 Then
-			Stamina = Min(60, Stamina)
-		EndIf
-		
 		ShowEntity(GasMaskOverlay)
 	Else
 		HideEntity(GasMaskOverlay)
 	End If
+	
+	If WearingHazmat Then
+		If WearingHazmat = 1 Then
+			Stamina = Min(60.0, Stamina)
+		EndIf
+		If Wearing714 = False Then
+			If WearingHazmat = 2 Then
+				Stamina = Min(100, Stamina + (100.0-Stamina)*0.01*FPSfactor)
+			EndIf
+		EndIf
+		ShowEntity(HazmatOverlay)
+	Else
+		HideEntity(HazmatOverlay)
+	EndIf
 	
 	If (Not WearingNightVision=0) Then
 		ShowEntity(NVOverlay)
@@ -7904,6 +7915,16 @@ Function LoadEntities()
 	EntityOrder GasMaskOverlay, -1003
 	MoveEntity(GasMaskOverlay, 0, 0, 1.0)
 	HideEntity(GasMaskOverlay)
+	
+	HazmatTexture = LoadTexture_Strict("GFX\HazmatOverlay.jpg", 1)
+	HazmatOverlay = CreateSprite(ark_blur_cam)
+	ScaleSprite(HazmatOverlay, 1.0, Float(GraphicHeight) / Float(GraphicWidth))
+	EntityTexture(HazmatOverlay, HazmatTexture)
+	EntityBlend(HazmatOverlay, 2)
+	EntityFX(HazmatOverlay, 1)
+	EntityOrder(HazmatOverlay, -1003)
+	MoveEntity(HazmatOverlay, 0, 0, 1.0)
+	HideEntity(HazmatOverlay)
 	
 	InfectTexture = LoadTexture_Strict("GFX\InfectOverlay.jpg", 1)
 	InfectOverlay = CreateSprite(ark_blur_cam)

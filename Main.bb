@@ -292,6 +292,7 @@ Global SCP1025state#[6]
 Global HeartBeatRate#, HeartBeatTimer#, HeartBeatVolume#
 
 Global WearingGasMask%, WearingHazmat%, WearingVest%, Wearing714%, WearingNightVision%
+Global RemoveHazmatTimer#, Remove714Timer#
 Global NVTimer#
 
 Global SuperMan%, SuperManTimer#
@@ -4706,7 +4707,7 @@ Function DrawGUI()
 		EndIf
 	EndIf
 	
-	If ClosestItem <> Null Then
+	If ClosestItem <> Null And KillTimer >= 0 Then
 		yawvalue# = -DeltaYaw(Camera, ClosestItem\collider)
 		If yawvalue > 90 And yawvalue <= 180 Then yawvalue = 90
 		If yawvalue > 180 And yawvalue < 270 Then yawvalue = 270
@@ -8744,6 +8745,8 @@ Function NullGame(playbuttonsfx%=True)
 		CameraFogFar = StoredCameraFogFar
 		WearingNightVision = 0
 	EndIf
+	RemoveHazmatTimer = 0.0
+	Remove714Timer = 0.0
 	I_427\Using = 0
 	I_427\Timer = 0.0
 	

@@ -1308,6 +1308,9 @@ Function LoadGameQuick(file$)
 	LightFlash = 0
 	BlurTimer = 0
 	
+	RemoveHazmatTimer = 0.0
+	Remove714Timer = 0.0
+	
 	KillTimer = 0
 	FallTimer = 0
 	MenuOpen = False

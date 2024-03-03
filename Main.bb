@@ -3128,15 +3128,13 @@ Repeat
 		
 		If LightFlash > 0 Then
 			ShowEntity Light
+			EntityColor Light,255,255,255
 			EntityAlpha(Light, Max(Min(LightFlash + Rnd(-0.2, 0.2), 1.0), 0.0))
 			LightFlash = Max(LightFlash - (FPSfactor / 70.0), 0)
 		Else
 			HideEntity Light
 			;EntityAlpha(Light, LightFlash)
 		EndIf
-		
-		EntityColor Light,255,255,255
-		
 		;[End block]
 		
 		If KeyHit(KEY_INV) And VomitTimer >= 0 Then
@@ -5681,7 +5679,6 @@ Function DrawGUI()
 					;[Block]
 					If Not (Wearing714 = 1) Then
 						If PlayerRoom\RoomTemplate\Name <> "room1123" Then
-							ShowEntity Light
 							LightFlash = 7
 							PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))		
 							DeathMSG = "Subject D-9341 was shot dead after attempting to attack a member of Nine-Tailed Fox. Surveillance tapes show that the subject had been "
@@ -5694,7 +5691,6 @@ Function DrawGUI()
 						For e.Events = Each Events
 							If e\EventName = "room1123" Then 
 								If e\EventState = 0 Then
-									ShowEntity Light
 									LightFlash = 3
 									PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))		
 								EndIf

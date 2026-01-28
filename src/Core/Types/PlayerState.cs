@@ -8,6 +8,12 @@ namespace SCPContainmentBreach.Core.Types;
 
 public class PlayerState
 {
+    public float X;
+    public float Y;
+    public float Z;
+    public float Yaw;
+    public float Pitch;
+
     public int Collider;
     public int Head;
 

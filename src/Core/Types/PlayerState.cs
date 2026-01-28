@@ -35,6 +35,7 @@ public class PlayerState
     public float EyeStuck;
     public float BlinkEffect = 1.0f;
     public float BlinkEffectTimer;
+    public float BlurTimer;
 
     public float Stamina;
     public float StaminaEffect = 1.0f;

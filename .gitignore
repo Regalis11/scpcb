@@ -13,3 +13,31 @@ error_log_*
 updates/
 Thumbs.db
 *.SI
+
+# C# / .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.exe
+!SCP*.exe
+!*.Conversion.exe
+!LightMapPNG.exe
+*.nupkg
+.vs/
+*.csproj.user
+launchSettings.json
+crash.log
+
+# IDE
+.idea/
+*.swp
+*~
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets

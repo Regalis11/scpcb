@@ -54,6 +54,10 @@ public class Items
 {
     public string name = "";
 
+    public float x;
+    public float y;
+    public float z;
+
     public int collider;
     public int model;
 

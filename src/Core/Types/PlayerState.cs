@@ -1,31 +1,28 @@
+/*
+ * Source: Main.bb
+ * Lines: 278-365, 1534, 2719
+ * Type: Global variables (Player)
+ */
+
 namespace SCPContainmentBreach.Core.Types;
 
-/// <summary>
-/// Player state data - direct port from Main.bb Global variables.
-/// Original: Main.bb lines 278-365, 1534, 2719
-/// </summary>
 public class PlayerState
 {
-    // Entity references (Main.bb:2719)
-    public int Collider;  // Player collision pivot
-    public int Head;      // Head pivot for camera
+    public int Collider;
+    public int Head;
 
-    // Death/Kill state (Main.bb:278)
     public float KillTimer;
     public int KillAnim;
     public float FallTimer;
     public float DeathTimer;
 
-    // Mental state (Main.bb:279-280)
     public float Sanity;
     public float ForceMove;
     public float ForceAngle;
     public int RestoreSanity;
 
-    // Playability (Main.bb:282)
-    public int Playable = 1; // True
+    public int Playable = 1;
 
-    // Blink system (Main.bb:284-285)
     public float BLINKFREQ;
     public float BlinkTimer;
     public float EyeIrritation;
@@ -33,47 +30,38 @@ public class PlayerState
     public float BlinkEffect = 1.0f;
     public float BlinkEffectTimer;
 
-    // Stamina system (Main.bb:287)
     public float Stamina;
     public float StaminaEffect = 1.0f;
     public float StaminaEffectTimer;
 
-    // Effects (Main.bb:289)
     public float CameraShakeTimer;
     public int Vomit;
     public float VomitTimer;
     public int Regurgitate;
 
-    // SCP-1025 disease states (Main.bb:291)
-    public float[] SCP1025state = new float[7];
+    public float[] SCP1025state = new float[7]; // Disease flags
 
-    // Heartbeat (Main.bb:293)
     public float HeartBeatRate;
     public float HeartBeatTimer;
     public float HeartBeatVolume;
 
-    // Equipment worn (Main.bb:295-296)
     public int WearingGasMask;
     public int WearingHazmat;
     public int WearingVest;
-    public int Wearing714;
+    public int Wearing714; // SCP-714 ring
     public int WearingNightVision;
     public float NVTimer;
 
-    // Superman mode / cheat (Main.bb:298)
-    public int SuperMan;
+    public int SuperMan; // Cheat flag
     public float SuperManTimer;
 
-    // Health/Damage (Main.bb:300)
     public float Injuries;
     public float Bloodloss;
     public float Infect;
     public float HealTimer;
 
-    // SCP-914 refined items count (Main.bb:302)
-    public int RefinedItems;
+    public int RefinedItems; // SCP-914 counter
 
-    // Movement (Main.bb:307-309)
     public float DropSpeed;
     public float HeadDropSpeed;
     public float CurrSpeed;
@@ -82,44 +70,37 @@ public class PlayerState
     public int Crouch;
     public float CrouchState;
 
-    // Location (Main.bb:311)
     public int PlayerZone;
     public Rooms? PlayerRoom;
 
-    // Interaction (Main.bb:313)
     public int GrabbedEntity;
 
-    // Cheats (Main.bb:318)
     public int GodMode;
     public int NoClip;
     public float NoClipSpeed = 2.0f;
 
-    // SCP-895 coffin distance (Main.bb:320)
-    public float CoffinDistance = 100.0f;
+    public float CoffinDistance = 100.0f; // SCP-895
 
-    // Audio (Main.bb:322)
     public float PlayerSoundVolume;
 
-    // Camera (Main.bb:1534)
     public int Camera;
     public float CameraShake;
     public float CurrCameraZoom;
 
-    // Night vision (Main.bb:364-365)
     public int NVBlink;
     public int IsNVGBlinking;
 
-    // Infinite stamina cheat (Main.bb:363)
     public int InfiniteStamina;
 }
 
-/// <summary>
-/// Input state - key bindings and mouse state.
-/// Original: Main.bb lines 257-269, 315-316
-/// </summary>
+/*
+ * Source: Main.bb
+ * Lines: 250-269, 315-316
+ * Type: Global variables (Input)
+ */
+
 public class InputState
 {
-    // Key bindings (Main.bb:257-267)
     public int KEY_RIGHT;
     public int KEY_LEFT;
     public int KEY_UP;
@@ -131,11 +112,9 @@ public class InputState
     public int KEY_SAVE;
     public int KEY_CONSOLE;
 
-    // Mouse settings (Main.bb:269, 315)
     public float MouseSmooth = 1.0f;
     public int InvertMouse;
 
-    // Mouse state (Main.bb:316)
     public int MouseHit1;
     public int MouseDown1;
     public int MouseHit2;
@@ -143,7 +122,6 @@ public class InputState
     public int LastMouseHit1;
     public int MouseUp1;
 
-    // Mouselook (Main.bb:250-255)
     public float mouselook_x_inc = 0.3f;
     public float mouselook_y_inc = 0.3f;
     public int mouse_left_limit = 250;
@@ -154,10 +132,12 @@ public class InputState
     public float mouse_y_speed_1;
 }
 
-/// <summary>
-/// UI/Menu state.
-/// Original: Main.bb lines 334-343
-/// </summary>
+/*
+ * Source: Main.bb
+ * Lines: 334-343
+ * Type: Global variables (Menu/UI)
+ */
+
 public class MenuState
 {
     public int MainMenuOpen;
@@ -166,31 +146,29 @@ public class MenuState
     public int InvOpen;
     public Items? OtherOpen;
 
-    // Ending (Main.bb:337)
     public string SelectedEnding = "";
     public int EndingScreen;
     public float EndingTimer;
 
-    // Messages (Main.bb:339)
     public float MsgTimer;
     public string Msg = "";
     public string DeathMSG = "";
 
-    // Keypad (Main.bb:341)
     public int AccessCode;
     public string KeypadInput = "";
     public float KeypadTimer;
     public string KeypadMSG = "";
 
-    // UI icons (Main.bb:343)
     public int DrawHandIcon;
     public int[] DrawArrowIcon = new int[5];
 }
 
-/// <summary>
-/// Game timing state.
-/// Original: Main.bb lines 189, 359
-/// </summary>
+/*
+ * Source: Main.bb
+ * Lines: 189, 359
+ * Type: Global variables (Timing)
+ */
+
 public class TimeState
 {
     public int CurTime;
@@ -202,23 +180,23 @@ public class TimeState
     public int PlayTime;
 }
 
-/// <summary>
-/// Graphics/Visual effects state.
-/// Original: Main.bb lines 325-329, 1527-1529
-/// </summary>
+/*
+ * Source: Main.bb
+ * Lines: 325-329, 1527-1529
+ * Type: Global variables (Visual)
+ */
+
 public class VisualState
 {
     public float Shake;
     public float ExplosionTimer;
     public int ExplosionSFX;
-    public int LightsOn = 1; // True
+    public int LightsOn = 1;
     public int SoundTransmission;
 
-    // Blur (Main.bb:1527)
     public float BlurVolume;
     public float BlurTimer;
 
-    // Light effects (Main.bb:1529)
     public float LightBlink;
     public float LightFlash;
 }

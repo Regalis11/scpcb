@@ -1,9 +1,10 @@
-namespace SCPContainmentBreach.Core.Types;
+/*
+ * Source: MapSystem.bb
+ * Lines: 5818-5836
+ * Type: TempWayPoints
+ */
 
-// ============================================================================
-// WAYPOINTS - Pathfinding
-// Original: MapSystem.bb lines 5818-5836
-// ============================================================================
+namespace SCPContainmentBreach.Core.Types;
 
 public class TempWayPoints
 {
@@ -11,30 +12,35 @@ public class TempWayPoints
     public RoomTemplates? roomtemplate;
 }
 
+/*
+ * Source: MapSystem.bb
+ * Lines: 5818-5836
+ * Type: WayPoints
+ */
+
 public class WayPoints
 {
-    public int obj;  // Pivot entity
+    public int obj;
     public Doors? door;
     public Rooms? room;
     public int state;
 
-    // Connected waypoints
     public WayPoints?[] connected = new WayPoints?[6];
     public float[] dist = new float[6];
 
-    // A* pathfinding costs
+    // A* costs
     public float Fcost;
     public float Gcost;
     public float Hcost;
 
-    // Parent for path reconstruction
     public WayPoints? parent;
 }
 
-// ============================================================================
-// SECURITY CAMERAS
-// Original: MapSystem.bb lines 6284-6308
-// ============================================================================
+/*
+ * Source: MapSystem.bb
+ * Lines: 6284-6308
+ * Type: SecurityCams
+ */
 
 public class SecurityCams
 {
@@ -44,7 +50,6 @@ public class SecurityCams
     public int BaseObj;
     public int CameraObj;
 
-    // Screen
     public int ScrObj;
     public float ScrWidth;
     public float ScrHeight;
@@ -53,42 +58,35 @@ public class SecurityCams
     public int ScrTexture;
     public int ScrOverlay;
 
-    // Rotation
     public float angle;
     public float turn;
     public float CurrAngle;
 
-    // State
     public float State;
     public int PlayerState;
 
-    // Sound
     public int soundCHN;
 
-    // Visibility
     public int InSight;
 
-    // Rendering
     public float RenderInterval;
 
-    // Room reference
     public Rooms? room;
 
-    // Behavior
     public int FollowPlayer;
-    public int CoffinEffect;  // SCP-895
+    public int CoffinEffect; // SCP-895
     public int AllowSaving;
 
-    // Angle limits
     public float MinAngle;
     public float MaxAngle;
     public int dir;
 }
 
-// ============================================================================
-// SCREENS (documents/images)
-// Original: MapSystem.bb lines 6222-6227
-// ============================================================================
+/*
+ * Source: MapSystem.bb
+ * Lines: 6222-6227
+ * Type: Screens
+ */
 
 public class Screens
 {
@@ -98,6 +96,12 @@ public class Screens
     public Rooms? room;
 }
 
+/*
+ * Source: MapSystem.bb
+ * Lines: 6222-6227
+ * Type: TempScreens
+ */
+
 public class TempScreens
 {
     public string imgpath = "";
@@ -105,10 +109,11 @@ public class TempScreens
     public RoomTemplates? roomtemplate;
 }
 
-// ============================================================================
-// PROPS (decorations)
-// Original: MapSystem.bb lines 7002-7005
-// ============================================================================
+/*
+ * Source: MapSystem.bb
+ * Lines: 7002-7005
+ * Type: Props
+ */
 
 public class Props
 {
@@ -116,10 +121,11 @@ public class Props
     public int obj;
 }
 
-// ============================================================================
-// LIGHT TEMPLATES
-// Original: MapSystem.bb lines 5790-5799
-// ============================================================================
+/*
+ * Source: MapSystem.bb
+ * Lines: 5790-5799
+ * Type: LightTemplates
+ */
 
 public class LightTemplates
 {
@@ -129,40 +135,43 @@ public class LightTemplates
     public float range;
     public int r, g, b;
 
-    // Spotlight
     public float pitch;
     public float yaw;
     public int innerconeangle;
     public float outerconeangle;
 }
 
-// ============================================================================
-// PARTICLES
-// Original: Particles.bb lines 5-15, 85-101, 198-207
-// ============================================================================
+/*
+ * Source: Particles.bb
+ * Lines: 5-15
+ * Type: Particles
+ */
 
 public class Particles
 {
-    public int obj;   // Sprite
-    public int pvt;   // Pivot
+    public int obj;
+    public int pvt;
 
     public int image;
 
-    // Color
     public float R, G, B, A;
     public float size;
 
-    // Movement
     public float speed;
     public float yspeed;
     public float gravity;
 
-    // Animation
     public float Rchange, Gchange, Bchange, Achange;
     public float SizeChange;
 
     public float lifetime;
 }
+
+/*
+ * Source: Particles.bb
+ * Lines: 85-101
+ * Type: Emitters
+ */
 
 public class Emitters
 {
@@ -186,6 +195,12 @@ public class Emitters
     public float Achange;
 }
 
+/*
+ * Source: Particles.bb
+ * Lines: 198-207
+ * Type: DevilEmitters
+ */
+
 public class DevilEmitters
 {
     public int obj;
@@ -198,10 +213,11 @@ public class DevilEmitters
     public int isDeconGas;
 }
 
-// ============================================================================
-// DIFFICULTY
-// Original: Difficulty.bb lines 1-14
-// ============================================================================
+/*
+ * Source: Difficulty.bb
+ * Lines: 1-14
+ * Type: Const (Difficulty)
+ */
 
 public static class DifficultyConstants
 {
@@ -219,6 +235,12 @@ public static class DifficultyConstants
     public const int HARD = 2;
 }
 
+/*
+ * Source: Difficulty.bb
+ * Lines: 1-14
+ * Type: Difficulty
+ */
+
 public class Difficulty
 {
     public string name = "";
@@ -228,7 +250,6 @@ public class Difficulty
     public int saveType;
     public int otherFactors;
 
-    // Color
     public int r;
     public int g;
     public int b;
@@ -236,23 +257,24 @@ public class Difficulty
     public int customizable;
 }
 
-// ============================================================================
-// MATERIALS (textures)
-// Original: MapSystem.bb line 3
-// ============================================================================
+/*
+ * Source: MapSystem.bb
+ * Lines: 3
+ * Type: Materials
+ */
 
 public class Materials
 {
     public string name = "";
-    public int diff;   // Diffuse texture
-    public int bump;   // Normal map
-    // Placeholder - need full definition
+    public int diff;
+    public int bump;
 }
 
-// ============================================================================
-// CONSOLE MESSAGE
-// Original: Main.bb lines 378-382
-// ============================================================================
+/*
+ * Source: Main.bb
+ * Lines: 378-382
+ * Type: ConsoleMsg
+ */
 
 public class ConsoleMsg
 {
@@ -261,10 +283,11 @@ public class ConsoleMsg
     public int r, g, b;
 }
 
-// ============================================================================
-// DECALS
-// Original: Main.bb line 10756
-// ============================================================================
+/*
+ * Source: Main.bb
+ * Lines: 10756
+ * Type: Decals
+ */
 
 public class Decals
 {
@@ -274,38 +297,38 @@ public class Decals
     public float blendmode;
     public float timer;
     public int id;
-    // Placeholder - need full definition
 }
 
-// ============================================================================
-// SCP-427 state
-// Original: Main.bb line 2787
-// ============================================================================
+/*
+ * Source: Main.bb
+ * Lines: 2787
+ * Type: SCP427
+ */
 
 public class SCP427
 {
     public float Timer;
     public int Using;
-    // Placeholder - need full definition
 }
 
-// ============================================================================
-// MAP ZONES
-// Original: Main.bb line 2796
-// ============================================================================
+/*
+ * Source: Main.bb
+ * Lines: 2796
+ * Type: MapZones
+ */
 
 public class MapZones
 {
     public int[] Transition = new int[2];
     public int HasCustomForest;
     public int HasCustomMT;
-    // Placeholder - need full definition
 }
 
-// ============================================================================
-// LOADING SCREENS
-// Original: Menu.bb line 1337
-// ============================================================================
+/*
+ * Source: Menu.bb
+ * Lines: 1337
+ * Type: LoadingScreens
+ */
 
 public class LoadingScreens
 {
@@ -313,5 +336,4 @@ public class LoadingScreens
     public string imgpath = "";
     public string title = "";
     public string txt = "";
-    // Placeholder - need full definition
 }

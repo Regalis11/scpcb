@@ -384,4 +384,32 @@ public static class InventorySystem
     {
         return min + (float)Random.Shared.NextDouble() * (max - min);
     }
+
+    /// <summary>
+    /// Main.bb lines 5371-5374: Move item between slots
+    /// For z% = 0 To MaxItemAmount - 1 / If Inventory(z) = SelectedItem Then Inventory(z) = Null
+    /// Inventory(n) = SelectedItem
+    /// </summary>
+    public static void MoveToSlot(Items item, int targetSlot)
+    {
+        if (targetSlot < 0 || targetSlot >= MaxItemAmount) return;
+        if (Inventory[targetSlot] != null) return;
+
+        int sourceSlot = FindItemSlot(item);
+        if (sourceSlot < 0) return;
+
+        Inventory[sourceSlot] = null;
+        Inventory[targetSlot] = item;
+    }
+
+    /// <summary>
+    /// Swap two inventory slots
+    /// </summary>
+    public static void SwapSlots(int slotA, int slotB)
+    {
+        if (slotA < 0 || slotA >= MaxItemAmount) return;
+        if (slotB < 0 || slotB >= MaxItemAmount) return;
+
+        (Inventory[slotA], Inventory[slotB]) = (Inventory[slotB], Inventory[slotA]);
+    }
 }

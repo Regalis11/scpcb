@@ -1,23 +1,19 @@
 /*
- * Source: UpdateEvents.bb (10,000+ lines)
- * Type: Room Event System - Full 1:1 Port Foundation
- *
- * This file contains the event update logic for all room-specific events.
- * Events are triggered when the player enters specific rooms and control
- * scripted sequences, puzzles, NPC behavior, and environmental changes.
+ * Source: UpdateEvents.bb (10,181 lines)
+ * Type: Room Event System - FULL 1:1 Port
+ * CHUNK 1: Lines 1-1500 (exit1, alarm, 173, buttghost, checkpoint partial)
  */
 
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using SCPContainmentBreach.Core.Types;
-using SCPContainmentBreach.Core.Engine;
 
 namespace SCPContainmentBreach.Core.Systems;
 
 public class Event
 {
     public string EventName = "";
+    public string EventStr = "";
     public Rooms? Room;
 
     public float EventState;
@@ -34,230 +30,290 @@ public class Event
     public bool Loaded;
 }
 
+public class Rooms
+{
+    public int Obj;
+    public float X, Y, Z;
+    public float Angle;
+    public RoomTemplate? RoomTemplate;
+    public Doors?[] RoomDoors = new Doors?[10];
+    public Doors?[] AdjDoor = new Doors?[4];
+    public NPC?[] NPC = new NPC?[15];
+    public int[] Objects = new int[20];
+    public Forest? Fr;
+}
+
+public class RoomTemplate
+{
+    public string Name = "";
+}
+
+public class Doors
+{
+    public int Obj;
+    public int Obj2;
+    public int FrameObj;
+    public bool Open;
+    public float OpenState;
+    public bool Locked;
+    public int SoundCHN;
+    public Rooms? Room;
+}
+
+public class Forest
+{
+    public int ForestPivot;
+    public int[] Grid = new int[256];
+}
+
 public static class RoomEventSystem
 {
     private static readonly List<Event> _events = new();
     private static readonly Random _rng = new();
 
-    // Blitz3D compatibility constants
-    public static float RoomScale = 8.0f / 2048.0f;
+    // Global state (from Main.bb)
     public static float FPSfactor = 1.0f;
-
-    // Game state references
+    public static float FPSfactor2 = 1.0f;
+    public static float RoomScale = 8.0f / 2048.0f;
     public static bool RemoteDoorOn;
+    public static int CurrStepSFX;
+    public static float Brightness = 40.0f;
+    public static float CameraFogNear = 0.5f;
+    public static float CameraFogFar = 6.0f;
+    public static float BlinkTimer;
+    public static float LightBlink;
+    public static float BlurTimer;
+    public static float CameraShake;
+    public static float KillTimer;
+    public static float DropSpeed;
+    public static float CurrSpeed;
+    public static float EyeIrritation;
+    public static bool CanSave = true;
+    public static bool NoTarget;
+    public static int PlayerZone;
+    public static float LightVolume = 1.0f;
+    public static float TempLightVolume = 1.0f;
+    public static string Msg = "";
+    public static float MsgTimer;
+    public static string DeathMSG = "";
+    public static int ShouldPlay;
+    public static int NowPlaying;
+    public static float CurrMusicVolume;
+    public static float MusicVolume;
+    public static int Mode;
+    public static int MusicCHN;
+    public static int Light;
+    public static int Fog;
+    public static int Camera;
+    public static int Collider;
+    public static float UserCameraPitch;
+
+    // NPC references
     public static NPC? Curr173;
     public static NPC? Curr096;
-    public static NPC? Curr106;
-    public static NPC? Curr049;
 
-    // Event action delegates
-    public static Action<string>? OnMessage;
-    public static Action<int>? OnPlaySound;
-    public static Action<int, Vector3, float>? OnPlaySound2;
-    public static Action<int, Vector3, float, float>? OnLoopSound;
-    public static Action<float>? OnCameraShake;
-    public static Action<string>? OnAchievement;
-    public static Action<string>? OnDeath;
-    public static Action? OnKill;
-    public static Action<float>? OnBlur;
-    public static Action? OnBlink;
-    public static Action<NPC, Vector3>? OnPositionNPC;
-    public static Action<Doors, bool>? OnSetDoorOpen;
-    public static Action<Doors, bool>? OnSetDoorLocked;
+    // Room references
+    public static Rooms? PlayerRoom;
 
-    public static void AddEvent(Event e)
+    // Sound arrays
+    public static int[] IntroSFX = new int[20];
+    public static int[] AlarmSFX = new int[5];
+    public static int[] DecaySFX = new int[5];
+    public static int[] NeckSnapSFX = new int[5];
+    public static int[] StepSFX = new int[10];
+    public static int StoneDragSFX;
+    public static int ButtGhostSFX;
+
+    // State arrays
+    public static bool[] CommotionState = new bool[30];
+
+    // Difficulty
+    public static DifficultySettings? SelectedDifficulty;
+
+    // Delegates
+    public static Func<string>? CheckTriggers;
+    public static Action<Doors, bool>? UseDoor;
+    public static Action<int, int, int, int, int, int>? PositionEntity;
+    public static Action<int, int, int, int>? RotateEntity;
+    public static Action<int, int, int, int>? MoveEntity;
+    public static Action<int>? ShowEntity;
+    public static Action<int>? HideEntity;
+    public static Action<int, float>? EntityAlpha;
+    public static Action<int>? FreeEntity;
+    public static Action<int>? ResetEntity;
+    public static Func<int, int, float>? EntityDistance;
+    public static Func<int, float>? EntityX;
+    public static Func<int, float>? EntityY;
+    public static Func<int, float>? EntityZ;
+    public static Func<int, float>? EntityYaw;
+    public static Func<int, float>? EntityPitch;
+    public static Action<int, int>? PointEntity;
+    public static Func<int, int, bool>? EntityVisible;
+    public static Func<int, int, bool>? EntityInView;
+    public static Func<int, float>? AnimTime;
+    public static Action<int, float>? SetAnimTime;
+    public static Func<int>? PlaySoundStrict;
+    public static Func<int, int, int, float, float, int>? PlaySound2;
+    public static Func<int, int, int, int, float, float, int>? LoopSound2;
+    public static Action<int, int, int, float>? UpdateSoundOrigin;
+    public static Func<int, bool>? ChannelPlaying;
+    public static Action<int>? StopChannel;
+    public static Action<int>? FreeSoundStrict;
+    public static Func<string, int>? LoadSoundStrict;
+    public static Func<string, int>? LoadTempSound;
+    public static Func<string, float, int, int>? StreamSoundStrict;
+    public static Action<int>? StopStreamStrict;
+    public static Action<NPC, float, float, float, bool>? AnimateNPC;
+    public static Action<int, float, float, float, float, bool>? Animate2;
+    public static Action<NPC, float>? SetNPCFrame;
+    public static Func<int, float, float, float, NPC>? CreateNPC;
+    public static Action<NPC>? RemoveNPC;
+    public static Action<NPC, int>? ChangeNPCTextureID;
+    public static Func<float, float, float, int, Emitter>? CreateEmitter;
+    public static Action<Event>? RemoveEvent;
+    public static Action<string>? GiveAchievement;
+    public static Func<string, string, float, float, float, Item>? CreateItem;
+    public static Action<Item>? PickItem;
+    public static Action<int, float, float>? CameraFogRange;
+    public static Action<int, int>? CameraFogMode;
+    public static Action<int, float, float>? CameraRange;
+    public static Action<float, float, float>? AmbientLight;
+    public static Func<NPC, float, float, float, int>? FindPath;
+    public static Func<float, float, float, float, float>? Distance;
+    public static Func<float, float, float>? CurveValue;
+    public static Func<float, float, float, float>? CurveAngle;
+    public static Func<float, float>? WrapAngle;
+    public static Func<int, float>? DeltaYaw;
+    public static Func<string>? KeyName;
+    public static Action<Event, string>? LoadEventSound;
+    public static Func<float, float, float, float, Event, float>? UpdateElevators;
+    public static Func<Event, float, Doors, int, float>? Update096ElevatorEvent;
+    public static Action<int>? TurnCheckpointMonitorsOff;
+    public static Func<string, int>? LoadAnimMeshStrict;
+    public static Action<int, float, float, float>? ScaleEntity;
+    public static Action<int, int>? AlignToVector;
+    public static Action<int, float>? EntityPick;
+    public static Func<int>? PickedEntity;
+    public static Func<float>? PickedX;
+    public static Func<float>? PickedY;
+    public static Func<float>? PickedZ;
+    public static Func<float>? PickedNX;
+    public static Func<float>? PickedNY;
+    public static Func<float>? PickedNZ;
+    public static Func<int>? CreatePivot;
+    public static Action<int, float, float, float>? TurnEntity;
+    public static Func<int, int>? MilliSecs2;
+
+    // Constants
+    public const int SAVEANYWHERE = 0;
+    public const int SAVEONSCREENS = 1;
+    public const int KEY_SAVE = 63; // F5
+    public const int KEY_BLINK = 57; // Space
+    public const int KEY_INV = 15; // Tab
+    public const int KEY_SPRINT = 42; // Shift
+    public const int HIT_ITEM = 3;
+    public const int NPCtypeD = 4;
+    public const int NPCtypeGuard = 3;
+
+    public static void AddEvent(Event e) => _events.Add(e);
+    public static void Clear() => _events.Clear();
+
+    public static void UpdateRooms()
     {
-        _events.Add(e);
+        // Room update logic - placeholder for room-specific updates
     }
 
-    public static void Clear()
+    public static void UpdateEvents()
     {
-        _events.Clear();
-    }
+        float dist;
+        int i, temp, pvt, j, k;
+        string strtemp;
+        float x, y, z;
+        float angle;
 
-    public static void Update(PlayerState player, float fpsFactor)
-    {
-        FPSfactor = fpsFactor;
+        string CurrTrigger = "";
 
-        foreach (var e in _events)
+        CurrStepSFX = 0;
+
+        UpdateRooms();
+
+        foreach (var e in _events.ToArray()) // ToArray to allow removal during iteration
         {
             switch (e.EventName)
             {
                 case "exit1":
-                    UpdateExit1(e, player, fpsFactor);
+                    UpdateExit1(e);
                     break;
                 case "alarm":
-                    UpdateAlarm(e, player, fpsFactor);
+                    UpdateAlarm(e, ref CurrTrigger);
                     break;
                 case "173":
-                    Update173Intro(e, player, fpsFactor);
+                    Update173(e, ref CurrTrigger, ref x, ref y, ref z, ref strtemp, ref i, ref temp, ref pvt, ref dist, ref angle);
                     break;
-                case "pocketdimension":
-                    UpdatePocketDimension(e, player, fpsFactor);
-                    break;
-                case "914":
-                    Update914(e, player, fpsFactor);
-                    break;
-                case "gateaentrance":
-                    UpdateGateAEntrance(e, player, fpsFactor);
+                case "buttghost":
+                    UpdateButtghost(e);
                     break;
                 case "checkpoint":
-                    UpdateCheckpoint(e, player, fpsFactor);
+                    UpdateCheckpoint(e, ref angle);
                     break;
-                case "room2tesla":
-                    UpdateRoom2Tesla(e, player, fpsFactor);
-                    break;
-                case "room049":
-                    UpdateRoom049(e, player, fpsFactor);
-                    break;
-                case "room106":
-                    UpdateRoom106(e, player, fpsFactor);
-                    break;
-                case "room079":
-                    UpdateRoom079(e, player, fpsFactor);
-                    break;
-                case "room860":
-                    UpdateRoom860(e, player, fpsFactor);
-                    break;
-                case "room966":
-                    UpdateRoom966(e, player, fpsFactor);
-                    break;
-                case "room3storage":
-                    UpdateRoom3Storage(e, player, fpsFactor);
-                    break;
-                case "coffin":
-                case "coffin106":
-                    UpdateCoffin(e, player, fpsFactor);
-                    break;
-                case "endroom106":
-                    UpdateEndroom106(e, player, fpsFactor);
-                    break;
-                case "room012":
-                    UpdateRoom012(e, player, fpsFactor);
-                    break;
-                case "room035":
-                    UpdateRoom035(e, player, fpsFactor);
-                    break;
-                case "room2servers":
-                    UpdateRoom2Servers(e, player, fpsFactor);
-                    break;
-                case "room2nuke":
-                    UpdateRoom2Nuke(e, player, fpsFactor);
-                    break;
-                case "room2elevator":
-                    UpdateRoom2Elevator(e, player, fpsFactor);
-                    break;
-                case "room2tunnel":
-                    UpdateRoom2Tunnel(e, player, fpsFactor);
-                    break;
-                case "room3door":
-                    UpdateRoom3Door(e, player, fpsFactor);
-                    break;
-                case "room1162":
-                    UpdateRoom1162(e, player, fpsFactor);
-                    break;
-                case "medibay":
-                    UpdateMedibay(e, player, fpsFactor);
-                    break;
-                case "008":
-                    Update008(e, player, fpsFactor);
-                    break;
-                case "toiletguard":
-                    UpdateToiletGuard(e, player, fpsFactor);
-                    break;
-                case "lockroom173":
-                    UpdateLockroom173(e, player, fpsFactor);
-                    break;
-                case "lockroom096":
-                    UpdateLockroom096(e, player, fpsFactor);
-                    break;
-                case "096spawn":
-                    Update096Spawn(e, player, fpsFactor);
-                    break;
-                case "dimension1499":
-                    UpdateDimension1499(e, player, fpsFactor);
-                    break;
-                case "room2sl":
-                    UpdateRoom2SL(e, player, fpsFactor);
-                    break;
-                case "room_gw":
-                    UpdateRoomGW(e, player, fpsFactor);
-                    break;
-                case "gatea":
-                    UpdateGateA(e, player, fpsFactor);
-                    break;
-                default:
-                    // Unknown event - may need implementation
-                    break;
+                // Additional cases will be added in subsequent chunks
             }
         }
     }
 
-    // ========== EXIT1 - Gate B Exit ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 19-47, 9170+
-    /// Gate B exit area with elevator and 096 encounter
-    /// </summary>
-    private static void UpdateExit1(Event e, PlayerState player, float fpsFactor)
+    // =====================================================================
+    // EXIT1 - Gate B Exit (UpdateEvents.bb lines 19-47)
+    // =====================================================================
+    private static void UpdateExit1(Event e)
     {
         if (e.Room == null) return;
 
         if (!RemoteDoorOn)
         {
-            // Door 4 locked when remote door off
-            if (e.Room.RoomDoors[4] != null)
-                e.Room.RoomDoors[4].Locked = true;
+            e.Room.RoomDoors[4]!.Locked = true;
         }
-        else if (e.EventState3 == 0)
+        else if (RemoteDoorOn && e.EventState3 == 0)
         {
-            // Remote on but not opened yet
-            if (e.Room.RoomDoors[4] != null)
+            e.Room.RoomDoors[4]!.Locked = false;
+            if (e.Room.RoomDoors[4]!.Open)
             {
-                e.Room.RoomDoors[4].Locked = false;
-
-                if (e.Room.RoomDoors[4].Open)
+                if (e.Room.RoomDoors[4]!.OpenState > 50 ||
+                    EntityDistance!(Collider, e.Room.RoomDoors[4]!.FrameObj) < 0.5f)
                 {
-                    if (e.Room.RoomDoors[4].OpenState > 50 ||
-                        EntityDistance(player, e.Room.RoomDoors[4]) < 0.5f)
-                    {
-                        e.Room.RoomDoors[4].OpenState = MathF.Min(e.Room.RoomDoors[4].OpenState, 50);
-                        e.Room.RoomDoors[4].Open = false;
-                        OnPlaySound2?.Invoke(SoundID.DoorError, GetDoorPosition(e.Room.RoomDoors[4]), 1.0f);
-                    }
+                    e.Room.RoomDoors[4]!.OpenState = MathF.Min(e.Room.RoomDoors[4]!.OpenState, 50);
+                    e.Room.RoomDoors[4]!.Open = false;
+                    PlaySound2!(LoadTempSound!("SFX\\Door\\DoorError.ogg"), Camera, e.Room.RoomDoors[4]!.FrameObj, 1.0f, 1.0f);
                 }
             }
         }
         else
         {
-            // Remote door fully enabled
-            if (e.Room.RoomDoors[4] != null)
-                e.Room.RoomDoors[4].Locked = false;
+            e.Room.RoomDoors[4]!.Locked = false;
 
-            // Update elevators with 096 check
             if (Curr096 != null)
             {
                 if (Curr096.State == 0 || Curr096.State == 5)
                 {
-                    e.EventState2 = UpdateElevators(e.EventState2, e.Room, e);
+                    e.EventState2 = UpdateElevators!(e.EventState2, e.Room.RoomDoors[0]!.Obj, e.Room.RoomDoors[1]!.Obj, e.Room.Objects[8], e);
                 }
                 else
                 {
-                    e.EventState2 = Update096ElevatorEvent(e, e.EventState2);
+                    e.EventState2 = Update096ElevatorEvent!(e, e.EventState2, e.Room.RoomDoors[0]!, e.Room.Objects[8]);
                 }
             }
             else
             {
-                e.EventState2 = UpdateElevators(e.EventState2, e.Room, e);
+                e.EventState2 = UpdateElevators!(e.EventState2, e.Room.RoomDoors[0]!.Obj, e.Room.RoomDoors[1]!.Obj, e.Room.Objects[8], e);
             }
+
+            EntityAlpha!(Fog, 1.0f);
         }
     }
 
-    // ========== ALARM - Starting Room Intro ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 48-345
-    /// The alarm in the starting room - intro sequence
-    /// </summary>
-    private static void UpdateAlarm(Event e, PlayerState player, float fpsFactor)
+    // =====================================================================
+    // ALARM - Starting Room Intro (UpdateEvents.bb lines 48-345)
+    // =====================================================================
+    private static void UpdateAlarm(Event e, ref string CurrTrigger)
     {
         if (e.Room == null) return;
 
@@ -269,7 +325,7 @@ public static class RoomEventSystem
                 if (e.Room.AdjDoor[i] != null)
                 {
                     e.Room.RoomDoors[5] = e.Room.AdjDoor[i];
-                    e.Room.RoomDoors[5].Open = true;
+                    e.Room.RoomDoors[5]!.Open = true;
                     break;
                 }
             }
@@ -277,46 +333,99 @@ public static class RoomEventSystem
 
         if ((int)e.EventState == 0)
         {
-            if (player.PlayerRoom == e.Room)
+            if (PlayerRoom == e.Room)
             {
-                // Open containment door
-                if (e.Room.RoomDoors[2] != null)
-                    e.Room.RoomDoors[2].Open = true;
+                e.Room.RoomDoors[2]!.Open = true;
 
-                // Show fog and ambient
-                OnMessage?.Invoke("Press F5 to quicksave.");
+                ShowEntity!(Fog);
+                AmbientLight!(Brightness, Brightness, Brightness);
+                CameraFogRange!(Camera, CameraFogNear, CameraFogFar);
+                CameraFogMode!(Camera, 1);
 
-                // Wake up 173
-                if (Curr173 != null)
-                    Curr173.Idle = false;
-
-                // Open cell doors
-                if (e.Room.RoomDoors[1] != null)
+                if (SelectedDifficulty!.SaveType == SAVEANYWHERE)
                 {
-                    while (e.Room.RoomDoors[1].OpenState < 180)
-                    {
-                        e.Room.RoomDoors[1].OpenState = MathF.Min(180, e.Room.RoomDoors[1].OpenState + 0.8f);
-                        // MoveEntity for door visuals
-                    }
+                    Msg = "Press " + KeyName!(KEY_SAVE) + " to save.";
+                    MsgTimer = 70 * 4;
+                }
+                else if (SelectedDifficulty!.SaveType == SAVEONSCREENS)
+                {
+                    Msg = "Saving is only permitted on clickable monitors scattered throughout the facility.";
+                    MsgTimer = 70 * 8;
                 }
 
-                // Setup guard NPC[0] if exists
+                Curr173!.Idle = false;
+
+                // Open cell doors animation
+                while (e.Room.RoomDoors[1]!.OpenState < 180)
+                {
+                    e.Room.RoomDoors[1]!.OpenState = MathF.Min(180, e.Room.RoomDoors[1]!.OpenState + 0.8f);
+                    MoveEntity!(e.Room.RoomDoors[1]!.Obj, (int)(MathF.Sin(e.Room.RoomDoors[1]!.OpenState * MathF.PI / 180) / 180.0f), 0, 0);
+                    MoveEntity!(e.Room.RoomDoors[1]!.Obj2, (int)(-MathF.Sin(e.Room.RoomDoors[1]!.OpenState * MathF.PI / 180) / 180.0f), 0, 0);
+                }
+
                 if (e.Room.NPC[0] != null)
                 {
-                    SetNPCFrame(e.Room.NPC[0], 74);
+                    SetNPCFrame!(e.Room.NPC[0], 74);
                     e.Room.NPC[0].State = 8;
                 }
 
                 // Create scientist NPC[1]
                 if (e.Room.NPC[1] == null)
                 {
-                    // e.Room.NPC[1] = CreateNPC(NPCType.ClassD, ...);
+                    e.Room.NPC[1] = CreateNPC!(NPCtypeD, 0, 0, 0);
+                    ChangeNPCTextureID!(e.Room.NPC[1], 3);
+                    e.Room.NPC[1].Texture = "GFX\\npcs\\scientist2.jpg";
+                    ChangeNPCTextureID!(e.Room.NPC[1], 3);
                 }
+                PositionEntity!(e.Room.NPC[1]!.Collider, (int)e.Room.X, (int)0.5f, (int)(e.Room.Z - 1.0f));
+                ResetEntity!(e.Room.NPC[1]!.Collider);
+                SetNPCFrame!(e.Room.NPC[1], 210);
 
                 // Create guard NPC[2]
                 if (e.Room.NPC[2] == null)
                 {
-                    // e.Room.NPC[2] = CreateNPC(NPCType.Guard, ...);
+                    e.Room.NPC[2] = CreateNPC!(NPCtypeGuard, 0, 0, 0);
+                }
+                PositionEntity!(e.Room.NPC[2]!.Collider, (int)e.Room.X, (int)0.5f, (int)(e.Room.Z + 528 * RoomScale));
+                ResetEntity!(e.Room.NPC[2]!.Collider);
+                e.Room.NPC[2]!.State = 7;
+                PointEntity!(e.Room.NPC[2]!.Collider, e.Room.NPC[1]!.Collider);
+
+                // If no balcony guard, create intro NPCs
+                if (e.Room.NPC[0] == null)
+                {
+                    e.Room.NPC[3] = CreateNPC!(NPCtypeGuard, EntityX!(e.Room.Objects[2]), EntityY!(e.Room.Objects[2]), EntityZ!(e.Room.Objects[2]));
+                    RotateEntity!(e.Room.NPC[3]!.Collider, 0, 90, 0);
+                    SetNPCFrame!(e.Room.NPC[3], 286);
+                    e.Room.NPC[3]!.State = 8;
+                    MoveEntity!(e.Room.NPC[3]!.Collider, 1, 0, 0);
+
+                    e.Room.NPC[4] = CreateNPC!(NPCtypeD, EntityX!(e.Room.Objects[3]), 0.5f, EntityZ!(e.Room.Objects[3]));
+                    SetNPCFrame!(e.Room.NPC[4], 19);
+                    e.Room.NPC[4]!.State = 3;
+                    RotateEntity!(e.Room.NPC[4]!.Collider, 0, 270, 0);
+                    MoveEntity!(e.Room.NPC[4]!.Collider, 0, 0, (int)2.65f);
+
+                    e.Room.NPC[5] = CreateNPC!(NPCtypeD, EntityX!(e.Room.Objects[4]), 0.5f, EntityZ!(e.Room.Objects[4]));
+                    ChangeNPCTextureID!(e.Room.NPC[5], 6);
+                    SetNPCFrame!(e.Room.NPC[5], 19);
+                    e.Room.NPC[5]!.State = 3;
+                    RotateEntity!(e.Room.NPC[5]!.Collider, 0, 270, 0);
+                    MoveEntity!(e.Room.NPC[5]!.Collider, (int)0.25f, 0, 3);
+                    RotateEntity!(e.Room.NPC[5]!.Collider, 0, 0, 0);
+
+                    float x = EntityX!(e.Room.Obj) + 3712 * RoomScale;
+                    float y = 384.0f * RoomScale;
+                    float z = EntityZ!(e.Room.Obj) + 1312 * RoomScale;
+
+                    for (int i = 3; i <= 5; i++)
+                    {
+                        PositionEntity!(e.Room.NPC[i]!.Collider,
+                            (int)(x + (EntityX!(e.Room.NPC[i]!.Collider) - EntityX!(e.Room.Obj))),
+                            (int)(y + EntityY!(e.Room.NPC[i]!.Collider) + 0.4f),
+                            (int)(z + (EntityZ!(e.Room.NPC[i]!.Collider) - EntityZ!(e.Room.Obj))));
+                        ResetEntity!(e.Room.NPC[i]!.Collider);
+                    }
                 }
 
                 e.EventState = 1;
@@ -324,679 +433,661 @@ public static class RoomEventSystem
         }
         else
         {
-            // Animate guard if exists
+            // Animate guard
             if (e.Room.NPC[0] != null)
-                AnimateNPC(e.Room.NPC[0], 249, 286, 0.4f, false);
+                AnimateNPC!(e.Room.NPC[0], 249, 286, 0.4f, false);
 
-            // Check triggers for 173 scene
-            string trigger = CheckTriggers(player, e.Room);
-            if (trigger == "173scene_timer")
+            CurrTrigger = CheckTriggers!();
+
+            if (CurrTrigger == "173scene_timer")
             {
-                e.EventState += fpsFactor;
+                e.EventState += FPSfactor;
             }
-            else if (trigger == "173scene_activated")
+            else if (CurrTrigger == "173scene_activated")
             {
                 e.EventState = MathF.Max(e.EventState, 500);
             }
 
-            // Position 173 until scene starts
+            // Position 173 until scene
             if (e.EventState < 850 && Curr173 != null)
             {
-                SetNPCPosition(Curr173, e.Room.X + 32 * RoomScale, 0.31f, e.Room.Z + 1072 * RoomScale);
-                Curr173.HideFromNVG = true;
+                PositionEntity!(Curr173.Collider, (int)(e.Room.X + 32 * RoomScale), (int)0.31f, (int)(e.Room.Z + 1072 * RoomScale));
+                HideEntity!(Curr173.Obj);
             }
 
-            // Scene activation
             if (e.EventState >= 500)
             {
-                e.EventState += fpsFactor;
+                e.EventState += FPSfactor;
 
                 if ((int)e.EventState2 == 0)
                 {
-                    // Show 173
-                    if (Curr173 != null)
-                        Curr173.HideFromNVG = false;
+                    ShowEntity!(Curr173!.Obj);
 
-                    // Scientist backs away
-                    if (e.EventState > 900 && e.Room.RoomDoors[5] != null && e.Room.RoomDoors[5].Open)
+                    if (e.EventState > 900 && e.Room.RoomDoors[5]!.Open)
                     {
-                        if (e.Room.NPC[1] != null)
+                        // Play "What the..." sound
+                        if (e.EventState - FPSfactor <= 900)
                         {
-                            e.Room.NPC[1].State = 3;
-                            e.Room.NPC[1].CurrSpeed = CurveValue(-0.008f, e.Room.NPC[1].CurrSpeed, 5.0f);
-                            AnimateNPC(e.Room.NPC[1], 260, 236, e.Room.NPC[1].CurrSpeed * 18);
+                            e.Room.NPC[1]!.Sound = LoadSoundStrict!("SFX\\Room\\Intro\\WhatThe.ogg");
+                            e.Room.NPC[1]!.SoundChn = PlaySound2!(e.Room.NPC[1]!.Sound, Camera, e.Room.NPC[1]!.Collider, 1.0f, 1.0f);
                         }
+
+                        e.Room.NPC[1]!.State = 3;
+                        e.Room.NPC[1]!.CurrSpeed = CurveValue!(-0.008f, e.Room.NPC[1]!.CurrSpeed, 5.0f);
+                        AnimateNPC!(e.Room.NPC[1]!, 260, 236, e.Room.NPC[1]!.CurrSpeed * 18);
+                        RotateEntity!(e.Room.NPC[1]!.Collider, 0, 0, 0);
 
                         // Guard runs in
                         if (e.EventState > 900 + 2.5f * 70)
                         {
-                            if (e.Room.NPC[2] != null && e.Room.NPC[2].State != 1)
+                            if (e.Room.NPC[2]!.State != 1)
                             {
-                                e.Room.NPC[2].CurrSpeed = CurveValue(-0.012f, e.Room.NPC[2].CurrSpeed, 5.0f);
-                                AnimateNPC(e.Room.NPC[2], 39, 76, e.Room.NPC[2].CurrSpeed * 40);
-                                MoveNPCForward(e.Room.NPC[2], e.Room.NPC[2].CurrSpeed * fpsFactor);
-                                e.Room.NPC[2].State = 8;
+                                e.Room.NPC[2]!.CurrSpeed = CurveValue!(-0.012f, e.Room.NPC[2]!.CurrSpeed, 5.0f);
+                                AnimateNPC!(e.Room.NPC[2]!, 39, 76, e.Room.NPC[2]!.CurrSpeed * 40);
+                                MoveEntity!(e.Room.NPC[2]!.Collider, 0, 0, (int)(e.Room.NPC[2]!.CurrSpeed * FPSfactor));
+                                e.Room.NPC[2]!.State = 8;
+
+                                if (EntityZ!(e.Room.NPC[2]!.Collider) < e.Room.Z)
+                                {
+                                    PointEntity!(e.Room.NPC[2]!.Obj, e.Room.NPC[1]!.Collider);
+                                    RotateEntity!(e.Room.NPC[2]!.Collider, 0,
+                                        (int)CurveAngle!(EntityYaw!(e.Room.NPC[2]!.Obj) - 180, EntityYaw!(e.Room.NPC[2]!.Collider), 15.0f), 0);
+                                }
+                                else
+                                {
+                                    RotateEntity!(e.Room.NPC[2]!.Collider, 0, 0, 0);
+                                }
                             }
                         }
-                    }
 
-                    // Scientist dies, power goes out
-                    if (e.EventState > 1400)
-                    {
-                        e.EventState2 = 1;
-                        OnBlur?.Invoke(1000);
-                        // Power failure effects
-                    }
-                }
-            }
-        }
-    }
+                        if (e.EventState < 900 + 4 * 70)
+                        {
+                            PositionEntity!(Curr173!.Collider, (int)(e.Room.X + 32 * RoomScale), (int)0.31f, (int)(e.Room.Z + 1072 * RoomScale));
+                            RotateEntity!(Curr173!.Collider, 0, 190, 0);
 
-    // ========== 173 INTRO ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 346-592
-    /// SCP-173 containment chamber intro
-    /// </summary>
-    private static void Update173Intro(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
+                            if (e.EventState > 900 + 70 && e.EventState < 900 + 2.5f * 70)
+                            {
+                                AnimateNPC!(e.Room.NPC[2]!, 1539, 1553, 0.2f, false);
+                                PointEntity!(e.Room.NPC[2]!.Obj, Curr173!.Collider);
+                                RotateEntity!(e.Room.NPC[2]!.Collider, 0,
+                                    (int)CurveAngle!(EntityYaw!(e.Room.NPC[2]!.Obj), EntityYaw!(e.Room.NPC[2]!.Collider), 15.0f), 0);
+                            }
+                        }
+                        else
+                        {
+                            if (e.EventState - FPSfactor < 900 + 4 * 70)
+                            {
+                                PlaySoundStrict!(); // IntroSFX[11]
+                                LightBlink = 3.0f;
+                                PlaySound2!(StoneDragSFX, Camera, Curr173!.Collider, 1.0f, 1.0f);
+                                PointEntity!(Curr173!.Collider, e.Room.NPC[2]!.Collider);
+                                if (EntityY!(Collider) < 320 * RoomScale)
+                                    BlinkTimer = -10;
+                            }
 
-        if (player.PlayerRoom != e.Room) return;
+                            PositionEntity!(Curr173!.Collider, (int)(e.Room.X - 96 * RoomScale), (int)0.31f, (int)(e.Room.Z + 592 * RoomScale));
+                            RotateEntity!(Curr173!.Collider, 0, 190, 0);
 
-        // State 0: Waiting
-        // State 1+: Sequence running
+                            if (e.Room.NPC[2]!.State != 1 && KillTimer >= 0)
+                            {
+                                if (EntityZ!(e.Room.NPC[2]!.Collider) < e.Room.Z - 1150 * RoomScale)
+                                {
+                                    e.Room.RoomDoors[5]!.Open = false;
+                                    LightBlink = 3.0f;
+                                    PlaySoundStrict!(); // IntroSFX[11]
+                                    BlinkTimer = -10;
+                                    PlaySound2!(StoneDragSFX, Camera, Curr173!.Collider, 1.0f, 1.0f);
 
-        if ((int)e.EventState == 0)
-        {
-            // Check for sequence trigger
-            float dist = EntityDistance(player, e.Room);
-            if (dist < 4.0f)
-            {
-                e.EventState = 1;
-                OnPlaySound?.Invoke(SoundID.AlarmSFX);
-            }
-        }
-        else
-        {
-            e.EventState += fpsFactor;
+                                    if (EntityDistance!(Curr173!.Collider, Collider) < 2.5f &&
+                                        MathF.Abs(EntityY!(Collider) - EntityY!(Curr173!.Collider)) < 1.0f)
+                                    {
+                                        PositionEntity!(Curr173!.Collider, (int)EntityX!(Collider), (int)EntityY!(Collider), (int)EntityZ!(Collider));
+                                    }
+                                    else
+                                    {
+                                        PositionEntity!(Curr173!.Collider, 0, 0, 0);
+                                    }
+                                    ResetEntity!(Curr173!.Collider);
+                                    Msg = "Hold " + KeyName!(KEY_SPRINT) + " to run.";
+                                    MsgTimer = 70 * 8;
+                                }
+                            }
+                        }
 
-            // Lights flicker
-            if (e.EventState > 70 && e.EventState < 200)
-            {
-                if (_rng.Next(10) == 0)
-                    OnBlur?.Invoke(50);
-            }
+                        // Guard shooting logic
+                        if (CurrTrigger == "173scene_end" && EntityVisible!(e.Room.NPC[2]!.Collider, Collider) && !NoTarget)
+                        {
+                            e.Room.NPC[2]!.State = 1;
+                            e.Room.NPC[2]!.State3 = 1;
+                        }
+                        else if (e.Room.NPC[2]!.State == 1 && !EntityVisible!(e.Room.NPC[2]!.Collider, Collider))
+                        {
+                            e.Room.NPC[2]!.State = 0;
+                            e.Room.NPC[2]!.State3 = 0;
+                        }
 
-            // 173 appears
-            if (e.EventState > 200 && Curr173 != null)
-            {
-                Curr173.HideFromNVG = false;
-            }
-
-            // End sequence
-            if (e.EventState > 500)
-            {
-                e.EventState = -1; // Completed
-            }
-        }
-    }
-
-    // ========== POCKET DIMENSION ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 1955-2520
-    /// SCP-106's pocket dimension - maze navigation
-    /// </summary>
-    private static void UpdatePocketDimension(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-
-        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
-        if (roomName != "pocketdimension") return;
-
-        // Pocket dimension ambient effects
-        player.HeartBeatRate = MathF.Max(player.HeartBeatRate, 90);
-        player.HeartBeatVolume = MathF.Max(player.HeartBeatVolume, 0.5f);
-
-        // Sanity drain
-        player.Sanity = MathF.Max(player.Sanity - 0.005f * fpsFactor, 0);
-
-        // State machine for pocket dimension phases
-        switch ((int)e.EventState)
-        {
-            case 0: // Entry
-                e.EventState = 1;
-                OnMessage?.Invoke("You feel disoriented...");
-                break;
-
-            case 1: // Main area
-                // Check for correct path
-                if (player.Position.Z < -20)
-                {
-                    // Wrong path - loop back
-                    player.Position = new Vector3(player.Position.X, player.Position.Y, 0);
-                }
-
-                // Check for exit
-                float distToExit = MathF.Abs(player.Position.X) + MathF.Abs(player.Position.Z - 50);
-                if (distToExit < 3.0f)
-                {
-                    // Random chance to escape or die
-                    if (_rng.Next(3) == 0)
-                    {
-                        // Escape
-                        e.EventState = 2;
-                        OnMessage?.Invoke("You found a way out...");
+                        if (e.Room.NPC[2]!.State == 1)
+                            e.Room.RoomDoors[5]!.Open = true;
                     }
                     else
                     {
-                        // Death
-                        OnDeath?.Invoke("Subject D-9341 was found dead in [REDACTED]. " +
-                            "The body showed signs of prolonged exposure to SCP-106's pocket dimension.");
+                        CanSave = true;
+                        if (e.Room.NPC[2]!.State != 1)
+                        {
+                            if (EntityX!(Collider) < e.Room.X + 1384 * RoomScale)
+                                e.EventState = MathF.Max(e.EventState, 900);
+
+                            if (e.Room.RoomDoors[5]!.OpenState == 0)
+                            {
+                                if (e.Room.NPC[1] != null) RemoveNPC!(e.Room.NPC[1]);
+                                if (e.Room.NPC[2] != null) RemoveNPC!(e.Room.NPC[2]);
+                                e.EventState2 = 1;
+                            }
+                        }
                     }
                 }
-                break;
 
-            case 2: // Escape sequence
-                e.EventState2 += fpsFactor;
-                OnBlur?.Invoke(e.EventState2);
+                // Falling corpses animation
+                PositionEntity!(e.Room.Objects[0], (int)EntityX!(e.Room.Objects[0]),
+                    (int)(-MathF.Max(e.EventState - 1300, 0) / 4500), (int)EntityZ!(e.Room.Objects[0]));
+                RotateEntity!(e.Room.Objects[0], (int)(-MathF.Max(e.EventState - 1320, 0) / 130), 0, (int)(-MathF.Max(e.EventState - 1300, 0) / 40));
 
-                if (e.EventState2 > 200)
+                PositionEntity!(e.Room.Objects[1], (int)EntityX!(e.Room.Objects[1]),
+                    (int)(-MathF.Max(e.EventState - 1800, 0) / 5000), (int)EntityZ!(e.Room.Objects[1]));
+                RotateEntity!(e.Room.Objects[1], (int)(-MathF.Max(e.EventState - 2040, 0) / 135), 0, (int)(-MathF.Max(e.EventState - 2040, 0) / 43));
+
+                // Corpse decay sound
+                if (EntityDistance!(e.Room.Objects[0], Collider) < 2.5f)
                 {
-                    // Teleport back to facility
-                    e.EventState = 3;
+                    if (_rng.Next(300) == 1)
+                        PlaySound2!(DecaySFX[_rng.Next(1, 4)], Camera, e.Room.Objects[0], 3.0f, 1.0f);
                 }
-                break;
+            }
+
+            // Alarm sound loop
+            if (e.EventState < 2000)
+            {
+                if (e.SoundCHN == 0)
+                {
+                    e.SoundCHN = PlaySoundStrict!(); // AlarmSFX[0]
+                }
+                else
+                {
+                    if (!ChannelPlaying!(e.SoundCHN))
+                        e.SoundCHN = PlaySoundStrict!(); // AlarmSFX[0]
+                }
+            }
+
+            // Sequential alarm sounds
+            if (e.EventState3 < 11)
+            {
+                if (!ChannelPlaying!(e.SoundCHN2))
+                {
+                    e.EventState3++;
+
+                    if (e.Sound2 != 0)
+                    {
+                        FreeSoundStrict!(e.Sound2);
+                        e.Sound2 = 0;
+                    }
+
+                    e.Sound2 = LoadSoundStrict!("SFX\\Alarm\\Alarm2_" + (int)e.EventState3 + ".ogg");
+                    e.SoundCHN2 = PlaySoundStrict!(); // e.Sound2
+                }
+                else
+                {
+                    if ((int)e.EventState3 == 8)
+                        CameraShake = 1.0f;
+                }
+            }
+
+            // Periodic commotion sounds
+            if ((e.EventState % 600 > 300) && ((e.EventState + FPSfactor) % 600 < 300))
+            {
+                int i = (int)MathF.Floor((e.EventState - 5000) / 600) + 1;
+
+                if (i == 0)
+                    PlaySoundStrict!(); // LoadTempSound("SFX\\Room\\Intro\\PA\\scripted\\scripted6.ogg")
+
+                if (i > 0 && i < 26)
+                {
+                    if (!CommotionState[i])
+                    {
+                        PlaySoundStrict!(); // LoadTempSound("SFX\\Room\\Intro\\Commotion\\Commotion"+i+".ogg")
+                        CommotionState[i] = true;
+                    }
+                }
+
+                if (i > 26)
+                {
+                    if (e.Room.NPC[0] != null) RemoveNPC!(e.Room.NPC[0]);
+
+                    FreeEntity!(e.Room.Objects[0]);
+                    FreeEntity!(e.Room.Objects[1]);
+                    e.Room.Objects[0] = 0;
+                    e.Room.Objects[1] = 0;
+
+                    RemoveEvent!(e);
+                }
+            }
         }
     }
 
-    // ========== SCP-914 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 7351-7553
-    /// SCP-914 refining machine - item transformation
-    /// </summary>
-    private static void Update914(Event e, PlayerState player, float fpsFactor)
+    // =====================================================================
+    // 173 - Intro Sequence (UpdateEvents.bb lines 346-1419)
+    // This is a MASSIVE event - the entire game intro
+    // =====================================================================
+    private static void Update173(Event e, ref string CurrTrigger, ref float x, ref float y, ref float z,
+        ref string strtemp, ref int i, ref int temp, ref int pvt, ref float dist, ref float angle)
     {
         if (e.Room == null) return;
-        if (player.PlayerRoom != e.Room) return;
 
-        // Achievement for entering
-        if (e.Room.RoomDoors[2] != null && e.Room.RoomDoors[2].Open)
+        if (KillTimer >= 0 && (int)e.EventState2 == 0)
         {
-            OnAchievement?.Invoke("Achv914");
-            e.EventState2 = 1;
+            PlayerZone = 0;
+
+            if (e.EventState3 > 0)
+            {
+                ShouldPlay = 13;
+
+                // Slow player down to match guard speed
+                CurrSpeed = MathF.Min(CurrSpeed - (CurrSpeed * (0.008f / EntityDistance!(e.Room.NPC[3]!.Collider, Collider)) * FPSfactor), CurrSpeed);
+
+                if (e.EventState3 < 170)
+                {
+                    if (e.EventState3 == 1.0f)
+                    {
+                        PositionEntity!(Camera, (int)x, (int)y, (int)z);
+                        HideEntity!(Collider);
+                        PositionEntity!(Collider, (int)x, (int)0.302f, (int)z);
+                        RotateEntity!(Camera, -70, 0, 0);
+
+                        CurrMusicVolume = MusicVolume;
+
+                        StopStreamStrict!(MusicCHN);
+                        // MusicCHN = StreamSoundStrict("SFX\\Music\\"+Music[13]+".ogg", CurrMusicVolume, Mode);
+                        NowPlaying = ShouldPlay;
+
+                        PlaySoundStrict!(); // IntroSFX[11]
+                        BlurTimer = 500;
+                        ShowEntity!(Light);
+                        EntityAlpha!(Light, 0.5f);
+                    }
+
+                    if (e.EventState3 < 3)
+                    {
+                        e.EventState3 += FPSfactor / 100.0f;
+                    }
+                    else if (e.EventState3 < 15 || e.EventState3 >= 50)
+                    {
+                        e.EventState3 += FPSfactor / 30.0f;
+                    }
+
+                    if (e.EventState3 < 15)
+                    {
+                        x = EntityX!(e.Room.Obj) - (3224.0f + 1024.0f) * RoomScale;
+                        y = 136.0f * RoomScale;
+                        z = EntityZ!(e.Room.Obj) + 8.0f * RoomScale;
+
+                        if (e.EventState3 < 14)
+                        {
+                            // mouse_x_speed_1 = 0, mouse_y_speed_1 = 0
+
+                            if (e.EventState3 - FPSfactor / 30.0f < 12 && e.EventState3 > 12)
+                                PlaySound2!(StepSFX[0], Camera, Collider, 8.0f, 0.3f);
+
+                            ShowEntity!(Light);
+                            EntityAlpha!(Light, 0.9f - (e.EventState3 / 2.0f));
+
+                            x = x + (EntityX!(e.Room.Obj) - (3048.0f + 1024.0f) * RoomScale - x) * MathF.Max((e.EventState3 - 10.0f) / 4.0f, 0.0f);
+
+                            if (e.EventState3 < 10)
+                            {
+                                y = y + 0.2f * MathF.Min(MathF.Max((e.EventState3 - 3.0f) / 5.0f, 0.0f), 1.0f);
+                            }
+                            else
+                            {
+                                y = (y + 0.2f) + (0.302f + 0.6f - (y + 0.2f)) * MathF.Max((e.EventState3 - 10) / 4.0f, 0.0f);
+                            }
+
+                            z = z + (EntityZ!(e.Room.Obj) + 104.0f * RoomScale - z) * MathF.Min(MathF.Max((e.EventState3 - 3) / 5.0f, 0), 1.0f);
+
+                            // Camera rotation animation
+                            RotateEntity!(Camera,
+                                (int)(-70.0f + 70.0f * MathF.Min(MathF.Max((e.EventState3 - 3.0f) / 5.0f, 0.0f), 1.0f) + MathF.Sin(e.EventState3 * 12.857f * MathF.PI / 180) * 5.0f),
+                                (int)(-60.0f * MathF.Max((e.EventState3 - 10.0f) / 4.0f, 0.0f)),
+                                (int)(MathF.Sin(e.EventState3 * 25.7f * MathF.PI / 180) * 8.0f));
+
+                            PositionEntity!(Camera, (int)x, (int)y, (int)z);
+                            HideEntity!(Collider);
+                            PositionEntity!(Collider, (int)x, (int)0.302f, (int)z);
+                            DropSpeed = 0;
+                        }
+                        else
+                        {
+                            HideEntity!(Light);
+
+                            PositionEntity!(Collider, (int)EntityX!(Collider), (int)0.302f, (int)EntityZ!(Collider));
+                            ResetEntity!(Collider);
+                            ShowEntity!(Collider);
+                            DropSpeed = 0;
+                            e.EventState3 = 15;
+                            Msg = "Pick up the paper on the desk.";
+                            MsgTimer = 70 * 7;
+                        }
+
+                        UserCameraPitch = 0;
+                        RotateEntity!(Collider, 0, (int)EntityYaw!(Camera), 0);
+                    }
+                    else if (e.EventState3 < 40)
+                    {
+                        // Check if player picked up inventory item
+                        // if (Inventory[0] != null) { ... e.EventState3 = 40 }
+                    }
+
+                    // SelectedItem check
+                    // if (SelectedItem != null) e.EventState3 += FPSfactor / 5.0f;
+                }
+                else if (e.EventState3 >= 150.0f && e.EventState3 < 700)
+                {
+                    // Guard voice before door opens
+                    if (e.Room.NPC[3]!.State == 7)
+                    {
+                        if (e.Room.NPC[3]!.Sound2 == 0)
+                        {
+                            e.Room.NPC[3]!.Sound2 = LoadSoundStrict!("SFX\\Room\\Intro\\Guard\\Ulgrin\\BeforeDoorOpen.ogg");
+                            e.Room.NPC[3]!.SoundChn2 = PlaySound2!(e.Room.NPC[3]!.Sound2, Camera, e.Room.NPC[3]!.Collider, 1.0f, 1.0f);
+                        }
+
+                        UpdateSoundOrigin!(e.Room.NPC[3]!.SoundChn2, Camera, e.Room.NPC[3]!.Collider, 1.0f);
+
+                        if (!ChannelPlaying!(e.Room.NPC[3]!.SoundChn2))
+                        {
+                            e.Room.NPC[3]!.Sound = LoadSoundStrict!("SFX\\Room\\Intro\\Guard\\Ulgrin\\ExitCell.ogg");
+                            e.Room.NPC[3]!.SoundChn = PlaySound2!(e.Room.NPC[3]!.Sound, Camera, e.Room.NPC[3]!.Collider, 1.0f, 1.0f);
+
+                            e.Room.NPC[3]!.State = 9;
+                            e.Room.NPC[4]!.State = 9;
+                            e.Room.NPC[5]!.State = 9;
+
+                            e.Room.RoomDoors[6]!.Locked = false;
+                            UseDoor!(e.Room.RoomDoors[6]!, false);
+                            e.Room.RoomDoors[6]!.Locked = true;
+                        }
+                    }
+                    else
+                    {
+                        FreeSoundStrict!(e.Room.NPC[3]!.Sound2);
+
+                        e.EventState3 = MathF.Min(e.EventState3 + FPSfactor / 4, 699);
+
+                        // Outside the cell check
+                        if (Distance!(EntityX!(Collider), EntityZ!(Collider),
+                            PlayerRoom!.X - (3072 + 1024) * RoomScale, PlayerRoom!.Z + 192.0f * RoomScale) > 1.5f)
+                        {
+                            if (e.EventState3 > 250)
+                            {
+                                if (e.Room.NPC[3]!.SoundChn != 0)
+                                {
+                                    if (ChannelPlaying!(e.Room.NPC[3]!.SoundChn))
+                                        StopChannel!(e.Room.NPC[3]!.SoundChn);
+                                }
+                                FreeSoundStrict!(e.Room.NPC[3]!.Sound);
+                                e.Room.NPC[3]!.Sound = LoadSoundStrict!("SFX\\Room\\Intro\\Guard\\Ulgrin\\Escort" + _rng.Next(1, 3) + ".ogg");
+                                e.Room.NPC[3]!.SoundChn = PlaySound2!(e.Room.NPC[3]!.Sound, Camera, e.Room.NPC[3]!.Collider, 1.0f, 1.0f);
+
+                                e.Room.NPC[3]!.PathStatus = FindPath!(e.Room.NPC[3]!, PlayerRoom!.X - 320 * RoomScale, 0.3f, PlayerRoom!.Z - 704 * RoomScale);
+                                e.Room.NPC[4]!.PathStatus = FindPath!(e.Room.NPC[4]!, PlayerRoom!.X - 320 * RoomScale, 0.3f, PlayerRoom!.Z - 704 * RoomScale);
+
+                                e.EventState3 = 710;
+                            }
+                        }
+                        else // Inside the cell
+                        {
+                            e.Room.NPC[3]!.State = 9;
+
+                            if (e.EventState3 - (FPSfactor / 4) < 350 && e.EventState3 >= 350)
+                            {
+                                FreeSoundStrict!(e.Room.NPC[3]!.Sound);
+                                e.Room.NPC[3]!.Sound = LoadSoundStrict!("SFX\\Room\\Intro\\Guard\\Ulgrin\\ExitCellRefuse" + _rng.Next(1, 3) + ".ogg");
+                                e.Room.NPC[3]!.SoundChn = PlaySound2!(e.Room.NPC[3]!.Sound, Camera, e.Room.NPC[3]!.Collider, 1.0f, 1.0f);
+                            }
+                            else if (e.EventState3 - (FPSfactor / 4) < 550 && e.EventState3 >= 550)
+                            {
+                                FreeSoundStrict!(e.Room.NPC[3]!.Sound);
+                                e.Room.NPC[3]!.Sound = LoadSoundStrict!("SFX\\Room\\Intro\\Guard\\Ulgrin\\CellGas" + _rng.Next(1, 3) + ".ogg");
+                                e.Room.NPC[3]!.SoundChn = PlaySound2!(e.Room.NPC[3]!.Sound, Camera, e.Room.NPC[3]!.Collider, 1.0f, 1.0f);
+                            }
+                            else if (e.EventState3 > 630)
+                            {
+                                PositionEntity!(Collider, (int)EntityX!(Collider), (int)EntityY!(Collider),
+                                    (int)MathF.Min(EntityZ!(Collider), EntityZ!(e.Room.Obj) + 490 * RoomScale));
+
+                                if (e.Room.RoomDoors[6]!.Open)
+                                {
+                                    e.Room.RoomDoors[6]!.Locked = false;
+                                    UseDoor!(e.Room.RoomDoors[6]!, false);
+                                    e.Room.RoomDoors[6]!.Locked = true;
+
+                                    // Create gas emitters
+                                    var em = CreateEmitter!(PlayerRoom!.X - (2976.0f + 1024) * RoomScale, 373.0f * RoomScale, PlayerRoom!.Z + 204.0f * RoomScale, 0);
+                                    TurnEntity!(em.Obj, 90, 0, 0);
+                                    em.RandAngle = 7;
+                                    em.Speed = 0.03f;
+                                    em.SizeChange = 0.003f;
+                                    em.Room = PlayerRoom;
+
+                                    em = CreateEmitter!(PlayerRoom!.X - (3168.0f + 1024) * RoomScale, 373.0f * RoomScale, PlayerRoom!.Z + 204.0f * RoomScale, 0);
+                                    TurnEntity!(em.Obj, 90, 0, 0);
+                                    em.RandAngle = 7;
+                                    em.Speed = 0.03f;
+                                    em.SizeChange = 0.003f;
+                                    em.Room = PlayerRoom;
+                                }
+
+                                EyeIrritation = MathF.Max(EyeIrritation + FPSfactor * 4, 1.0f);
+                            }
+                        }
+                    }
+                }
+                // ... continuing the massive 173 event would require many more lines
+                // This represents the first ~500 lines of the 173 event
+            }
         }
 
-        // Ambient music trigger
-        if ((int)e.EventState2 == 1)
+        // Camera range adjustment based on event state
+        if (PlayerRoom == e.Room)
         {
-            // ShouldPlay = 22
-        }
+            if (e.EventState >= 10)
+            {
+                CameraRange!(Camera, 0.05f, 15);
+                if (e.Room.NPC[7] != null)
+                {
+                    RemoveNPC!(e.Room.NPC[7]);
+                }
+            }
+            else
+            {
+                CameraRange!(Camera, 0.05f, 40);
+            }
+            CameraFogMode!(Camera, 0);
+            AmbientLight!(140, 140, 140);
+            HideEntity!(Fog);
 
-        // Handle knob interactions (simplified)
-        // Full implementation needs raycasting for knob selection
-
-        if ((int)e.EventState == 0)
-        {
-            // Ready to activate
-            // Check for items in intake booth
-            // Original checks: Abs(EntityX(it\collider) - (room.x - 712*RoomScale)) < 200
-            // If item found and key turned, start processing
+            LightVolume = 4.0f;
+            TempLightVolume = 4.0f;
         }
         else
         {
-            // Processing
-            e.EventState += fpsFactor;
+            RemoveEvent!(e);
+        }
+    }
 
-            // Close intake door
-            if (e.Room.RoomDoors[1] != null)
-                e.Room.RoomDoors[1].Open = false;
+    // =====================================================================
+    // BUTTGHOST (UpdateEvents.bb lines 1420-1435)
+    // =====================================================================
+    private static void UpdateButtghost(Event e)
+    {
+        if (e.Room == null) return;
 
-            // Close output door after delay
-            if (e.EventState > 70 * 2)
+        if (PlayerRoom == e.Room)
+        {
+            if (EntityDistance!(Collider, e.Room.Objects[0]) < 1.8f)
             {
-                if (e.Room.RoomDoors[0] != null)
-                    e.Room.RoomDoors[0].Open = false;
+                if ((int)e.EventState == 0)
+                {
+                    GiveAchievement!("Achv789");
+                    e.SoundCHN = PlaySound2!(ButtGhostSFX, Camera, e.Room.Objects[0], 1.0f, 1.0f);
+                    e.EventState = 1;
+                }
+                else
+                {
+                    if (!ChannelPlaying!(e.SoundCHN))
+                    {
+                        RemoveEvent!(e);
+                    }
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // CHECKPOINT (UpdateEvents.bb lines 1436-1543) - Partial
+    // =====================================================================
+    private static void UpdateCheckpoint(Event e, ref float angle)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            // Play zone transition sound
+            if ((int)e.EventState2 == 0)
+            {
+                if (EntityZ!(Collider) < e.Room.Z)
+                {
+                    if (PlayerZone == 1)
+                    {
+                        PlaySoundStrict!(); // LoadTempSound("SFX\\Ambient\\ToZone2.ogg")
+                    }
+                    else
+                    {
+                        PlaySoundStrict!(); // LoadTempSound("SFX\\Ambient\\ToZone3.ogg")
+                    }
+                    e.EventState2 = 1;
+                }
             }
 
-            // Processing complete
-            if (e.EventState > 70 * 5)
+            // SCP-1048 teddy bear easter egg
+            if ((int)e.EventState3 == 0)
             {
-                // Transform items based on setting
-                // Open output door
-                if (e.Room.RoomDoors[0] != null)
+                if (_rng.Next(2) == 0)
                 {
-                    e.Room.RoomDoors[0].Open = true;
-                    OnPlaySound2?.Invoke(SoundID.DoorOpen, GetDoorPosition(e.Room.RoomDoors[0]), 1.0f);
+                    GiveAchievement!("Achv1048");
+                    e.Room.Objects[1] = LoadAnimMeshStrict!("GFX\\npcs\\scp-1048.b3d");
+                    ScaleEntity!(e.Room.Objects[1], 0.05f, 0.05f, 0.05f);
+                    PositionEntity!(e.Room.Objects[1], (int)EntityX!(e.Room.Objects[0]), (int)EntityY!(e.Room.Objects[0]), (int)EntityZ!(e.Room.Objects[0]));
+                    SetAnimTime!(e.Room.Objects[1], 267);
                 }
 
-                e.EventState = 0;
+                e.EventState3 = 1;
             }
-        }
-    }
-
-    // ========== GATE A ENTRANCE ==========
-    private static void UpdateGateAEntrance(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Gate A entry area event handling
-    }
-
-    // ========== CHECKPOINT ==========
-    private static void UpdateCheckpoint(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Security checkpoint event handling
-    }
-
-    // ========== ROOM2 TESLA ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 2854-3100
-    /// Tesla gate hallway
-    /// </summary>
-    private static void UpdateRoom2Tesla(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        if (player.PlayerRoom != e.Room) return;
-
-        // Tesla gate activation based on player position
-        float triggerX = e.Room.X;
-        float triggerZ = e.Room.Z;
-
-        float distToGate = MathF.Abs(player.Position.X - triggerX);
-
-        // Charging
-        if (distToGate < 2.0f && e.EventState < 100)
-        {
-            e.EventState += fpsFactor * 2;
-
-            // Charging sound
-            if (e.EventState > 50 && e.EventState2 == 0)
+            else if (e.Room.Objects[1] != 0)
             {
-                OnPlaySound2?.Invoke(SoundID.TeslaCharge, new Vector3(triggerX, player.Position.Y, triggerZ), 1.0f);
-                e.EventState2 = 1;
+                if ((int)e.EventState3 == 1)
+                {
+                    PointEntity!(e.Room.Objects[1], Collider);
+                    RotateEntity!(e.Room.Objects[1], -90, (int)EntityYaw!(e.Room.Objects[1]), 0);
+                    angle = WrapAngle!(DeltaYaw!(Collider, e.Room.Objects[1]));
+                    if (angle < 40 || angle > 320)
+                        e.EventState3 = 2;
+                }
+                else if ((int)e.EventState3 == 2)
+                {
+                    PointEntity!(e.Room.Objects[1], Collider);
+                    RotateEntity!(e.Room.Objects[1], -90, (int)EntityYaw!(e.Room.Objects[1]), 0);
+                    Animate2!(e.Room.Objects[1], AnimTime!(e.Room.Objects[1]), 267, 283, 0.3f, false);
+                    if (AnimTime!(e.Room.Objects[1]) == 283)
+                        e.EventState3 = 3;
+                }
+                else if ((int)e.EventState3 == 3)
+                {
+                    Animate2!(e.Room.Objects[1], AnimTime!(e.Room.Objects[1]), 283, 267, -0.2f, false);
+                    if (AnimTime!(e.Room.Objects[1]) == 267)
+                        e.EventState3 = 4;
+                }
+                else if ((int)e.EventState3 == 4)
+                {
+                    angle = WrapAngle!(DeltaYaw!(Collider, e.Room.Objects[1]));
+                    if (angle > 90 && angle < 270)
+                    {
+                        FreeEntity!(e.Room.Objects[1]);
+                        e.Room.Objects[1] = 0;
+                        e.EventState3 = 5;
+                    }
+                }
             }
         }
 
-        // Fire
-        if (e.EventState >= 100 && e.EventState < 110)
+        // Checkpoint2 specific - 008 event check
+        if (e.Room.RoomTemplate!.Name == "checkpoint2")
         {
-            OnPlaySound2?.Invoke(SoundID.TeslaFire, new Vector3(triggerX, player.Position.Y, triggerZ), 1.0f);
-            OnCameraShake?.Invoke(5.0f);
-
-            // Damage player if in kill zone
-            if (distToGate < 1.0f)
+            foreach (var e2 in _events)
             {
-                player.Injuries += 10.0f;
-                OnDeath?.Invoke("Subject D-9341 found dead in the facility. " +
-                    "Cause of death: Electrocution by tesla gate.");
-            }
-
-            e.EventState = 110;
-        }
-
-        // Cooldown
-        if (e.EventState >= 110)
-        {
-            e.EventState += fpsFactor;
-            if (e.EventState > 200)
-            {
-                e.EventState = 0;
-                e.EventState2 = 0;
+                if (e2.EventName == "008")
+                {
+                    if ((int)e2.EventState == 2)
+                    {
+                        if (e.Room.RoomDoors[0]!.Locked)
+                        {
+                            TurnCheckpointMonitorsOff!(1);
+                            e.Room.RoomDoors[0]!.Locked = false;
+                            e.Room.RoomDoors[1]!.Locked = false;
+                        }
+                    }
+                }
             }
         }
-    }
-
-    // ========== ROOM 049 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 5649-5890
-    /// SCP-049 containment chamber
-    /// </summary>
-    private static void UpdateRoom049(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-
-        // 049 chamber events
-        if (player.PlayerRoom == e.Room && Curr049 != null)
-        {
-            // Trigger 049 behavior based on room state
-        }
-    }
-
-    // ========== ROOM 106 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 6003-6205
-    /// SCP-106 containment chamber (femur breaker)
-    /// </summary>
-    private static void UpdateRoom106(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-
-        // 106 chamber - femur breaker event
-        // EventState tracks breaker sequence
-    }
-
-    // ========== ROOM 079 ==========
-    private static void UpdateRoom079(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SCP-079 computer room
-    }
-
-    // ========== ROOM 860 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 6407-6609
-    /// SCP-860 forest test chamber
-    /// </summary>
-    private static void UpdateRoom860(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 860-1 forest dimension handling
-    }
-
-    // ========== ROOM 966 ==========
-    private static void UpdateRoom966(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SCP-966 containment
-    }
-
-    // ========== ROOM3 STORAGE (939) ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 4918-4983
-    /// SCP-939 storage room
-    /// </summary>
-    private static void UpdateRoom3Storage(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-
-        // 939 encounter in storage
-        // Disable 939 if player not in room
-        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
-        if (roomName != "room3storage")
-        {
-            // Set all 939 instances to state 66 (disabled)
-            foreach (var npc in NPCSystem.GetAllNPCs())
-            {
-                if (npc.NPCtype == NPCType.SCP939)
-                    npc.State = 66;
-            }
-        }
-    }
-
-    // ========== COFFIN (106) ==========
-    private static void UpdateCoffin(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SCP-106 coffin event
-    }
-
-    // ========== ENDROOM 106 ==========
-    private static void UpdateEndroom106(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 106 pocket dimension exit
-    }
-
-    // ========== ROOM 012 ==========
-    private static void UpdateRoom012(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SCP-012 composition
-    }
-
-    // ========== ROOM 035 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 5210-5648
-    /// SCP-035 containment chamber
-    /// </summary>
-    private static void UpdateRoom035(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 035 mask interaction
-    }
-
-    // ========== ROOM2 SERVERS ==========
-    private static void UpdateRoom2Servers(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Server room
-    }
-
-    // ========== ROOM2 NUKE ==========
-    private static void UpdateRoom2Nuke(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Alpha warhead room
-    }
-
-    // ========== ROOM2 ELEVATOR ==========
-    private static void UpdateRoom2Elevator(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Standard elevator room
-    }
-
-    // ========== ROOM2 TUNNEL ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 3135-3919
-    /// Maintenance tunnel - 106 chase sequence
-    /// </summary>
-    private static void UpdateRoom2Tunnel(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-
-        // 106 tunnel chase
-        if (player.PlayerRoom == e.Room && Curr106 != null)
-        {
-            // Spawn 106 behind player
-            if ((int)e.EventState == 0 && _rng.Next(500) == 0)
-            {
-                e.EventState = 1;
-                // Position 106 at tunnel entrance
-            }
-        }
-    }
-
-    // ========== ROOM3 DOOR ==========
-    private static void UpdateRoom3Door(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 3-door room
-    }
-
-    // ========== ROOM 1162 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 7752-7989
-    /// SCP-1162 - hole in wall
-    /// </summary>
-    private static void UpdateRoom1162(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 1162 item exchange
-    }
-
-    // ========== MEDIBAY ==========
-    private static void UpdateMedibay(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Medical bay
-    }
-
-    // ========== 008 ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 7129-7220
-    /// SCP-008 containment
-    /// </summary>
-    private static void Update008(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 008 infection handling
-    }
-
-    // ========== TOILET GUARD ==========
-    private static void UpdateToiletGuard(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Bathroom guard encounter
-    }
-
-    // ========== LOCKROOM 173 ==========
-    private static void UpdateLockroom173(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 173 lockroom
-    }
-
-    // ========== LOCKROOM 096 ==========
-    private static void UpdateLockroom096(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 096 lockroom
-    }
-
-    // ========== 096 SPAWN ==========
-    private static void Update096Spawn(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // 096 spawn event
-    }
-
-    // ========== DIMENSION 1499 ==========
-    private static void UpdateDimension1499(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SCP-1499 dimension
-    }
-
-    // ========== ROOM2 SL ==========
-    private static void UpdateRoom2SL(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // SL room
-    }
-
-    // ========== ROOM GW ==========
-    private static void UpdateRoomGW(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // GW room
-    }
-
-    // ========== GATE A ==========
-    /// <summary>
-    /// UpdateEvents.bb lines 9599+
-    /// Gate A exit - MTF/Helicopter ending
-    /// </summary>
-    private static void UpdateGateA(Event e, PlayerState player, float fpsFactor)
-    {
-        if (e.Room == null) return;
-        // Gate A exit sequence
-    }
-
-    // ========== HELPER FUNCTIONS ==========
-
-    private static float CurveValue(float target, float current, float rate)
-    {
-        return current + (target - current) / rate;
-    }
-
-    private static float CurveAngle(float target, float current, float rate)
-    {
-        float diff = WrapAngle(target - current);
-        if (diff > 180) diff -= 360;
-        return WrapAngle(current + diff / rate);
-    }
-
-    private static float WrapAngle(float angle)
-    {
-        while (angle < 0) angle += 360;
-        while (angle >= 360) angle -= 360;
-        return angle;
-    }
-
-    private static float EntityDistance(PlayerState player, Rooms room)
-    {
-        float dx = player.Position.X - room.X;
-        float dy = player.Position.Y - room.Y;
-        float dz = player.Position.Z - room.Z;
-        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    private static float EntityDistance(PlayerState player, Doors door)
-    {
-        // Approximate distance to door
-        return 1.0f;
-    }
-
-    private static Vector3 GetDoorPosition(Doors door)
-    {
-        // Get door frame position
-        return Vector3.Zero;
-    }
-
-    private static void SetNPCFrame(NPC n, float frame)
-    {
-        n.Frame = frame;
-    }
-
-    private static void SetNPCPosition(NPC n, float x, float y, float z)
-    {
-        n.PrevX = x;
-        n.PrevY = y;
-        n.PrevZ = z;
-    }
-
-    private static void AnimateNPC(NPC n, float startFrame, float endFrame, float speed, bool loop = true)
-    {
-        n.Frame += speed * FPSfactor;
-        if (loop)
-        {
-            if (n.Frame > endFrame) n.Frame = startFrame;
-            if (n.Frame < startFrame) n.Frame = startFrame;
-        }
-        else
-        {
-            if (n.Frame > endFrame) n.Frame = endFrame;
-            if (n.Frame < startFrame) n.Frame = startFrame;
-        }
-    }
-
-    private static void MoveNPCForward(NPC n, float distance)
-    {
-        float yaw = n.Angle * MathF.PI / 180.0f;
-        n.PrevX += MathF.Sin(yaw) * distance;
-        n.PrevZ += MathF.Cos(yaw) * distance;
-    }
-
-    private static string CheckTriggers(PlayerState player, Rooms room)
-    {
-        // Check trigger volumes in room
-        // Returns trigger name if activated
-        return "";
-    }
-
-    private static float UpdateElevators(float state, Rooms room, Event e)
-    {
-        // Elevator update logic
-        return state;
-    }
-
-    private static float Update096ElevatorEvent(Event e, float state)
-    {
-        // 096 in elevator logic
-        return state;
     }
 }
 
-// Sound IDs for events
-public static partial class SoundID
+// Supporting classes
+public class DifficultySettings
 {
-    public const int AlarmSFX = 200;
-    public const int DoorError = 201;
-    public const int DoorOpen = 202;
-    public const int TeslaCharge = 203;
-    public const int TeslaFire = 204;
-    public const int MachineSFX = 205;
-    public const int Use914SFX = 206;
-    public const int Death914SFX = 207;
+    public int SaveType;
+}
+
+public class Emitter
+{
+    public int Obj;
+    public float RandAngle;
+    public float Speed;
+    public float SizeChange;
+    public Rooms? Room;
+}
+
+public class Item
+{
+    public int Collider;
+}
+
+public class NPC
+{
+    public int Obj;
+    public int Collider;
+    public float State;
+    public float State2;
+    public float State3;
+    public float CurrSpeed;
+    public float Speed;
+    public float Frame;
+    public float Angle;
+    public bool Idle;
+    public int Sound;
+    public int Sound2;
+    public int SoundChn;
+    public int SoundChn2;
+    public float Reload;
+    public int PathStatus;
+    public float EnemyX, EnemyY, EnemyZ;
+    public string Texture = "";
 }

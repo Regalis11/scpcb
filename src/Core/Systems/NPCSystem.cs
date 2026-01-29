@@ -148,6 +148,32 @@ public static class SoundID
     public const int Scp049Searching = 118;
     public const int Step3SFX = 119;
     public const int DamageSFX5_8 = 120;
+    // MTF sounds
+    public const int Gunshot = 121;
+    public const int MTFBlinking = 122;
+    public const int MTFDoorOpen = 123;
+    public const int MTFStop = 124;
+    public const int MTFThereHeIs = 125;
+    public const int MTF173Spotted = 126;
+    public const int MTF106Spotted = 127;
+    public const int MTF096Spotted = 128;
+    public const int MTFZombieSpotted = 129;
+    public const int MTFTargetTerminated = 130;
+    public const int MTFTargetLost = 131;
+    public const int MTFSearching = 132;
+    public const int MTF173Box = 133;
+    // SCP-939 sounds
+    public const int Step4SFX = 134;
+    public const int Step1SFX = 135;
+    public const int Scp939Lure = 136;
+    public const int Scp939Attack = 137;
+    public const int Scp939Alert = 138;
+    public const int Slash1 = 139;
+    // SCP-066 sounds
+    public const int Scp066Eric = 140;
+    public const int Scp066Notes = 141;
+    public const int Scp066Rolling = 142;
+    public const int Scp066Beethoven = 143;
 }
 
 public static class EventSystem
@@ -191,6 +217,7 @@ public static class NPCSystem
     public static Action<int, float, float, float, float, int, float, float, float, float>? OnCreateDecal;
     public static Action<string>? OnAchievement;
     public static Action? OnMoveToPocketDimension;
+    public static Action<string>? OnMessage;
 
     public static void AddNPC(NPC npc)
     {
@@ -1954,17 +1981,1212 @@ public static class NPCSystem
             if (n.Frame < 133) n.Frame = 133;
         }
     }
-    private static void UpdateGuard(NPC n, PlayerState player, float fpsFactor) { }
-    private static void UpdateMTF(NPC n, PlayerState player, float fpsFactor) { }
-    private static void UpdateClassD(NPC n, PlayerState player, float fpsFactor) { }
+    /// <summary>
+    /// NPCs.bb lines 2317-2716: Full Guard AI
+    /// States: 1=shoot player, 2=shoots, 3=follow path, 4=idle patrol, 5=follow target, 11=search player
+    /// </summary>
+    private static void UpdateGuard(NPC n, PlayerState player, float fpsFactor)
+    {
+        float prevFrame = n.Frame;
+        float dist = EntityDistance(n, player);
+
+        switch ((int)n.State)
+        {
+            case 1: // Aims and shoots at player
+                if (n.Frame < 39 || (n.Frame > 76 && n.Frame < 245) || (n.Frame > 248 && n.Frame < 302) || n.Frame > 344)
+                {
+                    n.Frame += 0.2f * fpsFactor;
+                    if (n.Frame > 357) n.Frame = 357;
+                    if (n.Frame >= 356) n.Frame = 302;
+                }
+
+                if (player.KillTimer >= 0)
+                {
+                    float shootAccuracy = 0.4f + 0.5f * (AggressiveNPCs ? 1 : 0);
+                    float detectDist = 11.0f;
+
+                    string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+                    if (roomName == "exit1")
+                    {
+                        detectDist = 21.0f;
+                        shootAccuracy = 0.0f;
+                        if (_rng.Next(1, 8 - (AggressiveNPCs ? 4 : 0)) < 2) shootAccuracy = 0.03f;
+                        shootAccuracy += 0.5f - player.CurrSpeed * 20;
+                    }
+
+                    if (dist < detectDist)
+                    {
+                        float targetYaw = GetAngleToPlayer(n, player);
+                        SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 10.0f));
+
+                        if (n.Reload <= 0)
+                        {
+                            if (EntityVisible(n, player))
+                            {
+                                OnPlaySound2?.Invoke(SoundID.Gunshot, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                                Shoot(n, player, shootAccuracy, false);
+                                n.Reload = 7;
+
+                                if (roomName == "start")
+                                    OnDeath?.Invoke("Subject D-9341. Cause of death: Gunshot wound to the head. Terminated by Agent Ulgrin.");
+                                else if (roomName == "exit1")
+                                    OnDeath?.Invoke("\"Agent G. to control. Eliminated a Class D escapee in Gate B's courtyard.\"");
+                            }
+                        }
+
+                        if (n.Reload > 0 && n.Reload <= 7)
+                        {
+                            n.Frame += 0.35f * fpsFactor;
+                            if (n.Frame > 248) n.Frame = 245;
+                            if (n.Frame < 245) n.Frame = 245;
+                        }
+                        else if (n.Frame < 302)
+                        {
+                            n.Frame += 0.35f * fpsFactor;
+                            if (n.Frame > 344) n.Frame = 302;
+                        }
+                    }
+                    else
+                    {
+                        n.Frame += 0.35f * fpsFactor;
+                        if (n.Frame > 344) n.Frame = 302;
+                    }
+                }
+                else
+                {
+                    n.State = 0;
+                }
+
+                n.Reload -= fpsFactor;
+                break;
+
+            case 2: // Shooting
+                n.Frame += 0.35f * fpsFactor;
+                if (n.Frame > 248) n.Frame = 245;
+                if (n.Frame < 245) n.Frame = 245;
+
+                if (n.Reload <= 0)
+                {
+                    OnPlaySound2?.Invoke(SoundID.Gunshot, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    n.Reload = 7;
+                }
+                n.Reload -= fpsFactor;
+                break;
+
+            case 3: // Following a path
+                if (n.PathStatus == 2)
+                {
+                    n.State = 0;
+                    n.CurrSpeed = 0;
+                }
+                else if (n.PathStatus == 1)
+                {
+                    if (n.Path[n.PathLocation] == null)
+                    {
+                        if (n.PathLocation > 19)
+                        {
+                            n.PathLocation = 0;
+                            n.PathStatus = 0;
+                        }
+                        else
+                        {
+                            n.PathLocation++;
+                        }
+                    }
+                    else
+                    {
+                        var wp = n.Path[n.PathLocation]!;
+                        float wpYaw = GetAngleToWaypoint(n, wp);
+                        SetNPCYaw(n, CurveAngle(wpYaw, GetNPCYaw(n), 20.0f));
+
+                        n.Frame += n.CurrSpeed * 40 * fpsFactor;
+                        if (n.Frame > 38) n.Frame = 1;
+                        if (n.Frame < 1) n.Frame = 1;
+
+                        n.CurrSpeed = CurveValue(n.Speed * 0.7f, n.CurrSpeed, 20.0f);
+                        MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                            n.PathLocation++;
+                    }
+                }
+                else
+                {
+                    n.CurrSpeed = 0;
+                    n.State = 4;
+                }
+                break;
+
+            case 4: // Idle patrol
+                n.Frame += 0.2f * fpsFactor;
+                if (n.Frame > 201) n.Frame = 77;
+                if (n.Frame < 77) n.Frame = 77;
+
+                if (_rng.Next(400) == 1)
+                    n.Angle = _rng.NextSingle() * 360 - 180;
+
+                float millis = Environment.TickCount;
+                SetNPCYaw(n, CurveAngle(n.Angle + MathF.Sin(millis / 50) * 2, GetNPCYaw(n), 150.0f));
+
+                if (dist < 15.0f)
+                {
+                    float angleDiff = WrapAngle(GetNPCYaw(n) - GetAngleToPlayer(n, player));
+                    if (angleDiff < 90 || angleDiff > 270)
+                    {
+                        if (EntityVisible(n, player))
+                            n.State = 1;
+                    }
+                }
+                break;
+
+            case 5: // Following a target
+                float targetYaw2 = VectorYaw(n.EnemyX - GetNPCX(n), n.EnemyZ - GetNPCZ(n)) + n.Angle;
+                SetNPCYaw(n, CurveAngle(targetYaw2, GetNPCYaw(n), 20.0f));
+
+                float targetDist = Distance2D(GetNPCX(n), GetNPCZ(n), n.EnemyX, n.EnemyZ);
+
+                n.Frame += n.CurrSpeed * 40 * fpsFactor;
+                if (n.Frame > 38) n.Frame = 1;
+                if (n.Frame < 1) n.Frame = 1;
+
+                if (targetDist > 2.0f || targetDist < 1.0f)
+                {
+                    n.CurrSpeed = CurveValue(n.Speed * MathF.Sign(targetDist - 1.5f) * 0.75f, n.CurrSpeed, 10.0f);
+                }
+                else
+                {
+                    n.CurrSpeed = CurveValue(0, n.CurrSpeed, 10.0f);
+                }
+
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+                break;
+
+            case 11: // Search player
+                if (n.Frame < 39 || (n.Frame > 76 && n.Frame < 245) || (n.Frame > 248 && n.Frame < 302) || n.Frame > 344)
+                {
+                    n.Frame += 0.2f * fpsFactor;
+                    if (n.Frame >= 356) n.Frame = 302;
+                }
+
+                if (player.KillTimer >= 0)
+                {
+                    bool searchPlayer = false;
+                    if (dist < 11.0f && EntityVisible(n, player))
+                        searchPlayer = true;
+
+                    if (searchPlayer)
+                    {
+                        float targetYaw3 = GetAngleToPlayer(n, player);
+                        SetNPCYaw(n, CurveAngle(targetYaw3, GetNPCYaw(n), 10.0f));
+
+                        if (n.Reload <= 0 && EntityVisible(n, player))
+                        {
+                            OnPlaySound2?.Invoke(SoundID.Gunshot, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            Shoot(n, player, 1.0f, false);
+                            n.Reload = 7;
+                        }
+
+                        if (n.Reload > 0 && n.Reload <= 7)
+                        {
+                            n.Frame += 0.35f * fpsFactor;
+                            if (n.Frame > 248) n.Frame = 245;
+                        }
+                        else if (n.Frame < 302)
+                        {
+                            n.Frame += 0.35f * fpsFactor;
+                            if (n.Frame > 344) n.Frame = 302;
+                        }
+                    }
+                    else
+                    {
+                        // Pathfind to player
+                        if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                        {
+                            var wp = n.Path[n.PathLocation]!;
+
+                            n.Frame += n.CurrSpeed * 40 * fpsFactor;
+                            if (n.Frame > 76) n.Frame = 39;
+                            if (n.Frame < 39) n.Frame = 39;
+
+                            n.CurrSpeed = CurveValue(n.Speed * 0.7f, n.CurrSpeed, 20.0f);
+                            MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                            float wpYaw = GetAngleToWaypoint(n, wp);
+                            SetNPCYaw(n, CurveAngle(wpYaw, GetNPCYaw(n), 20.0f));
+
+                            if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                                n.PathLocation++;
+                        }
+                        else
+                        {
+                            if (n.PathTimer == 0)
+                                n.PathStatus = FindPath(n, player.X, player.Y + 0.5f, player.Z);
+                        }
+
+                        if (prevFrame < 43 && n.Frame >= 43)
+                            OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), _rng.NextSingle() * 0.2f + 0.5f);
+                        else if (prevFrame < 61 && n.Frame >= 61)
+                            OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), _rng.NextSingle() * 0.2f + 0.5f);
+                    }
+                }
+                else
+                {
+                    n.State = 0;
+                }
+
+                n.Reload -= fpsFactor;
+                break;
+
+            default:
+                n.Frame += 0.2f * fpsFactor;
+                if (n.Frame > 201) n.Frame = 77;
+                if (n.Frame < 77) n.Frame = 77;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// NPCs.bb UpdateMTFUnit - Full MTF Squad AI
+    /// States: 0=wander, 1=search player, 2=contain 173, 3=follow path, 4=flee 106/049, 9=engage zombie
+    /// </summary>
+    private static void UpdateMTF(NPC n, PlayerState player, float fpsFactor)
+    {
+        if (n.IsDead)
+        {
+            n.BlinkTimer = -1.0f;
+            n.Frame = 532;
+            return;
+        }
+
+        n.MaxGravity = 0.03f;
+        n.BlinkTimer -= fpsFactor;
+
+        if (n.BlinkTimer <= -5.0f)
+        {
+            if ((int)n.State == 2 && Curr173 != null && OtherNPCSeesMeNPC(Curr173, n))
+                OnPlaySound2?.Invoke(SoundID.MTFBlinking, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+            n.BlinkTimer = 70.0f * (_rng.NextSingle() * 5.0f + 10.0f);
+        }
+
+        n.Reload -= fpsFactor;
+        float prevFrame = n.Frame;
+
+        if ((int)n.State != 1) n.PrevState = 0;
+
+        if (n.Idle > 0)
+        {
+            FinishWalking(n, 488, 522, 0.015f * 26, fpsFactor);
+            n.Idle -= fpsFactor;
+            if (n.Idle <= 0) n.Idle = 0;
+            return;
+        }
+
+        switch ((int)n.State)
+        {
+            case 0: // Wandering
+                n.Speed = 0.015f;
+                if (n.PathTimer <= 0)
+                {
+                    if (n.MTFLeader != null)
+                        n.PathStatus = FindPath(n, GetNPCX(n.MTFLeader), GetNPCY(n.MTFLeader) + 0.1f, GetNPCZ(n.MTFLeader));
+                    else
+                        n.PathStatus = FindPath(n, player.X + _rng.NextSingle() * 20 - 10, 0.1f, player.Z + _rng.NextSingle() * 20 - 10);
+
+                    if (n.PathStatus == 1)
+                    {
+                        while (n.Path[n.PathLocation] == null && n.PathLocation <= 19)
+                            n.PathLocation++;
+                    }
+                    n.PathTimer = 70.0f * (_rng.NextSingle() * 4.0f + 6.0f);
+                }
+                else if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                {
+                    var wp = n.Path[n.PathLocation]!;
+                    float wpYaw = GetAngleToWaypoint(n, wp);
+                    SetNPCYaw(n, wpYaw);
+                    n.Angle = CurveAngle(GetNPCYaw(n), n.Angle, 20.0f);
+
+                    n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                    TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                    n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                    if (n.Frame > 522) n.Frame = 488;
+                    if (n.Frame < 488) n.Frame = 488;
+
+                    if (wp.Door != null && GetDistanceToWaypoint(n, wp) < 1.0f && !wp.Door.open)
+                    {
+                        wp.Door.open = true;
+                        OnPlaySound2?.Invoke(SoundID.MTFDoorOpen, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    }
+
+                    if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                        n.PathLocation++;
+
+                    n.PathTimer -= fpsFactor;
+                }
+                else
+                {
+                    n.PathTimer -= fpsFactor * 2;
+                    n.CurrSpeed = 0;
+                    FinishWalking(n, 488, 522, n.Speed * 26, fpsFactor);
+                }
+
+                // Player detection
+                if (!NoTarget && NPCSeesPlayer(n, player))
+                {
+                    OnPlaySound2?.Invoke(SoundID.MTFStop, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    n.LastSeen = (int)(70 * 35);
+                    n.State = 1;
+                    n.EnemyX = player.X;
+                    n.EnemyY = player.Y;
+                    n.EnemyZ = player.Z;
+                    n.State2 = 70 * 15;
+                    n.PathTimer = 0;
+                    n.PathStatus = 0;
+                    n.Reload = 200 - (AggressiveNPCs ? 100 : 0);
+                }
+
+                // SCP-173 detection
+                if (Curr173 != null && Curr173.Idle < 2 && OtherNPCSeesMeNPC(Curr173, n) && EntityVisibleNPC(n, Curr173))
+                {
+                    n.State = 2;
+                    n.State2 = 70 * 15;
+                    n.State3 = 0;
+                    n.PathTimer = 0;
+                    OnPlaySound2?.Invoke(SoundID.MTF173Spotted, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                }
+
+                // SCP-106 detection
+                if (Curr106 != null && Curr106.State <= 0 && EntityDistanceNPC(n, Curr106) < 8.0f && EntityVisibleNPC(n, Curr106))
+                {
+                    n.State = 4;
+                    n.State2 = 70 * 15;
+                    n.Target = Curr106;
+                    OnPlaySound2?.Invoke(SoundID.MTF106Spotted, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                }
+                break;
+
+            case 1: // Searching for player
+                n.Speed = 0.015f;
+                n.State2 -= fpsFactor;
+
+                if (NPCSeesPlayer(n, player))
+                {
+                    float playerDist = EntityDistance(n, player);
+
+                    if (playerDist < 4.0f)
+                    {
+                        float angle = VectorYaw(player.X - GetNPCX(n), player.Z - GetNPCZ(n));
+                        SetNPCYaw(n, CurveAngle(angle, GetNPCYaw(n), 10.0f));
+
+                        if (n.Reload <= 0 && player.KillTimer >= 0 && EntityVisible(n, player))
+                        {
+                            float angleDiff = WrapAngle(angle - GetNPCYaw(n));
+                            if (angleDiff < 5 || angleDiff > 355)
+                            {
+                                OnPlaySound2?.Invoke(SoundID.Gunshot, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                                Shoot(n, player, 5.0f / playerDist, AggressiveNPCs);
+                                n.Reload = 7;
+
+                                if (player.KillTimer < 0)
+                                {
+                                    OnDeath?.Invoke("Subject D-9341. Terminated by Nine-Tailed Fox.");
+                                    OnPlaySound2?.Invoke(SoundID.MTFTargetTerminated, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                                }
+                            }
+                        }
+
+                        // Shooting animation
+                        n.Frame += 0.2f * fpsFactor;
+                        if (n.Frame > 193) n.Frame = 78;
+                        if (n.Frame < 78) n.Frame = 78;
+                        n.CurrSpeed = CurveValue(0, n.CurrSpeed, 20.0f);
+                    }
+                    else
+                    {
+                        float targetYaw = GetAngleToPlayer(n, player);
+                        SetNPCYaw(n, targetYaw);
+                        n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                        TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                        if (n.Frame > 522) n.Frame = 488;
+                    }
+                }
+                else
+                {
+                    n.LastSeen = (int)(n.LastSeen - fpsFactor);
+
+                    if (n.PathTimer <= 0)
+                    {
+                        n.PathStatus = FindPath(n, n.EnemyX, n.EnemyY + 0.1f, n.EnemyZ);
+                        n.PathTimer = 70 * 8;
+                    }
+                    else if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                    {
+                        var wp = n.Path[n.PathLocation]!;
+                        float wpYaw = GetAngleToWaypoint(n, wp);
+                        SetNPCYaw(n, wpYaw);
+
+                        n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                        TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                        if (n.Frame > 522) n.Frame = 488;
+
+                        if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                            n.PathLocation++;
+
+                        n.PathTimer -= fpsFactor;
+                    }
+                    else
+                    {
+                        n.CurrSpeed = 0;
+                        FinishWalking(n, 488, 522, n.Speed * 26, fpsFactor);
+                        n.PathTimer -= fpsFactor;
+                    }
+                }
+
+                if (n.State2 <= 0)
+                {
+                    if (n.MTFLeader == null)
+                        OnPlaySound2?.Invoke(SoundID.MTFTargetLost, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    n.State = 0;
+                }
+                break;
+
+            case 2: // Containing SCP-173
+                if (Curr173 == null || Curr173.Idle == 2)
+                {
+                    n.State = 0;
+                    break;
+                }
+
+                foreach (var n2 in GetAllNPCs())
+                    if (n2 != n && n2.NPCType == (int)NPCType.MTF)
+                        n2.State = 2;
+
+                float dist173 = Distance2D(GetNPCX(n), GetNPCZ(n), GetNPCX(Curr173), GetNPCZ(Curr173));
+
+                if (dist173 < 5.0f)
+                {
+                    Curr173.Idle = 1;
+                    n.State2 = 70 * 15;
+                    float tempDist = (n.MTFLeader != null) ? 2.0f : 1.0f;
+
+                    if (dist173 < tempDist)
+                    {
+                        if (n.MTFLeader == null)
+                        {
+                            n.State3 += fpsFactor;
+                            if (n.State3 >= 70 * 15)
+                            {
+                                Curr173.Idle = 2;
+                                Curr173.Target = n;
+                                OnPlaySound2?.Invoke(SoundID.MTF173Box, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            }
+                        }
+                        FinishWalking(n, 488, 522, n.Speed * 26, fpsFactor);
+                    }
+                    else
+                    {
+                        float yaw173 = GetAngleToNPC(n, Curr173);
+                        SetNPCYaw(n, yaw173);
+                        n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                        TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                        if (n.Frame > 522) n.Frame = 488;
+                    }
+                }
+                else
+                {
+                    Curr173.Idle = 0;
+                    if (n.PathTimer <= 0)
+                    {
+                        n.PathStatus = FindPath(n, GetNPCX(Curr173), GetNPCY(Curr173) + 0.1f, GetNPCZ(Curr173));
+                        n.PathTimer = 70 * 8;
+                    }
+                    else if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                    {
+                        var wp = n.Path[n.PathLocation]!;
+                        float wpYaw = GetAngleToWaypoint(n, wp);
+                        SetNPCYaw(n, wpYaw);
+
+                        n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                        TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                        if (n.Frame > 522) n.Frame = 488;
+
+                        if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                            n.PathLocation++;
+
+                        n.PathTimer -= fpsFactor;
+                    }
+                    else
+                    {
+                        n.PathTimer -= fpsFactor * 2;
+                        FinishWalking(n, 488, 522, n.Speed * 26, fpsFactor);
+                    }
+                }
+                break;
+
+            case 4: // SCP-106/049 detected - retreat
+                n.Speed = 0.03f;
+                n.State2 -= fpsFactor;
+
+                if (n.State2 > 0 && n.Target != null)
+                {
+                    if (EntityDistanceNPC(n.Target, n) < 3.0f)
+                    {
+                        float yawTarget = GetAngleToNPC(n, n.Target);
+                        SetNPCYaw(n, yawTarget);
+                        n.CurrSpeed = CurveValue(-n.Speed, n.CurrSpeed, 20.0f);
+                        TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        n.Frame -= n.CurrSpeed * 26 * fpsFactor;
+                        if (n.Frame < 488) n.Frame = 522;
+                    }
+                    else
+                    {
+                        n.PathTimer -= fpsFactor;
+                        if (n.PathTimer <= 0)
+                        {
+                            n.PathStatus = FindPath(n, GetNPCX(n) + _rng.NextSingle() * 20 - 10, 0.1f, GetNPCZ(n) + _rng.NextSingle() * 20 - 10);
+                            n.PathTimer = 70 * 5;
+                        }
+                        else if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                        {
+                            var wp = n.Path[n.PathLocation]!;
+                            float wpYaw = GetAngleToWaypoint(n, wp);
+                            SetNPCYaw(n, wpYaw);
+
+                            n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                            TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                            n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                            if (n.Frame > 522) n.Frame = 488;
+
+                            if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                                n.PathLocation++;
+                        }
+                    }
+                }
+                else
+                {
+                    n.State = 0;
+                    n.Target = null;
+                }
+                break;
+
+            case 9: // Zombie engagement
+                n.State2 -= fpsFactor;
+
+                if (n.State2 > 0 && n.Target != null && !n.Target.IsDead)
+                {
+                    float zombieDist = EntityDistanceNPC(n, n.Target);
+
+                    if (zombieDist < 8.0f && n.Reload <= 0 && EntityVisibleNPC(n, n.Target))
+                    {
+                        float yawZ = GetAngleToNPC(n, n.Target);
+                        SetNPCYaw(n, CurveAngle(yawZ, GetNPCYaw(n), 10.0f));
+
+                        OnPlaySound2?.Invoke(SoundID.Gunshot, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                        n.Target.Health -= _rng.NextSingle() * 20 + 10;
+                        if (n.Target.Health <= 0)
+                        {
+                            n.Target.IsDead = true;
+                            n.State = 0;
+                        }
+                        n.Reload = 7;
+
+                        n.Frame += 0.35f * fpsFactor;
+                        if (n.Frame > 248) n.Frame = 245;
+                    }
+                    else
+                    {
+                        if (n.PathTimer <= 0)
+                        {
+                            n.PathStatus = FindPath(n, GetNPCX(n.Target), GetNPCY(n.Target) + 0.1f, GetNPCZ(n.Target));
+                            n.PathTimer = 70 * 3;
+                        }
+                        else if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                        {
+                            var wp = n.Path[n.PathLocation]!;
+                            SetNPCYaw(n, GetAngleToWaypoint(n, wp));
+                            n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                            TranslateNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                            n.Frame += n.CurrSpeed * 26 * fpsFactor;
+                            if (n.Frame > 522) n.Frame = 488;
+
+                            if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                                n.PathLocation++;
+
+                            n.PathTimer -= fpsFactor;
+                        }
+                    }
+                }
+                else
+                {
+                    n.State = 0;
+                    n.Target = null;
+                }
+                break;
+
+            default:
+                n.State = 0;
+                break;
+        }
+
+        // Footstep sounds
+        if (n.CurrSpeed > 0.005f && ((prevFrame < 495 && n.Frame >= 495) || (prevFrame < 510 && n.Frame >= 510)))
+            OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), _rng.NextSingle() * 0.2f + 0.8f);
+    }
+
+    /// <summary>
+    /// NPCs.bb Class-D/Clerk AI - fear and fleeing behavior
+    /// </summary>
+    private static void UpdateClassD(NPC n, PlayerState player, float fpsFactor)
+    {
+        float dist = EntityDistance(n, player);
+
+        switch ((int)n.State)
+        {
+            case 0: // Idle
+                n.Frame += 0.2f * fpsFactor;
+                if (n.Frame > 284) n.Frame = 155;
+                if (n.Frame < 155) n.Frame = 155;
+                break;
+
+            case 1: // Following path
+                if (n.PathStatus == 1 && n.Path[n.PathLocation] != null)
+                {
+                    var wp = n.Path[n.PathLocation]!;
+                    float wpYaw = GetAngleToWaypoint(n, wp);
+                    SetNPCYaw(n, CurveAngle(wpYaw, GetNPCYaw(n), 20.0f));
+
+                    n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+                    MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                    n.Frame += n.CurrSpeed * 40 * fpsFactor;
+                    if (n.Frame > 37) n.Frame = 1;
+
+                    if (GetDistanceToWaypoint(n, wp) < 0.2f)
+                        n.PathLocation++;
+                }
+                else if (n.PathStatus == 2)
+                {
+                    n.State = 0;
+                    n.CurrSpeed = 0;
+                }
+                else
+                {
+                    n.CurrSpeed = 0;
+                    n.Frame += 0.2f * fpsFactor;
+                    if (n.Frame > 284) n.Frame = 155;
+                }
+                break;
+
+            case 2: // Fleeing
+                n.Speed = 0.025f;
+                n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 10.0f);
+
+                // Run away from player
+                float awayYaw = GetAngleToPlayer(n, player) + 180;
+                SetNPCYaw(n, CurveAngle(awayYaw, GetNPCYaw(n), 15.0f));
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                n.Frame += n.CurrSpeed * 50 * fpsFactor;
+                if (n.Frame > 154) n.Frame = 38;
+                if (n.Frame < 38) n.Frame = 38;
+
+                if (dist > 15.0f)
+                    n.State = 0;
+                break;
+        }
+    }
+
     private static void Update5131(NPC n, PlayerState player, float fpsFactor) { }
     private static void Update372(NPC n, PlayerState player, float fpsFactor, float blinkTimer) { }
     private static void UpdateApache(NPC n, PlayerState player, float fpsFactor) { }
     private static void UpdateTentacle(NPC n, PlayerState player, float fpsFactor) { }
     private static void Update860(NPC n, PlayerState player, float fpsFactor) { }
-    private static void Update939(NPC n, PlayerState player, float fpsFactor) { }
-    private static void Update066(NPC n, PlayerState player, float fpsFactor) { }
-    private static void Update966(NPC n, PlayerState player, float fpsFactor) { }
+
+    /// <summary>
+    /// NPCs.bb SCP-939 - Sound-based hunting
+    /// States: 0=idle, 1=alert, 2=patrol, 3=attack, 5=eating
+    /// </summary>
+    private static void Update939(NPC n, PlayerState player, float fpsFactor)
+    {
+        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+        if (roomName != "room3storage")
+        {
+            n.State = 66;
+            return;
+        }
+
+        if (n.State >= 66) return;
+
+        float dist = EntityDistance(n, player);
+        float prevFrame = n.Frame;
+
+        switch ((int)n.State)
+        {
+            case 0: // Idle
+                n.Frame += 0.1f * fpsFactor;
+                if (n.Frame > 405) n.Frame = 290;
+                if (n.Frame < 290) n.Frame = 290;
+                break;
+
+            case 1: // Alert - heard something
+                if (n.Frame >= 644 && n.Frame < 683)
+                {
+                    n.CurrSpeed = CurveValue(n.Speed * 0.05f, n.CurrSpeed, 10.0f);
+                    n.Frame += 28 * n.CurrSpeed * 4 * fpsFactor;
+                    if (n.Frame >= 682) n.Frame = 175;
+                }
+                else
+                {
+                    n.CurrSpeed = CurveValue(0, n.CurrSpeed, 5.0f);
+                    n.Frame += 0.22f * fpsFactor;
+                    if (n.Frame >= 296) n.State = 2;
+                }
+                n.LastSeen = 0;
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+                break;
+
+            case 2: // Patrol
+                n.CurrSpeed = CurveValue(n.Speed * 0.3f * MathF.Min(dist, 1.0f), n.CurrSpeed, 10.0f);
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                n.Frame += 28 * n.CurrSpeed * fpsFactor;
+                if (n.Frame > 683) n.Frame = 644;
+                if (n.Frame < 644) n.Frame = 644;
+
+                // Footstep sound triggers lure sound
+                if ((prevFrame < 664 && n.Frame >= 664) || (prevFrame > 673 && n.Frame < 654))
+                {
+                    OnPlaySound2?.Invoke(SoundID.Step4SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    if (_rng.Next(10) == 1)
+                        OnPlaySound2?.Invoke(SoundID.Scp939Lure, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                }
+                break;
+
+            case 3: // Attack
+                if (EntityVisible(n, player))
+                {
+                    n.EnemyX = player.X;
+                    n.EnemyZ = player.Z;
+                    n.LastSeen = 10 * 7;
+                }
+
+                if (n.LastSeen > 0 && !NoTarget)
+                {
+                    if (n.Frame >= 18 && n.Frame < 68)
+                    {
+                        // Attack animation
+                        n.CurrSpeed = CurveValue(0, n.CurrSpeed, 5.0f);
+                        n.Frame += 0.5f * fpsFactor;
+                        if (n.Frame > 68) n.Frame = 68;
+
+                        // Hit check
+                        if ((prevFrame < 24 && n.Frame >= 24) || (prevFrame < 57 && n.Frame >= 57))
+                        {
+                            if (Distance2D(n.EnemyX, n.EnemyZ, GetNPCX(n), GetNPCZ(n)) < 1.5f)
+                            {
+                                OnPlaySound?.Invoke(SoundID.Slash1);
+                                player.Injuries += _rng.NextSingle() * 1.0f + 1.5f - player.WearingVest * 0.5f;
+                                player.BlurTimer = 500;
+
+                                if (player.Injuries > 4.0f)
+                                {
+                                    OnDeath?.Invoke("All four (4) escaped SCP-939 specimens have been captured and recontained successfully.");
+                                    OnKill?.Invoke();
+                                    if (!player.GodMode) n.State = 5;
+                                }
+                            }
+                            else
+                            {
+                                n.Frame = 449;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (n.LastSeen == 10 * 7)
+                        {
+                            n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 20.0f);
+
+                            n.Frame += 6 * n.CurrSpeed * fpsFactor;
+                            if (n.Frame > 464) n.Frame = 449;
+                            if (n.Frame < 449) n.Frame = 449;
+
+                            if ((prevFrame < 452 && n.Frame >= 452) || (prevFrame < 459 && n.Frame >= 459))
+                                OnPlaySound2?.Invoke(SoundID.Step1SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+
+                            if (Distance2D(n.EnemyX, n.EnemyZ, GetNPCX(n), GetNPCZ(n)) < 1.1f)
+                                n.Frame = 18;
+                        }
+                        else
+                        {
+                            n.CurrSpeed = CurveValue(0, n.CurrSpeed, 5.0f);
+                            n.Frame += 5 * n.CurrSpeed * fpsFactor;
+                            if (n.Frame > 297) n.Frame = 175;
+                        }
+                    }
+
+                    float angle = VectorYaw(n.EnemyX - GetNPCX(n), n.EnemyZ - GetNPCZ(n));
+                    SetNPCYaw(n, CurveAngle(angle, GetNPCYaw(n), 15.0f));
+                    MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                    n.LastSeen = (int)(n.LastSeen - fpsFactor);
+                }
+                else
+                {
+                    n.State = 2;
+                }
+                break;
+
+            case 5: // Eating
+                if (n.Frame < 68)
+                {
+                    n.Frame += 0.5f * fpsFactor;
+                    if (n.Frame > 68) n.Frame = 68;
+                }
+                else
+                {
+                    n.Frame += 0.5f * fpsFactor;
+                    if (n.Frame > 473) n.Frame = 464;
+                    if (n.Frame < 464) n.Frame = 464;
+                }
+                break;
+        }
+
+        // Sound-based detection
+        if (n.State < 3 && !NoTarget && !n.IgnorePlayer)
+        {
+            float soundDist = dist;
+            if (dist < 4.0f && EntityVisible(n, player)) soundDist -= 1.0f;
+
+            if (player.SoundVolume * 1.2f > soundDist || dist < 1.5f)
+            {
+                if (n.State3 == 0)
+                {
+                    OnPlaySound2?.Invoke(SoundID.Scp939Attack, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    n.State3 = 1;
+                }
+                n.State = 3;
+            }
+            else if (player.SoundVolume * 1.6f > soundDist)
+            {
+                if ((int)n.State != 1 && n.Reload <= 0)
+                {
+                    OnPlaySound2?.Invoke(SoundID.Scp939Alert, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                    n.Frame = 175;
+                    n.Reload = 70 * 3;
+                }
+                n.State = 1;
+            }
+
+            n.Reload -= fpsFactor;
+        }
+    }
+
+    /// <summary>
+    /// NPCs.bb SCP-066 - "Eric?" rolling ball
+    /// States: 0=idle far, 1=staring, 2=roll towards, 3=escape
+    /// </summary>
+    private static void Update066(NPC n, PlayerState player, float fpsFactor)
+    {
+        float dist = Distance2D(player.X, player.Z, GetNPCX(n), GetNPCZ(n));
+
+        switch ((int)n.State)
+        {
+            case 0: // Idle - far from player
+                n.Frame += 0.2f * fpsFactor;
+                if (n.Frame > 612) n.Frame = 451;
+                if (n.Frame < 451) n.Frame = 451;
+
+                if (dist > 20.0f)
+                {
+                    if (n.State2 < Environment.TickCount)
+                    {
+                        TeleportCloser(n, player);
+                        n.State2 = Environment.TickCount + 5000;
+                    }
+                }
+                else if (dist < 8.0f)
+                {
+                    n.LastDist = _rng.NextSingle() * 1.5f + 1.0f;
+                    n.State = 1;
+                }
+                break;
+
+            case 1: // Staring at player
+                if (n.Frame < 451)
+                {
+                    float angle = WrapAngle(CurveAngle(GetAngleToPlayer(n, player) - 180, n.Frame / 1.2445f, 15.0f));
+                    n.Frame = angle * 1.2445f + 2.0f;
+                }
+                else
+                {
+                    n.Frame += 0.4f * fpsFactor;
+                    if (n.Frame >= 646) n.Frame = 2;
+                }
+
+                if (_rng.Next(700) == 1)
+                    OnPlaySound2?.Invoke(SoundID.Scp066Eric, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+
+                if (dist < 1.0f + n.LastDist)
+                    n.State = _rng.Next(2, 4);
+                break;
+
+            case 2: // Roll towards player and make sound
+                if (n.Frame < 647)
+                {
+                    float angle = CurveAngle(0, n.Frame / 1.2445f, 5.0f);
+                    if (angle < 5 || angle > 355)
+                        n.Frame = 647;
+                    else
+                        n.Frame = angle * 1.2445f + 2.0f;
+                }
+                else
+                {
+                    if (MathF.Abs(n.Frame - 683) < 0.1f)
+                    {
+                        if (n.State2 == 0)
+                        {
+                            if (_rng.Next(2) == 1)
+                                OnPlaySound2?.Invoke(SoundID.Scp066Eric, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            else
+                                OnPlaySound2?.Invoke(SoundID.Scp066Notes, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+
+                            // Random effects
+                            switch (_rng.Next(1, 7))
+                            {
+                                case 1: // Beethoven - deafen
+                                    OnPlaySound?.Invoke(SoundID.Scp066Beethoven);
+                                    player.DeafTimer = 70 * (45 + (AggressiveNPCs ? 15 : 0));
+                                    player.CameraShake = 10.0f;
+                                    break;
+                                case 2:
+                                    n.State3 = _rng.Next(700, 1401);
+                                    break;
+                                case 4: // Blood splat
+                                    player.CameraShake = 5.0f;
+                                    if (dist < 0.8f)
+                                        player.Injuries += _rng.NextSingle() * 0.2f + 0.3f;
+                                    break;
+                            }
+                        }
+
+                        n.State2 += fpsFactor;
+                        if (n.State2 > 70)
+                        {
+                            n.State = 3;
+                            n.State2 = 0;
+                        }
+                    }
+                    else
+                    {
+                        n.CurrSpeed = CurveValue(n.Speed * 1.5f, n.CurrSpeed, 10.0f);
+                        float targetYaw = GetAngleToPlayer(n, player) - 180;
+                        SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 10.0f));
+
+                        n.Frame += n.CurrSpeed * 25 * fpsFactor;
+                        if (n.Frame > 683) n.Frame = 683;
+
+                        MoveNPCForward(n, -n.CurrSpeed * fpsFactor);
+                    }
+                }
+                break;
+
+            case 3: // Escape
+                float escapeYaw = GetAngleToPlayer(n, player) + n.Angle - 180;
+                SetNPCYaw(n, CurveAngle(escapeYaw, GetNPCYaw(n), 10.0f));
+
+                n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 10.0f);
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                if (_rng.Next(100) == 1)
+                    n.Angle = _rng.NextSingle() * 40 - 20;
+
+                n.State2 += fpsFactor;
+                if (n.State2 > 250)
+                {
+                    n.Frame -= n.CurrSpeed * 25 * fpsFactor;
+                    if (n.Frame <= 647)
+                    {
+                        n.State = 0;
+                        n.State2 = 0;
+                    }
+                }
+                else
+                {
+                    n.Frame -= n.CurrSpeed * 25 * fpsFactor;
+                    if (n.Frame < 647) n.Frame = 684;
+                }
+                break;
+        }
+
+        // Rolling sound
+        if (n.State > 1)
+            OnPlaySound2?.Invoke(SoundID.Scp066Rolling, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 0.5f);
+
+        // Heartbeat effect
+        if (n.State3 > 0)
+        {
+            n.State3 -= fpsFactor;
+            player.HeartBeatRate = MathF.Max(player.HeartBeatRate, 130);
+            player.HeartBeatVolume = MathF.Max(player.HeartBeatVolume, MathF.Min(n.State3 / 1000, 1.0f));
+        }
+    }
+
+    /// <summary>
+    /// NPCs.bb SCP-966 - Invisible stalker
+    /// States: 0=idle, 1-4=echo, 5-6=wander, 8+=attack
+    /// </summary>
+    private static void Update966(NPC n, PlayerState player, float fpsFactor)
+    {
+        float dist = EntityDistance(n, player);
+
+        if (dist >= HideDistance) return;
+
+        float prevFrame = n.Frame;
+
+        // Visibility based on NVG
+        if (player.WearingNightVision == 0)
+        {
+            n.HideFromNVG = true;
+
+            if (dist < 1 && n.Reload <= 0 && player.MsgTimer <= 0)
+            {
+                string[] msgs = {
+                    "You feel something breathing right next to you.",
+                    "\"It feels like something's in this room with me.\"",
+                    "You feel like something is here with you, but you do not see anything.",
+                    "\"Is my mind playing tricks on me or is there someone else here?\"",
+                    "You feel like something is following you.",
+                    "You can feel something near you, but you are unable to see it."
+                };
+                OnMessage?.Invoke(msgs[_rng.Next(msgs.Length)]);
+                n.Reload = 20 * 70;
+                player.MsgTimer = 8 * 70;
+            }
+            n.Reload -= fpsFactor;
+        }
+        else
+        {
+            n.HideFromNVG = false;
+        }
+
+        // Exhaustion tracking - triggers attack mode
+        if (n.State3 > 5 * 70)
+        {
+            if (n.State3 < 1000)
+            {
+                foreach (var n2 in GetAllNPCs())
+                    if (n2.NPCType == (int)NPCType.SCP966)
+                        n2.State3 = 1000;
+            }
+            n.State = MathF.Max(n.State, 8);
+            n.State3 = 1000;
+        }
+
+        if (player.Stamina < 10)
+            n.State3 += fpsFactor;
+        else if (n.State3 < 900)
+            n.State3 = MathF.Max(n.State3 - fpsFactor * 0.2f, 0);
+
+        if ((int)n.State != 10)
+            n.LastSeen = 0;
+
+        switch ((int)n.State)
+        {
+            case 0: // Idle
+                if (n.Frame > 556)
+                {
+                    n.Frame += 0.25f * fpsFactor;
+                    if (n.Frame > 651) n.Frame = 2;
+                }
+                else
+                {
+                    n.Frame += 0.25f * fpsFactor;
+                    if (n.Frame > 213)
+                    {
+                        if (_rng.Next(3) == 1 && dist < 4)
+                            n.State = _rng.Next(1, 5);
+                        else
+                            n.State = _rng.Next(5, 7);
+                    }
+
+                    if (dist < 2.0f)
+                        n.State = _rng.Next(1, 5);
+                }
+
+                n.CurrSpeed = CurveValue(0, n.CurrSpeed, 10.0f);
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+                break;
+
+            case 1:
+            case 2:
+            case 3:
+            case 4: // Echo/stare
+                n.Frame += 0.25f * fpsFactor;
+                if (n.Frame > 300) n.State = 0;
+                break;
+
+            case 5:
+            case 6: // Wander
+                n.CurrSpeed = CurveValue(n.Speed * 0.3f, n.CurrSpeed, 10.0f);
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                n.Frame += n.CurrSpeed * 30 * fpsFactor;
+                if (n.Frame > 556) n.Frame = 400;
+                if (n.Frame < 400) n.Frame = 400;
+
+                n.State2 += fpsFactor;
+                if (n.State2 > 200)
+                {
+                    n.State = 0;
+                    n.State2 = 0;
+                }
+
+                if (_rng.Next(50) == 1)
+                    SetNPCYaw(n, GetNPCYaw(n) + _rng.NextSingle() * 40 - 20);
+                break;
+
+            default: // Attack mode (state >= 8)
+                float targetYaw = GetAngleToPlayer(n, player);
+                SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 20.0f));
+
+                n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 10.0f);
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                n.Frame += n.CurrSpeed * 40 * fpsFactor;
+                if (n.Frame > 652) n.Frame = 557;
+                if (n.Frame < 557) n.Frame = 557;
+
+                // Attack when close
+                if (dist < 0.8f && n.Reload <= 0)
+                {
+                    player.Injuries += _rng.NextSingle() * 0.3f + 0.2f;
+                    OnPlaySound?.Invoke(SoundID.DamageSFX1);
+                    player.BlurTimer = 300;
+                    n.Reload = 70 * 2;
+
+                    if (player.Injuries > 5)
+                    {
+                        OnDeath?.Invoke("Subject D-9341 found dead in [REDACTED]. Body was determined to have been partially consumed by instances of SCP-966.");
+                        OnKill?.Invoke();
+                    }
+                }
+                break;
+        }
+    }
+
     private static void Update1048A(NPC n, PlayerState player, float fpsFactor) { }
     private static void Update1499(NPC n, PlayerState player, float fpsFactor) { }
     private static void Update008(NPC n, PlayerState player, float fpsFactor) { }
@@ -2116,6 +3338,68 @@ public static class NPCSystem
         float yaw = n.Angle * MathF.PI / 180.0f;
         n.PrevX += MathF.Sin(yaw) * distance;
         n.PrevZ += MathF.Cos(yaw) * distance;
+    }
+
+    private static void TranslateNPCForward(NPC n, float distance)
+    {
+        float yaw = (n.Angle + 90) * MathF.PI / 180.0f;
+        n.PrevX += MathF.Cos(yaw) * distance;
+        n.PrevZ += MathF.Sin(yaw) * distance;
+    }
+
+    public static float VectorYaw(float x, float z)
+    {
+        return MathF.Atan2(x, z) * 180.0f / MathF.PI;
+    }
+
+    public static bool OtherNPCSeesMeNPC(NPC target, NPC observer)
+    {
+        float dist = EntityDistanceNPC(target, observer);
+        if (dist > HideDistance) return false;
+
+        float angle = GetAngleToNPC(observer, target);
+        float angleDiff = MathF.Abs(WrapAngle(angle - observer.Angle));
+        if (angleDiff > 180) angleDiff = 360 - angleDiff;
+
+        return angleDiff < 60;
+    }
+
+    private static void FinishWalking(NPC n, float startFrame, float endFrame, float speed, float fpsFactor)
+    {
+        if (n.Frame >= startFrame && n.Frame < endFrame)
+        {
+            n.Frame += speed * fpsFactor;
+            if (n.Frame > endFrame) n.Frame = startFrame;
+        }
+        else
+        {
+            n.Frame = startFrame;
+        }
+        n.CurrSpeed = CurveValue(0, n.CurrSpeed, 10.0f);
+    }
+
+    private static void Shoot(NPC shooter, PlayerState player, float accuracy, bool aggressive)
+    {
+        float shootAccuracy = aggressive ? 0.1f : accuracy;
+        float hitChance = 1.0f - shootAccuracy;
+
+        if (_rng.NextSingle() < hitChance)
+        {
+            player.Injuries += _rng.NextSingle() * 0.5f + 0.5f;
+            player.BlurTimer = 200;
+            player.CameraShake = 3.0f;
+
+            if (player.Injuries > 3.5f && !player.GodMode)
+            {
+                player.KillTimer = -1;
+                OnKill?.Invoke();
+            }
+        }
+    }
+
+    public static IEnumerable<NPC> GetAllNPCs()
+    {
+        return _npcs;
     }
 
     private static void ClampNPCY(NPC n, float maxY)

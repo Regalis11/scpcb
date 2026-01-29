@@ -68,7 +68,7 @@ public class NPC
     public float CurrSpeed;
 
     public string Texture = "";
-    public float Idle;
+    public bool Idle;
     public float Reload;
 
     public int LastSeen;
@@ -123,6 +123,18 @@ public class NPC
     public bool SoundChnIsStream;
     public bool SoundChn2IsStream;
     public float FallingPickDistance;
+
+    // Apache-specific
+    public float RotorAngle;
+    public float RotorAngle2;
+
+    // SCP-860-specific
+    public bool EyesVisible;
+    public float EyeAlpha;
+    public bool ForestNPCVisible;
+
+    // General flags
+    public bool SoundPlaying;
 }
 
 public static class SoundID
@@ -174,6 +186,26 @@ public static class SoundID
     public const int Scp066Notes = 141;
     public const int Scp066Rolling = 142;
     public const int Scp066Beethoven = 143;
+    // SCP-513-1 sounds
+    public const int Scp513Bell = 144;
+    // SCP-372 sounds
+    public const int Scp372Rustle = 145;
+    // Apache sounds
+    public const int ApacheSFX = 146;
+    public const int ApacheCrash = 147;
+    public const int AlarmSFX2 = 148;
+    public const int Gunshot2SFX = 149;
+    // Tentacle sounds
+    public const int TentacleSpawn = 150;
+    public const int TentacleIdle = 151;
+    public const int TentacleAttack = 152;
+    public const int BodyFall = 153;
+    public const int Damage2 = 154;
+    // SCP-860 sounds
+    public const int Scp860Cancer = 155;
+    public const int Scp860CancerLoud = 156;
+    public const int Scp860Chase = 157;
+    public const int Slash2 = 158;
 }
 
 public static class EventSystem
@@ -214,10 +246,14 @@ public static class NPCSystem
     public static Action? OnKill;
     public static Action<int>? OnPlaySound;
     public static Action<int, Vector3, float>? OnPlaySound2;
+    public static Action<int, Vector3, float, float>? OnLoopSound;
     public static Action<int, float, float, float, float, int, float, float, float, float>? OnCreateDecal;
     public static Action<string>? OnAchievement;
     public static Action? OnMoveToPocketDimension;
     public static Action<string>? OnMessage;
+    public static Action<float>? OnCameraShake;
+    public static Action<float, float>? OnHeartbeat;
+    public static Action<float>? OnBlur;
 
     public static void AddNPC(NPC npc)
     {
@@ -2708,11 +2744,934 @@ public static class NPCSystem
         }
     }
 
-    private static void Update5131(NPC n, PlayerState player, float fpsFactor) { }
-    private static void Update372(NPC n, PlayerState player, float fpsFactor, float blinkTimer) { }
-    private static void UpdateApache(NPC n, PlayerState player, float fpsFactor) { }
-    private static void UpdateTentacle(NPC n, PlayerState player, float fpsFactor) { }
-    private static void Update860(NPC n, PlayerState player, float fpsFactor) { }
+    /// <summary>
+    /// NPCs.bb SCP-513-1 - Hallucination entity
+    /// Twitching effect, waypoint-based escape, bell sounds
+    /// States: 0=idle, 1=walking, 2=walking (alt anim)
+    /// </summary>
+    private static void Update5131(NPC n, PlayerState player, float fpsFactor)
+    {
+        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+
+        // Only active outside pocket dimension
+        if (roomName == "pocketdimension") return;
+
+        float dist = EntityDistance(n, player);
+
+        if (n.Idle)
+        {
+            // Hidden - try to spawn at waypoint near player
+            HideNPC(n);
+
+            if (_rng.Next(200) == 0)
+            {
+                var waypoints = GetAllWaypoints();
+                foreach (var w in waypoints)
+                {
+                    if (w.Room == player.PlayerRoom) continue;
+
+                    float x = MathF.Abs(player.Position.X - w.Position.X);
+                    if (x > 3 && x < 9)
+                    {
+                        float z = MathF.Abs(player.Position.Z - w.Position.Z);
+                        if (z > 3 && z < 9)
+                        {
+                            SetNPCPosition(n, w.Position.X, w.Position.Y, w.Position.Z);
+                            ShowNPC(n);
+
+                            n.LastSeen = 0;
+                            n.Path[0] = w;
+                            n.Idle = false;
+                            n.State2 = _rng.Next(15, 21) * 70;
+                            n.State = MathF.Max(_rng.Next(-1, 3), 0);
+                            n.PrevState = _rng.Next(0, 2);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Active - twitching effect using PrevX/PrevZ
+            n.PrevX = CurveValue(0.0f, n.PrevX, 10.0f);
+            n.PrevZ = CurveValue(0.0f, n.PrevZ, 10.0f);
+
+            if (_rng.Next(100) == 0)
+            {
+                if (_rng.Next(5) == 0)
+                {
+                    // Twitch towards player
+                    n.PrevX = (player.Position.X - GetNPCX(n)) * 0.9f;
+                    n.PrevZ = (player.Position.Z - GetNPCZ(n)) * 0.9f;
+                }
+                else
+                {
+                    // Random small twitch
+                    n.PrevX = _rng.NextSingle() * 0.4f + 0.1f;
+                    n.PrevZ = _rng.NextSingle() * 0.4f + 0.1f;
+                }
+            }
+
+            // Position obj2 with twitching offset
+            float temp = _rng.NextSingle() * 2.0f - 1.0f;
+            float sinOffset = MathF.Sin((GetMilliseconds() / 8 - 45) % 360 * MathF.PI / 180) * 0.05f;
+            // n.obj2 would be at: n.Position + new Vector3(n.PrevX * temp, -0.2f + sinOffset, n.PrevZ * temp)
+
+            if ((int)n.State == 0)
+            {
+                // Idle animation based on PrevState
+                if ((int)n.PrevState == 0)
+                    AnimateNPC(n, 2, 74, 0.2f);
+                else
+                    AnimateNPC(n, 75, 124, 0.2f);
+
+                if (n.LastSeen > 0)
+                {
+                    // Player seen - face player
+                    float targetYaw = GetAngleToPlayer(n, player);
+                    SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 40.0f));
+
+                    if (dist < 4)
+                        n.State = _rng.Next(1, 3);
+                }
+                else
+                {
+                    // Check if player can see us
+                    if (dist < 6 && _rng.Next(5) == 0)
+                    {
+                        if (EntityInView(n, player) && EntityVisible(n, player))
+                        {
+                            n.LastSeen = 1;
+                            OnPlaySound2?.Invoke(SoundID.Scp513Bell, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Moving states - find escape waypoint
+                if (n.Path[0] == null)
+                {
+                    // Find waypoint that is:
+                    // 1. max 8 units away from 513-1
+                    // 2. further from player than current position
+                    var waypoints = GetAllWaypoints();
+                    foreach (var w in waypoints)
+                    {
+                        float x = MathF.Abs(GetNPCX(n) - w.Position.X);
+                        if (x < 8.0f && x > 1.0f)
+                        {
+                            float z = MathF.Abs(GetNPCZ(n) - w.Position.Z);
+                            if (z < 8.0f && z > 1.0f)
+                            {
+                                float wDist = Vector3.Distance(player.Position, w.Position);
+                                if (wDist > dist)
+                                {
+                                    n.Path[0] = w;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // No suitable path - disappear
+                    if (n.Path[0] == null)
+                    {
+                        n.Idle = true;
+                        n.State2 = 0;
+                    }
+                }
+                else
+                {
+                    // Move towards waypoint
+                    float wpDist = Vector3.Distance(
+                        new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)),
+                        n.Path[0].Position);
+
+                    if (wpDist > 1.0f)
+                    {
+                        float targetYaw = VectorYaw(n.Path[0].Position - new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)));
+                        SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 15.0f));
+
+                        n.CurrSpeed = CurveValue(0.05f * MathF.Max((7.0f - dist) / 7.0f, 0.0f), n.CurrSpeed, 15.0f);
+                        MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                        // Random teleport
+                        if (_rng.Next(200) == 0)
+                            MoveNPCForward(n, 0.5f);
+                    }
+                    else
+                    {
+                        // At waypoint - find connected waypoint further from player
+                        for (int i = 0; i < 5; i++)
+                        {
+                            if (n.Path[0].Connected[i] != null)
+                            {
+                                float connDist = Vector3.Distance(player.Position, n.Path[0].Connected[i].Position);
+                                if (connDist > dist)
+                                {
+                                    // Check if player sees transition
+                                    if (n.LastSeen == 0 && EntityInView(n, player) && EntityVisible(n, player))
+                                    {
+                                        n.LastSeen = 1;
+                                        OnPlaySound2?.Invoke(SoundID.Scp513Bell, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                                    }
+
+                                    n.Path[0] = n.Path[0].Connected[i];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (n.Path[0] == null) n.State2 = 0;
+                    }
+                }
+
+                // Animate based on state
+                switch ((int)n.State)
+                {
+                    case 1:
+                        if ((int)n.PrevState == 0)
+                            AnimateNPC(n, 125, 194, n.CurrSpeed * 20);
+                        else
+                            AnimateNPC(n, 195, 264, n.CurrSpeed * 20);
+                        break;
+                    case 2:
+                        if ((int)n.PrevState == 0)
+                            AnimateNPC(n, 2, 74, 0.2f);
+                        else
+                            AnimateNPC(n, 75, 124, 0.2f);
+                        break;
+                }
+            }
+
+            // Main obj position with bob
+            float sinBob = MathF.Sin((GetMilliseconds() / 8) % 360 * MathF.PI / 180) * 0.1f;
+            // Update obj position: (n.Position.X, n.Position.Y - 0.2f + sinBob, n.Position.Z)
+
+            // Timer countdown
+            if (n.State2 > 0)
+            {
+                if (dist < 4.0f) n.State2 -= fpsFactor * 4;
+                n.State2 -= fpsFactor;
+            }
+            else
+            {
+                n.Path[0] = null;
+                n.Idle = true;
+                n.State2 = 0;
+            }
+        }
+
+        n.DropSpeed = 0;
+    }
+
+    /// <summary>
+    /// NPCs.bb SCP-372 - Peripheral vision flicker
+    /// Appears at edge of vision during blink, moves to stay out of direct sight
+    /// </summary>
+    private static void Update372(NPC n, PlayerState player, float fpsFactor, float blinkTimer)
+    {
+        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+
+        // Not active in pocket dimension or dimension 1499
+        if (roomName == "pocketdimension" || roomName == "dimension1499") return;
+
+        float dist = EntityDistance(n, player);
+
+        if (n.Idle)
+        {
+            // Hidden - check for spawn during blink edge
+            HideNPC(n);
+
+            // BlinkTimer < -5 And BlinkTimer > -15 = blink edge detection
+            if (_rng.Next(50) == 0 && (blinkTimer < -5 && blinkTimer > -15))
+            {
+                ShowNPC(n);
+
+                // Spawn at edge of player's view
+                float angle = player.Yaw + (_rng.NextSingle() * 180 - 90);
+                float spawnDist = _rng.NextSingle() * 0.5f + 1.5f; // 1.5 to 2.0
+
+                float spawnX = player.Position.X + MathF.Sin(angle * MathF.PI / 180) * spawnDist;
+                float spawnZ = player.Position.Z + MathF.Cos(angle * MathF.PI / 180) * spawnDist;
+                SetNPCPosition(n, spawnX, player.Position.Y + 0.2f, spawnZ);
+
+                n.Idle = false;
+                n.State = _rng.Next(20, 61); // Timer for how long to be visible
+
+                // Rare rustle sound
+                if (_rng.Next(300) == 0)
+                    OnPlaySound2?.Invoke(SoundID.Scp372Rustle, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), _rng.NextSingle() * 0.2f);
+            }
+        }
+        else
+        {
+            // Visible - flicker and move at edge of vision
+
+            // Bobbing/twitching position
+            float bobY = 0.3f + 0.1f * MathF.Sin(GetMilliseconds() / 2.0f * MathF.PI / 180);
+            float jitterX = (_rng.NextSingle() - 0.5f) * 0.01f;
+            float jitterZ = (_rng.NextSingle() - 0.5f) * 0.01f;
+            // Visual position would be: n.Position + new Vector3(jitterX, bobY, jitterZ)
+
+            // Spinning/tumbling rotation
+            float roll = (GetMilliseconds() / 5) % 360;
+            // Visual rotation: (0, n.Yaw, roll)
+
+            // Animation
+            AnimateNPC(n, 32, 113, 0.4f);
+
+            // If player can see it
+            if (EntityInView(n, player))
+            {
+                // Achievement trigger
+                OnAchievement?.Invoke("Achv372");
+
+                // Rare rustle sound
+                if (_rng.Next(30) == 0)
+                {
+                    if (!n.SoundPlaying && EntityVisible(n, player))
+                    {
+                        OnPlaySound2?.Invoke(SoundID.Scp372Rustle, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 0.3f);
+                        n.SoundPlaying = true;
+                    }
+                }
+
+                // Calculate angle to player and move to stay at edge
+                float angleToPlayer = GetAngleToPlayer(n, player);
+                float relativeAngle = WrapAngle(player.Yaw - angleToPlayer);
+
+                // Move to stay at 80 degrees from player's view
+                if (relativeAngle < 180)
+                    SetNPCYaw(n, player.Yaw - 80);
+                else
+                    SetNPCYaw(n, player.Yaw + 80);
+
+                MoveNPCForward(n, 0.03f * fpsFactor);
+
+                // Decrease timer faster when in view
+                n.State -= fpsFactor;
+            }
+
+            // Always decrease timer slowly
+            n.State -= fpsFactor / 80.0f;
+
+            // Timer expired - hide
+            if (n.State <= 0) n.Idle = true;
+        }
+
+        n.DropSpeed = 0;
+    }
+
+    /// <summary>
+    /// NPCs.bb Apache Helicopter - Combat/patrol helicopter
+    /// States: 0=idle rotor, 1=patrol, 2=attack player, 3=attack position, 4=crash, 5=crashed
+    /// </summary>
+    private static void UpdateApache(NPC n, PlayerState player, float fpsFactor)
+    {
+        float dist = EntityDistance(n, player);
+
+        // Helicopter sound
+        if (dist < 60.0f)
+        {
+            string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+            float dist2 = 1.0f;
+            if (roomName == "exit1")
+            {
+                // Distance to room object[3] for volume scaling
+                // dist2 = Max(Min(EntityDistance(n.Collider, room.Objects[3])/(8000*RoomScale), 1.0), 0.0)
+                dist2 = 1.0f; // Simplified - would need room object reference
+            }
+            OnLoopSound?.Invoke(SoundID.ApacheSFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 25.0f, dist2);
+        }
+
+        n.DropSpeed = 0;
+
+        switch ((int)n.State)
+        {
+            case 0: // Idle - rotor spinning
+            case 1: // Patrol
+                // Spin rotors
+                n.RotorAngle = (n.RotorAngle + 20.0f * fpsFactor) % 360;
+                n.RotorAngle2 = (n.RotorAngle2 + 20.0f * fpsFactor) % 360;
+
+                if ((int)n.State == 1 && !player.NoTarget)
+                {
+                    // Check if player in range
+                    if (MathF.Abs(player.Position.X - GetNPCX(n)) < 30.0f &&
+                        MathF.Abs(player.Position.Z - GetNPCZ(n)) < 30.0f &&
+                        MathF.Abs(player.Position.Y - GetNPCY(n)) < 20.0f)
+                    {
+                        if (_rng.Next(20) == 0 && EntityVisible(n, player))
+                        {
+                            n.State = 2;
+                            OnPlaySound2?.Invoke(SoundID.AlarmSFX2, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                        }
+                    }
+                }
+                break;
+
+            case 2: // Attack player
+            case 3: // Attack position (EnemyX/Y/Z)
+                // Spin rotors
+                n.RotorAngle = (n.RotorAngle + 20.0f * fpsFactor) % 360;
+                n.RotorAngle2 = (n.RotorAngle2 + 20.0f * fpsFactor) % 360;
+
+                Vector3 target;
+                if ((int)n.State == 2)
+                    target = player.Position;
+                else
+                    target = new Vector3(n.EnemyX, n.EnemyY, n.EnemyZ);
+
+                if (player.NoTarget && (int)n.State == 2)
+                {
+                    n.State = 1;
+                    break;
+                }
+
+                // Check if target in range
+                if (MathF.Abs(target.X - GetNPCX(n)) < 55.0f &&
+                    MathF.Abs(target.Z - GetNPCZ(n)) < 55.0f &&
+                    MathF.Abs(target.Y - GetNPCY(n)) < 20.0f)
+                {
+                    // Point at target
+                    float targetYaw = VectorYaw(target - new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)));
+                    float targetPitch = VectorPitch(target - new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)));
+
+                    SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 90.0f));
+                    SetNPCPitch(n, CurveAngle(MathF.Min(WrapAngle(targetPitch), 40.0f), GetNPCPitch(n), 40.0f));
+
+                    // Maintain altitude above target
+                    float newY = CurveValue(target.Y + 8.0f, GetNPCY(n), 70.0f);
+                    SetNPCPosition(n, GetNPCX(n), newY, GetNPCZ(n));
+
+                    // Distance to target (2D)
+                    float distXZ = MathF.Sqrt(MathF.Pow(target.X - GetNPCX(n), 2) + MathF.Pow(target.Z - GetNPCZ(n), 2));
+
+                    // Approach speed
+                    n.CurrSpeed = CurveValue(MathF.Min(distXZ - 6.5f, 6.5f) * 0.008f, n.CurrSpeed, 50.0f);
+                    MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                    // Visibility check timer
+                    if (n.PathTimer == 0)
+                    {
+                        n.PathStatus = EntityVisible(n, player) ? 1 : 0;
+                        n.PathTimer = _rng.Next(100, 201);
+                    }
+                    else
+                    {
+                        n.PathTimer = MathF.Min(n.PathTimer - fpsFactor, 0.0f);
+                    }
+
+                    if (n.PathStatus == 1) // Target visible
+                    {
+                        // Level out roll
+                        SetNPCRoll(n, CurveAngle(0, GetNPCRoll(n), 40.0f));
+
+                        // Shooting
+                        if (n.Reload <= 0 && distXZ < 20.0f)
+                        {
+                            // Calculate gun position
+                            float gunYaw = GetNPCYaw(n);
+                            // Check if gun is aimed at target
+                            float aimAngle = WrapAngle(targetYaw - gunYaw);
+
+                            if (aimAngle < 10)
+                            {
+                                OnPlaySound2?.Invoke(SoundID.Gunshot2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+
+                                // Shoot with accuracy based on distance
+                                float accuracy = ((10 / distXZ) * (1 / distXZ)) * ((int)n.State == 2 ? 1 : 0);
+                                bool canKill = (int)n.State == 2;
+                                Shoot(new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), accuracy, canKill, player);
+
+                                n.Reload = 5;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Banking when target not visible
+                        SetNPCRoll(n, CurveAngle(-20, GetNPCRoll(n), 40.0f));
+                    }
+
+                    // Strafe based on roll
+                    float strafeAmount = -GetNPCRoll(n) * 0.002f;
+                    TranslateNPCForward(n, strafeAmount, 0, 0);
+
+                    n.Reload -= fpsFactor;
+                }
+                break;
+
+            case 4: // Crashing
+                if (n.State2 < 300)
+                {
+                    // Spin rotors
+                    n.RotorAngle = (n.RotorAngle + 20.0f * fpsFactor) % 360;
+                    n.RotorAngle2 = (n.RotorAngle2 + 20.0f * fpsFactor) % 360;
+
+                    // Spin out of control
+                    SetNPCYaw(n, GetNPCYaw(n) - fpsFactor * 7);
+                    n.State2 += fpsFactor * 0.3f;
+
+                    // Move towards crash point
+                    Vector3 crashTarget = new Vector3(n.EnemyX, n.EnemyY, n.EnemyZ);
+                    Vector3 toTarget = Vector3.Normalize(crashTarget - new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)));
+
+                    float moveSpeed = fpsFactor * 0.001f * n.State2;
+                    SetNPCPosition(n,
+                        GetNPCX(n) + toTarget.X * moveSpeed,
+                        GetNPCY(n) + toTarget.Y * moveSpeed,
+                        GetNPCZ(n) + toTarget.Z * moveSpeed);
+
+                    // Check if reached crash point
+                    float crashDist = Vector3.Distance(new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), crashTarget);
+                    if (crashDist < 0.3f)
+                    {
+                        OnCameraShake?.Invoke(3.0f);
+                        OnPlaySound?.Invoke(SoundID.ApacheCrash);
+                        n.State = 5;
+                    }
+                }
+                break;
+
+            case 5: // Crashed - do nothing
+                break;
+        }
+    }
+
+    /// <summary>
+    /// NPCs.bb Tentacle - Pocket dimension appendage
+    /// States: 0=spawn, 1=idle, 2=attack
+    /// Animation: spawn 283-389, attack 2-32, idle 33-174
+    /// </summary>
+    private static void UpdateTentacle(NPC n, PlayerState player, float fpsFactor)
+    {
+        float dist = EntityDistance(n, player);
+
+        if (dist >= HideDistance) return;
+
+        switch ((int)n.State)
+        {
+            case 0: // Spawn
+                if (n.Frame > 283)
+                {
+                    // Heartbeat effect
+                    OnHeartbeat?.Invoke(CurveValue(1.0f, 0, 50), CurveValue(130, 60, 100));
+
+                    // Face player
+                    float targetYaw = GetAngleToPlayer(n, player);
+                    SetNPCYaw(n, CurveAngle(targetYaw, GetNPCYaw(n), 25.0f));
+
+                    // Spawn animation
+                    AnimateNPC(n, 283, 389, 0.3f, false);
+
+                    if (n.Frame > 388)
+                    {
+                        n.State = 1;
+                        // Free spawn sound
+                    }
+                }
+                else
+                {
+                    // Wait for player to get close
+                    if (dist < 2.5f)
+                    {
+                        SetNPCFrame(n, 284);
+                        OnPlaySound?.Invoke(SoundID.TentacleSpawn);
+                    }
+                }
+                break;
+
+            case 1: // Idle
+                // Loop idle sound
+                OnLoopSound?.Invoke(SoundID.TentacleIdle, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 10.0f, 1.0f);
+
+                // Check for attack
+                if (dist < 1.8f)
+                {
+                    float deltaYaw = MathF.Abs(DeltaYaw(n, player));
+                    if (deltaYaw < 20)
+                    {
+                        n.State = 2;
+                    }
+                }
+
+                // Face player
+                float idleTargetYaw = GetAngleToPlayer(n, player);
+                SetNPCYaw(n, CurveAngle(idleTargetYaw, GetNPCYaw(n), 25.0f));
+
+                // Idle animation
+                AnimateNPC(n, 33, 174, 0.3f, true);
+                break;
+
+            case 2: // Attack
+                // Finish idle animation before attacking
+                if (n.Frame > 33 && n.Frame < 174)
+                {
+                    AnimateNPC(n, 33, 174, 2.0f, false);
+                }
+                else
+                {
+                    // Face player
+                    float attackTargetYaw = GetAngleToPlayer(n, player);
+                    SetNPCYaw(n, CurveAngle(attackTargetYaw, GetNPCYaw(n), 10.0f));
+
+                    if (n.Frame > 33)
+                    {
+                        // Reset to attack start
+                        n.Frame = 2;
+                        OnPlaySound?.Invoke(SoundID.TentacleAttack);
+                    }
+
+                    // Attack animation
+                    AnimateNPC(n, 2, 32, 0.3f, false);
+
+                    // Damage on frame 5-6
+                    if (n.Frame >= 5 && n.Frame < 6)
+                    {
+                        if (dist < 1.8f)
+                        {
+                            float deltaYaw = MathF.Abs(DeltaYaw(n, player));
+                            if (deltaYaw < 20)
+                            {
+                                if (player.WearingHazmat)
+                                {
+                                    // Reduced damage with hazmat
+                                    player.Injuries += _rng.NextSingle() * 0.5f;
+                                    OnPlaySound?.Invoke(SoundID.BodyFall);
+                                }
+                                else
+                                {
+                                    // Full damage
+                                    OnBlur?.Invoke(100);
+                                    player.Injuries += _rng.NextSingle() * 0.5f + 1.0f; // 1.0 to 1.5
+                                    OnPlaySound?.Invoke(SoundID.Damage2);
+
+                                    if (player.Injuries > 3.0f)
+                                    {
+                                        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+                                        if (roomName == "room2offices")
+                                        {
+                                            OnDeath?.Invoke("\"One large and highly active tentacle-like appendage seems " +
+                                                "to have grown outside the dead body of a scientist within office area [REDACTED]. Its level of aggression is " +
+                                                "unlike anything we've seen before - it looks like it has " +
+                                                "beaten some unfortunate Class D to death at some point during the breach.\"");
+                                        }
+                                        else
+                                        {
+                                            OnDeath?.Invoke("\"We will need more than the regular cleaning team to take care of this. " +
+                                                "Two large and highly active tentacle-like appendages seem " +
+                                                "to have formed inside the chamber. Their level of aggression is " +
+                                                "unlike anything we've seen before - it looks like they have " +
+                                                "beaten some unfortunate Class D to death at some point during the breach.\"");
+                                        }
+                                    }
+                                }
+
+                                n.Frame = 6;
+                            }
+                        }
+                    }
+                    else if (n.Frame >= 32)
+                    {
+                        // Return to idle
+                        n.State = 1;
+                        n.Frame = 173;
+                    }
+                }
+                break;
+        }
+
+        // Visual position/rotation
+        // obj position: (n.Position.X, n.Position.Y, n.Position.Z)
+        // obj rotation: (n.Pitch - 90, n.Yaw - 180, n.Roll)
+
+        n.DropSpeed = 0;
+    }
+
+    /// <summary>
+    /// NPCs.bb SCP-860-2 - Forest creature
+    /// States: 0=hidden, 1=peek behind trees, 2=walk towards player, 3=chase and attack
+    /// Complex forest grid-based spawning and pathfinding
+    /// </summary>
+    private static void Update860(NPC n, PlayerState player, float fpsFactor)
+    {
+        string roomName = player.PlayerRoom?.RoomTemplate?.Name ?? "";
+        if (roomName != "room860") return;
+
+        float dist = EntityDistance(n, player);
+
+        // ForestNPC visibility handling (secondary visual entity)
+        if (n.ForestNPCVisible)
+        {
+            if ((int)n.State != 1)
+            {
+                // Hide during blink edge
+                if ((player.BlinkTimer < -8 && player.BlinkTimer > -12) || !EntityInView(n, player))
+                {
+                    n.ForestNPCVisible = false;
+                }
+            }
+        }
+
+        switch ((int)n.State)
+        {
+            case 0: // Hidden
+                HideNPC(n);
+                n.State2 = 0;
+                SetNPCPosition(n, 0, -100, 0);
+                break;
+
+            case 1: // Peek behind trees
+                n.DropSpeed = 0;
+
+                if (GetNPCY(n) <= -100)
+                {
+                    // Spawn in nearby empty forest cell
+                    // Forest grid system - transform player position to local coords
+                    // Then find empty cell (not on path) near player
+
+                    // Simplified spawn - would need forest grid reference
+                    float spawnAngle = player.Yaw + (_rng.NextSingle() * 180 - 90);
+                    float spawnDist = 8.0f + _rng.NextSingle() * 4.0f;
+
+                    float spawnX = player.Position.X + MathF.Sin(spawnAngle * MathF.PI / 180) * spawnDist;
+                    float spawnZ = player.Position.Z + MathF.Cos(spawnAngle * MathF.PI / 180) * spawnDist;
+
+                    // Check if spawn point is in view
+                    Vector3 spawnPos = new Vector3(spawnX, player.Position.Y + 2.3f, spawnZ);
+                    // If in view, don't spawn
+                    // If not in view, spawn
+
+                    SetNPCPosition(n, spawnX, player.Position.Y + 2.3f, spawnZ);
+                    OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 0.5f);
+
+                    // Random starting animation
+                    switch (_rng.Next(3))
+                    {
+                        case 0:
+                            SetNPCYaw(n, GetAngleToPlayer(n, player));
+                            n.Frame = 2;
+                            break;
+                        case 1:
+                            SetNPCYaw(n, GetAngleToPlayer(n, player));
+                            n.Frame = 201;
+                            break;
+                        case 2:
+                            SetNPCYaw(n, GetAngleToPlayer(n, player) + 90);
+                            n.Frame = 299;
+                            break;
+                    }
+
+                    n.State2 = 0;
+                }
+                else
+                {
+                    ShowNPC(n);
+
+                    // Don't start moving until player is looking
+                    if (n.State2 == 0)
+                    {
+                        if (EntityInView(n, player))
+                        {
+                            n.State2 = 1;
+                            if (_rng.Next(8) == 0)
+                                OnPlaySound2?.Invoke(SoundID.Scp860Cancer, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                        }
+                    }
+                    else
+                    {
+                        float prevFrame = n.Frame;
+
+                        if (n.Frame <= 199)
+                        {
+                            AnimateNPC(n, 2, 199, 0.5f, false);
+                            if (n.Frame >= 199)
+                            {
+                                n.Frame = 298;
+                                OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            }
+                        }
+                        else if (n.Frame <= 297)
+                        {
+                            SetNPCYaw(n, GetAngleToPlayer(n, player));
+                            AnimateNPC(n, 200, 297, 0.5f, false);
+                            if (n.Frame >= 297)
+                            {
+                                n.Frame = 298;
+                                OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            }
+                        }
+                        else
+                        {
+                            // Walking - face player direction
+                            float targetAngle = VectorYaw(new Vector3(player.Position.X - GetNPCX(n), 0, player.Position.Z - GetNPCZ(n)));
+                            SetNPCYaw(n, CurveAngle(targetAngle + 90, GetNPCYaw(n) + 90, 20.0f) - 90);
+
+                            AnimateNPC(n, 298, 316, n.CurrSpeed * 10);
+
+                            n.CurrSpeed = CurveValue(n.Speed, n.CurrSpeed, 10.0f);
+                            MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                            // Hide if too far
+                            if (dist > 15.0f)
+                            {
+                                SetNPCPosition(n, 0, -110, 0);
+                                n.State = 0;
+                                n.State2 = 0;
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case 2: // Walk towards player on path
+                ShowNPC(n);
+
+                float prevFrame2 = n.Frame;
+
+                if (GetNPCY(n) <= -100)
+                {
+                    // Spawn on nearby path cell
+                    float spawnAngle = player.Yaw + 180; // Behind player
+                    float spawnDist = 10.0f;
+
+                    float spawnX = player.Position.X + MathF.Sin(spawnAngle * MathF.PI / 180) * spawnDist;
+                    float spawnZ = player.Position.Z + MathF.Cos(spawnAngle * MathF.PI / 180) * spawnDist;
+
+                    SetNPCPosition(n, spawnX, player.Position.Y + 1.0f, spawnZ);
+
+                    // Force blink if player is looking
+                    if (EntityInView(n, player))
+                        player.BlinkTimer = -10;
+                }
+                else
+                {
+                    // Find angle towards player (using forest pathfinding)
+                    float targetAngle = GetAngleToPlayer(n, player);
+                    SetNPCYaw(n, CurveAngle(targetAngle + 90, GetNPCYaw(n) + 90, 80.0f) - 90);
+
+                    n.CurrSpeed = CurveValue(n.Speed * 0.3f, n.CurrSpeed, 50.0f);
+                    MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+
+                    AnimateNPC(n, 494, 569, n.CurrSpeed * 25);
+
+                    // Check if player close and looking
+                    if (n.State2 == 0)
+                    {
+                        if (dist < 8.0f && EntityInView(n, player))
+                        {
+                            OnPlaySound?.Invoke(SoundID.Scp860Chase);
+                            OnPlaySound2?.Invoke(SoundID.Scp860Cancer, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                            n.State2 = 1;
+                        }
+                    }
+
+                    // Running triggers more sounds
+                    if (player.CurrSpeed > 0.03f)
+                    {
+                        n.State3 += fpsFactor;
+                        if (_rng.NextSingle() * 5000 < n.State3)
+                        {
+                            if (!n.SoundPlaying)
+                            {
+                                OnPlaySound2?.Invoke(SoundID.Scp860Cancer, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                                n.SoundPlaying = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        n.State3 = MathF.Max(n.State3 - fpsFactor, 0);
+                    }
+
+                    // Transition to chase
+                    if (dist < 4.5f || n.State3 > _rng.NextSingle() * 50 + 200)
+                    {
+                        OnPlaySound2?.Invoke(SoundID.Scp860CancerLoud, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                        n.State = 3;
+                    }
+
+                    // Hide if too far
+                    if (dist > 20.0f)
+                    {
+                        n.State = 0;
+                        n.State2 = 0;
+                        SetNPCPosition(n, 0, -110, 0);
+                    }
+
+                    // Footstep sounds
+                    if ((prevFrame2 < 533 && n.Frame >= 533) || (prevFrame2 > 568 && n.Frame < 2))
+                        OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 0.6f);
+                }
+                break;
+
+            case 3: // Chase and attack
+                ShowNPC(n);
+
+                float prevFrame3 = n.Frame;
+
+                // Face player
+                float chaseAngle = GetAngleToPlayer(n, player);
+                SetNPCYaw(n, CurveAngle(chaseAngle + 90, GetNPCYaw(n) + 90, 40.0f) - 90);
+
+                // Attack if close OR already attacking
+                if (dist < 1.1f || (n.Frame > 451 && n.Frame < 493) || player.KillTimer < 0)
+                {
+                    // Death message clear for attack
+
+                    n.CurrSpeed = CurveValue(0.0f, n.CurrSpeed, 5.0f);
+
+                    AnimateNPC(n, 451, 493, 0.5f, false);
+
+                    // Slash sounds
+                    if (prevFrame3 < 461 && n.Frame >= 461)
+                    {
+                        if (player.KillTimer >= 0)
+                        {
+                            OnDeath?.Invoke("");
+                        }
+                        OnPlaySound?.Invoke(SoundID.Slash1);
+                    }
+                    if (prevFrame3 < 476 && n.Frame >= 476)
+                        OnPlaySound?.Invoke(SoundID.Slash2);
+                    if (prevFrame3 < 486 && n.Frame >= 486)
+                        OnPlaySound?.Invoke(SoundID.Slash2);
+                }
+                else
+                {
+                    // Chase
+                    n.CurrSpeed = CurveValue(n.Speed * 0.8f, n.CurrSpeed, 10.0f);
+
+                    AnimateNPC(n, 298, 316, n.CurrSpeed * 10);
+
+                    // Footstep
+                    if (prevFrame3 < 307 && n.Frame >= 307)
+                        OnPlaySound2?.Invoke(SoundID.Step2SFX, new Vector3(GetNPCX(n), GetNPCY(n), GetNPCZ(n)), 1.0f);
+                }
+
+                MoveNPCForward(n, n.CurrSpeed * fpsFactor);
+                break;
+        }
+
+        // Visual updates when not hidden
+        if ((int)n.State != 0)
+        {
+            // Eyes visible at distance
+            if (dist > 8.0f)
+            {
+                n.EyesVisible = true;
+                n.EyeAlpha = MathF.Min(dist - 8.0f, 1.0f);
+            }
+            else
+            {
+                n.EyesVisible = false;
+            }
+        }
+    }
 
     /// <summary>
     /// NPCs.bb SCP-939 - Sound-based hunting
@@ -3504,6 +4463,106 @@ public static class NPCSystem
         // For now return 0 to use direct chase
         return 0;
     }
+
+    // Additional helpers for remaining NPCs
+
+    public static float VectorYaw(Vector3 v)
+    {
+        return MathF.Atan2(v.X, v.Z) * 180.0f / MathF.PI;
+    }
+
+    public static float VectorPitch(Vector3 v)
+    {
+        float dist = MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+        return MathF.Atan2(v.Y, dist) * 180.0f / MathF.PI;
+    }
+
+    private static float GetNPCPitch(NPC n) => n.BonePitch;
+    private static void SetNPCPitch(NPC n, float pitch) => n.BonePitch = pitch;
+
+    private static float GetNPCRoll(NPC n) => n.BoneRoll;
+    private static void SetNPCRoll(NPC n, float roll) => n.BoneRoll = roll;
+
+    private static void SetNPCFrame(NPC n, float frame) => n.Frame = frame;
+
+    private static long GetMilliseconds()
+    {
+        return Environment.TickCount64;
+    }
+
+    private static float DeltaYaw(NPC n, PlayerState player)
+    {
+        float angleToPlayer = GetAngleToPlayer(n, player);
+        float diff = WrapAngle(angleToPlayer - GetNPCYaw(n));
+        if (diff > 180) diff -= 360;
+        return diff;
+    }
+
+    private static void TranslateNPCForward(NPC n, float x, float y, float z)
+    {
+        // Local-to-world translation based on NPC facing direction
+        float yawRad = n.Angle * MathF.PI / 180.0f;
+        float cosYaw = MathF.Cos(yawRad);
+        float sinYaw = MathF.Sin(yawRad);
+
+        // Transform local coordinates to world coordinates
+        n.PrevX += x * cosYaw - z * sinYaw;
+        n.PrevY += y;
+        n.PrevZ += x * sinYaw + z * cosYaw;
+    }
+
+    private static void Shoot(Vector3 origin, float accuracy, bool canKill, PlayerState player)
+    {
+        // Apache helicopter shooting
+        float hitChance = accuracy;
+        if (_rng.NextSingle() < hitChance)
+        {
+            player.Injuries += _rng.NextSingle() * 0.5f + 0.5f;
+            player.BlurTimer = 200;
+            player.CameraShake = 3.0f;
+
+            if (canKill && player.Injuries > 3.5f && !player.GodMode)
+            {
+                player.KillTimer = -1;
+                OnKill?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>
+    /// AnimateNPC with looping control
+    /// </summary>
+    private static void AnimateNPC(NPC n, float startFrame, float endFrame, float speed, bool loop = true)
+    {
+        n.Frame += speed;
+        if (loop)
+        {
+            if (n.Frame > endFrame) n.Frame = startFrame;
+            if (n.Frame < startFrame) n.Frame = startFrame;
+        }
+        else
+        {
+            if (n.Frame > endFrame) n.Frame = endFrame;
+            if (n.Frame < startFrame) n.Frame = startFrame;
+        }
+    }
+
+    private static readonly List<WayPoint> _waypoints = new();
+
+    public static void AddWaypoint(WayPoint wp)
+    {
+        _waypoints.Add(wp);
+    }
+
+    public static void ClearWaypoints()
+    {
+        _waypoints.Clear();
+    }
+
+    public static IEnumerable<WayPoint> GetAllWaypoints()
+    {
+        return _waypoints;
+    }
 }
 
 public class WayPoint
@@ -3512,4 +4571,5 @@ public class WayPoint
     public Rooms? Room;
     public Doors? Door;
     public WayPoint?[] Connected = new WayPoint?[5];
+    public Vector3 Position;
 }

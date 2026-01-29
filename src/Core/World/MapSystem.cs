@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SCPContainmentBreach.Core.Engine;
 using SCPContainmentBreach.Core.Types;
 
@@ -500,10 +501,198 @@ public class MapSystem
         return handle;
     }
 
+    /// <summary>
+    /// FillRoom - MapSystem.bb lines 2170-2400
+    /// Sets up room-specific content: waypoints, sound emitters, lights, triggerboxes
+    /// </summary>
     private void FillRoom(Rooms r)
     {
-        // Room-specific content setup
-        // Will be fully implemented in Part 2
+        if (r.RoomTemplate == null) return;
+
+        var rt = r.RoomTemplate;
+        float roomX = r.x;
+        float roomY = r.y;
+        float roomZ = r.z;
+        float roomAngle = r.angle;
+
+        // Create room grid for waypoints
+        r.grid = new Grids();
+
+        // Generate basic waypoint grid for the room
+        // Waypoints are placed in a grid pattern based on room shape
+        int gridSize = RoomConstants.gridsz;
+        float cellSize = 0.5f; // Half-unit cells
+
+        // Calculate rotation matrix for room angle
+        float angleRad = roomAngle * MathF.PI / 180f;
+        float cosA = MathF.Cos(angleRad);
+        float sinA = MathF.Sin(angleRad);
+
+        // Create center waypoint
+        int centerIdx = (gridSize / 2) * gridSize + (gridSize / 2);
+        var centerWP = new WayPoints
+        {
+            obj = CreatePivot(),
+            room = r,
+            state = 0
+        };
+        PositionEntity(centerWP.obj, roomX, roomY + 0.1f, roomZ);
+        r.grid.waypoints[centerIdx] = centerWP;
+
+        // Generate waypoints based on room shape
+        switch (rt.Shape)
+        {
+            case RoomShapes.ROOM1:
+                // Dead end - waypoints in one direction
+                GenerateWaypointsLine(r, 0, 0, 0, 1, 5);
+                break;
+
+            case RoomShapes.ROOM2:
+                // Straight corridor - waypoints in both directions
+                GenerateWaypointsLine(r, 0, 0, 0, 1, 5);
+                GenerateWaypointsLine(r, 0, 0, 0, -1, 5);
+                break;
+
+            case RoomShapes.ROOM2C:
+                // Corner - waypoints in two perpendicular directions
+                GenerateWaypointsLine(r, 0, 0, 0, 1, 5);
+                GenerateWaypointsLine(r, 0, 0, 1, 0, 5);
+                break;
+
+            case RoomShapes.ROOM3:
+                // T-junction - waypoints in three directions
+                GenerateWaypointsLine(r, 0, 0, 0, 1, 5);
+                GenerateWaypointsLine(r, 0, 0, 0, -1, 5);
+                GenerateWaypointsLine(r, 0, 0, 1, 0, 5);
+                break;
+
+            case RoomShapes.ROOM4:
+                // 4-way intersection - waypoints in all directions
+                GenerateWaypointsLine(r, 0, 0, 0, 1, 5);
+                GenerateWaypointsLine(r, 0, 0, 0, -1, 5);
+                GenerateWaypointsLine(r, 0, 0, 1, 0, 5);
+                GenerateWaypointsLine(r, 0, 0, -1, 0, 5);
+                break;
+        }
+
+        // Connect waypoints within this room
+        ConnectRoomWaypoints(r);
+
+        // Copy sound emitters from template
+        for (int i = 0; i < RoomConstants.MaxRoomEmitters; i++)
+        {
+            if (rt.TempSoundEmitter[i] != 0)
+            {
+                r.SoundEmitter[i] = rt.TempSoundEmitter[i];
+
+                // Transform emitter position by room angle
+                float ex = rt.TempSoundEmitterX[i];
+                float ez = rt.TempSoundEmitterZ[i];
+                float rotX = ex * cosA - ez * sinA;
+                float rotZ = ex * sinA + ez * cosA;
+
+                int emitterObj = CreatePivot();
+                PositionEntity(emitterObj, roomX + rotX * RoomScale, roomY + rt.TempSoundEmitterY[i] * RoomScale, roomZ + rotZ * RoomScale);
+                r.SoundEmitterObj[i] = emitterObj;
+                r.SoundEmitterRange[i] = rt.TempSoundEmitterRange[i];
+            }
+        }
+
+        // Copy triggerboxes from template
+        r.TriggerboxAmount = rt.TempTriggerboxAmount;
+        for (int i = 0; i < rt.TempTriggerboxAmount; i++)
+        {
+            r.Triggerbox[i] = rt.TempTriggerbox[i];
+            r.TriggerboxName[i] = rt.TempTriggerboxName[i] ?? "";
+        }
+    }
+
+    /// <summary>
+    /// Generate a line of waypoints from center in given direction
+    /// </summary>
+    private void GenerateWaypointsLine(Rooms r, float startX, float startY, float dirX, float dirZ, int count)
+    {
+        if (r.grid == null) return;
+
+        float roomAngle = r.angle;
+        float angleRad = roomAngle * MathF.PI / 180f;
+        float cosA = MathF.Cos(angleRad);
+        float sinA = MathF.Sin(angleRad);
+
+        float spacing = 1.0f; // 1 unit spacing
+
+        for (int i = 1; i <= count; i++)
+        {
+            float localX = startX + dirX * i * spacing;
+            float localZ = startY + dirZ * i * spacing;
+
+            // Rotate by room angle
+            float rotX = localX * cosA - localZ * sinA;
+            float rotZ = localX * sinA + localZ * cosA;
+
+            float worldX = r.x + rotX;
+            float worldZ = r.z + rotZ;
+
+            // Create waypoint
+            var wp = new WayPoints
+            {
+                obj = CreatePivot(),
+                room = r,
+                state = 0
+            };
+            PositionEntity(wp.obj, worldX, r.y + 0.1f, worldZ);
+
+            // Store in grid (simplified - just use linear index)
+            int gridIdx = i + (int)dirX * RoomConstants.gridsz + (int)dirZ;
+            if (gridIdx >= 0 && gridIdx < RoomConstants.gridsz * RoomConstants.gridsz)
+            {
+                r.grid.waypoints[gridIdx] = wp;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Connect waypoints within a room to each other
+    /// </summary>
+    private void ConnectRoomWaypoints(Rooms r)
+    {
+        if (r.grid == null) return;
+
+        // Collect all non-null waypoints
+        var waypoints = new List<WayPoints>();
+        for (int i = 0; i < RoomConstants.gridsz * RoomConstants.gridsz; i++)
+        {
+            if (r.grid.waypoints[i] != null)
+            {
+                waypoints.Add(r.grid.waypoints[i]!);
+            }
+        }
+
+        // Connect each waypoint to its nearest neighbors
+        foreach (var wp in waypoints)
+        {
+            if (!Entities.TryGetValue(wp.obj, out var wpEntity)) continue;
+
+            // Find 4 nearest waypoints
+            var nearest = waypoints
+                .Where(other => other != wp && Entities.TryGetValue(other.obj, out _))
+                .OrderBy(other =>
+                {
+                    if (!Entities.TryGetValue(other.obj, out var otherEntity)) return float.MaxValue;
+                    return System.Numerics.Vector3.Distance(wpEntity.Position, otherEntity.Position);
+                })
+                .Take(4)
+                .ToArray();
+
+            for (int i = 0; i < nearest.Length && i < 5; i++)
+            {
+                wp.connected[i] = nearest[i];
+                if (Entities.TryGetValue(nearest[i].obj, out var nearEntity))
+                {
+                    wp.dist[i] = System.Numerics.Vector3.Distance(wpEntity.Position, nearEntity.Position);
+                }
+            }
+        }
     }
 
     private void AddLightCones(Rooms r)

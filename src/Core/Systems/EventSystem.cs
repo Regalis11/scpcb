@@ -2221,24 +2221,4 @@ public class Item
     public int Collider;
 }
 
-public class NPC
-{
-    public int Obj;
-    public int Collider;
-    public float State;
-    public float State2;
-    public float State3;
-    public float CurrSpeed;
-    public float Speed;
-    public float Frame;
-    public float Angle;
-    public bool Idle;
-    public int Sound;
-    public int Sound2;
-    public int SoundChn;
-    public int SoundChn2;
-    public float Reload;
-    public int PathStatus;
-    public float EnemyX, EnemyY, EnemyZ;
-    public string Texture = "";
-}
+// NPC class is defined in NPCSystem.cs - use that one

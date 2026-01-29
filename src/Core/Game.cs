@@ -10,6 +10,7 @@ using Raylib_cs;
 using SCPContainmentBreach.Core.Engine;
 using SCPContainmentBreach.Core.Types;
 using SCPContainmentBreach.Core.World;
+using SCPContainmentBreach.Core.Systems;
 
 namespace SCPContainmentBreach.Core;
 
@@ -78,6 +79,9 @@ public class Game : IDisposable
 
         AssetManager.Initialize("");
 
+        // Initialize Blitz3D adapter - wires all delegates
+        BlitzAdapter.Init();
+
         _player = new PlayerState();
         _player.X = 0;
         _player.Y = 1.0f;
@@ -122,6 +126,18 @@ public class Game : IDisposable
         UpdateMouseLook();
         UpdateMovement();
         UpdateCamera();
+
+        // Update Blitz adapter state
+        BlitzAdapter.Update(DeltaTime, _player, _camera);
+        BlitzAdapter.UpdateStreams();
+
+        // Update FPSfactor for systems
+        RoomEventSystem.FPSfactor = FPSfactor;
+        RoomEventSystem.FPSfactor2 = FPSfactor;
+
+        // Update game systems
+        RoomEventSystem.UpdateEvents();
+        NPCSystem.Update(_player, FPSfactor, _player.BlinkTimer, false);
     }
 
     private void UpdateMouseLook()
@@ -262,6 +278,7 @@ public class Game : IDisposable
 
     private void Shutdown()
     {
+        BlitzAdapter.Shutdown();
         AssetManager.UnloadAll();
         Raylib.CloseAudioDevice();
         Raylib.CloseWindow();

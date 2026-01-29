@@ -35,12 +35,33 @@ public class Rooms
     public int Obj;
     public float X, Y, Z;
     public float Angle;
+    public float Dist;
+    public bool Found;
     public RoomTemplate? RoomTemplate;
     public Doors?[] RoomDoors = new Doors?[10];
     public Doors?[] AdjDoor = new Doors?[4];
+    public Rooms?[] Adjacent = new Rooms?[4];
     public NPC?[] NPC = new NPC?[15];
     public int[] Objects = new int[20];
+    public int[] Levers = new int[10];
     public Forest? Fr;
+
+    // Sound emitters
+    public int[] SoundEmitter = new int[4];
+    public int[] SoundEmitterObj = new int[4];
+    public float[] SoundEmitterRange = new float[4];
+    public int[] SoundEmitterCHN = new int[4];
+
+    // Lights
+    public int[] Lights = new int[8];
+    public float[] LightIntensity = new float[8];
+
+    // Triggerboxes
+    public int TriggerboxAmount;
+    public int[] Triggerbox = new int[10];
+
+    // Sound channel
+    public int SoundCHN;
 }
 
 public class RoomTemplate
@@ -58,6 +79,16 @@ public class Doors
     public bool Locked;
     public int SoundCHN;
     public Rooms? Room;
+
+    // Button interaction
+    public int[] Buttons = new int[2];
+    public float[] ButtonX = new float[2];
+    public float[] ButtonZ = new float[2];
+
+    // Access control
+    public int KeyCard;
+    public string Code = "";
+    public bool IsElevatorDoor;
 }
 
 public class Forest
@@ -218,10 +249,284 @@ public static class RoomEventSystem
     public static void AddEvent(Event e) => _events.Add(e);
     public static void Clear() => _events.Clear();
 
+    /// <summary>
+    /// UpdateRooms (MapSystem.bb lines 5554-5707) - FULL 1:1 PORT
+    /// Handles: PlayerZone, room visibility, sound emitters, light volumes, room discovery
+    /// </summary>
     public static void UpdateRooms()
     {
-        // Room update logic - placeholder for room-specific updates
+        float dist, x, z;
+        int i, j;
+        bool hide;
+
+        float colliderX = EntityX?.Invoke(Collider) ?? 0;
+        float colliderY = EntityY?.Invoke(Collider) ?? 0;
+        float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+
+        // Determine PlayerZone based on Z position and zone transitions
+        // Zone 0 = EZ (Entrance Zone), Zone 1 = HCZ (Heavy Containment), Zone 2 = LCZ (Light Containment)
+        float zPos = colliderZ / 8.0f;
+        int selectedMapOffset = string.IsNullOrEmpty(SelectedMap) ? 0 : 1;
+
+        if (zPos < ZoneTransition1 - selectedMapOffset)
+        {
+            PlayerZone = 2; // LCZ
+        }
+        else if (zPos >= ZoneTransition1 - selectedMapOffset && zPos < ZoneTransition0 - selectedMapOffset)
+        {
+            PlayerZone = 1; // HCZ
+        }
+        else
+        {
+            PlayerZone = 0; // EZ
+        }
+
+        TempLightVolume = 0;
+        bool foundNewPlayerRoom = false;
+
+        // Check if player is still in current room
+        if (PlayerRoom != null)
+        {
+            float roomY = EntityY?.Invoke(PlayerRoom.Obj) ?? 0;
+            if (MathF.Abs(colliderY - roomY) < 1.5f)
+            {
+                x = MathF.Abs(PlayerRoom.X - colliderX);
+                if (x < 4.0f)
+                {
+                    z = MathF.Abs(PlayerRoom.Z - colliderZ);
+                    if (z < 4.0f)
+                    {
+                        foundNewPlayerRoom = true;
+                    }
+                }
+
+                // Check adjacent rooms if player moved out
+                if (!foundNewPlayerRoom)
+                {
+                    for (i = 0; i < 4; i++)
+                    {
+                        if (PlayerRoom.Adjacent[i] != null)
+                        {
+                            x = MathF.Abs(PlayerRoom.Adjacent[i]!.X - colliderX);
+                            if (x < 4.0f)
+                            {
+                                z = MathF.Abs(PlayerRoom.Adjacent[i]!.Z - colliderZ);
+                                if (z < 4.0f)
+                                {
+                                    foundNewPlayerRoom = true;
+                                    PlayerRoom = PlayerRoom.Adjacent[i];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Player is high up or deep down - keep same room
+                foundNewPlayerRoom = true;
+            }
+        }
+
+        // Process each room
+        foreach (var r in _rooms)
+        {
+            x = MathF.Abs(r.X - colliderX);
+            z = MathF.Abs(r.Z - colliderZ);
+            r.Dist = MathF.Max(x, z);
+
+            // Sound emitters update for nearby rooms
+            if (x < 16 && z < 16)
+            {
+                for (i = 0; i < MaxRoomEmitters; i++)
+                {
+                    if (r.SoundEmitter[i] != 0)
+                    {
+                        dist = EntityDistance?.Invoke(r.SoundEmitterObj[i], Collider);
+                        if (dist < r.SoundEmitterRange[i])
+                        {
+                            r.SoundEmitterCHN[i] = LoopSound2?.Invoke(
+                                RoomAmbience[r.SoundEmitter[i]],
+                                r.SoundEmitterCHN[i],
+                                Camera,
+                                r.SoundEmitterObj[i],
+                                r.SoundEmitterRange[i],
+                                1.0f);
+                        }
+                    }
+                }
+
+                // Check if this room is the new PlayerRoom
+                if (!foundNewPlayerRoom && PlayerRoom != r)
+                {
+                    if (x < 4.0f)
+                    {
+                        if (z < 4.0f)
+                        {
+                            float roomY = EntityY?.Invoke(r.Obj);
+                            if (MathF.Abs(colliderY - roomY) < 1.5f)
+                            {
+                                PlayerRoom = r;
+                            }
+                            foundNewPlayerRoom = true;
+                        }
+                    }
+                }
+            }
+
+            // Determine room visibility
+            hide = true;
+
+            if (r == PlayerRoom) hide = false;
+
+            if (hide && IsRoomAdjacent(PlayerRoom, r)) hide = false;
+
+            if (hide && PlayerRoom != null)
+            {
+                for (i = 0; i < 4; i++)
+                {
+                    if (IsRoomAdjacent(PlayerRoom.Adjacent[i], r))
+                    {
+                        hide = false;
+                        break;
+                    }
+                }
+            }
+
+            // Apply visibility
+            if (hide)
+            {
+                HideEntity?.Invoke(r.Obj);
+            }
+            else
+            {
+                ShowEntity?.Invoke(r.Obj);
+
+                // Update light volumes for visible rooms
+                for (i = 0; i < MaxRoomLights; i++)
+                {
+                    if (r.Lights[i] != 0)
+                    {
+                        dist = EntityDistance?.Invoke(Collider, r.Lights[i]);
+                        if (dist < HideDistance)
+                        {
+                            float intensity = r.LightIntensity[i];
+                            TempLightVolume += intensity * intensity * ((HideDistance - dist) / HideDistance);
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                // Triggerbox debug display
+                if (r.TriggerboxAmount > 0)
+                {
+                    for (i = 0; i < r.TriggerboxAmount; i++)
+                    {
+                        if (DebugHUD)
+                        {
+                            EntityColor?.Invoke(r.Triggerbox[i], 255, 255, 0);
+                            EntityAlpha?.Invoke(r.Triggerbox[i], 0.2f);
+                        }
+                        else
+                        {
+                            EntityColor?.Invoke(r.Triggerbox[i], 255, 255, 255);
+                            EntityAlpha?.Invoke(r.Triggerbox[i], 0.0f);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Mark current room as discovered
+        if (PlayerRoom != null)
+        {
+            int mapX = (int)MathF.Floor(EntityX?.Invoke(PlayerRoom.Obj) / 8.0f);
+            int mapZ = (int)MathF.Floor(EntityZ?.Invoke(PlayerRoom.Obj) / 8.0f);
+            MapFound[mapX, mapZ] = 1;
+            PlayerRoom.Found = true;
+        }
+
+        TempLightVolume = MathF.Max(TempLightVolume / 4.5f, 1.0f);
+
+        // Update adjacent room visibility based on door states
+        if (PlayerRoom != null)
+        {
+            OnEntityAlpha?.Invoke(GetChild?.Invoke(PlayerRoom.Obj, 2), 1.0f);
+
+            for (i = 0; i < 4; i++)
+            {
+                if (PlayerRoom.Adjacent[i] != null)
+                {
+                    if (PlayerRoom.AdjDoor[i] != null)
+                    {
+                        x = MathF.Abs(colliderX - EntityX?.Invoke(PlayerRoom.AdjDoor[i]!.FrameObj));
+                        z = MathF.Abs(colliderZ - EntityZ?.Invoke(PlayerRoom.AdjDoor[i]!.FrameObj));
+
+                        if (PlayerRoom.AdjDoor[i]!.OpenState == 0)
+                        {
+                            OnEntityAlpha?.Invoke(GetChild?.Invoke(PlayerRoom.Adjacent[i]!.Obj, 2), 0.0f);
+                        }
+                        else if (!EntityInView?.Invoke(PlayerRoom.AdjDoor[i]!.FrameObj, Camera))
+                        {
+                            OnEntityAlpha?.Invoke(GetChild?.Invoke(PlayerRoom.Adjacent[i]!.Obj, 2), 0.0f);
+                        }
+                        else
+                        {
+                            OnEntityAlpha?.Invoke(GetChild?.Invoke(PlayerRoom.Adjacent[i]!.Obj, 2), 1.0f);
+                        }
+                    }
+
+                    // Hide rooms two steps away
+                    for (j = 0; j < 4; j++)
+                    {
+                        if (PlayerRoom.Adjacent[i]!.Adjacent[j] != null)
+                        {
+                            if (PlayerRoom.Adjacent[i]!.Adjacent[j] != PlayerRoom)
+                            {
+                                OnEntityAlpha?.Invoke(GetChild?.Invoke(PlayerRoom.Adjacent[i]!.Adjacent[j]!.Obj, 2), 0.0f);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    // Helper: Check if rooms are adjacent
+    private static bool IsRoomAdjacent(Rooms? thisRoom, Rooms? thatRoom)
+    {
+        if (thisRoom == null) return false;
+        if (thisRoom == thatRoom) return true;
+        for (int i = 0; i < 4; i++)
+        {
+            if (thatRoom == thisRoom.Adjacent[i]) return true;
+        }
+        return false;
+    }
+
+    // Room list and constants
+    private static readonly List<Rooms> _rooms = new();
+    public static void AddRoom(Rooms r) => _rooms.Add(r);
+    public static void ClearRooms() => _rooms.Clear();
+
+    public const int MaxRoomEmitters = 4;
+    public const int MaxRoomLights = 8;
+    public static float HideDistance = 15.0f;
+    public static bool DebugHUD = false;
+    public static string SelectedMap = "";
+    public static float ZoneTransition0 = 0;
+    public static float ZoneTransition1 = 0;
+    public static int[,] MapFound = new int[100, 100];
+    public static int[] RoomAmbience = new int[20];
+
+    // Additional delegates
+    public static Action<int, int, int, int>? EntityColor;
+    public static Action<int, float>? OnEntityAlpha;
+    public static Func<int, int, int>? GetChild;
 
     public static void UpdateEvents()
     {
@@ -256,7 +561,58 @@ public static class RoomEventSystem
                 case "checkpoint":
                     UpdateCheckpoint(e, ref angle);
                     break;
-                // Additional cases will be added in subsequent chunks
+                case "coffin":
+                case "coffin106":
+                    UpdateCoffin(e);
+                    break;
+                case "endroom106":
+                    UpdateEndroom106(e, ref dist);
+                    break;
+                case "gateaentrance":
+                    UpdateGateAEntrance(e);
+                    break;
+                case "lockroom173":
+                    UpdateLockroom173(e);
+                    break;
+                case "lockroom096":
+                    UpdateLockroom096(e);
+                    break;
+                case "pj":
+                    UpdatePJ(e);
+                    break;
+                case "pocketdimension":
+                    UpdatePocketDimension(e, ref angle, ref dist, ref x, ref y, ref z, ref i, ref pvt, ref temp);
+                    break;
+                case "room2cafeteria":
+                    UpdateRoom2Cafeteria(e, ref temp);
+                    break;
+                case "room2ccont":
+                    UpdateRoom2CCont(e);
+                    break;
+                case "room2closets":
+                    UpdateRoom2Closets(e, ref i);
+                    break;
+                case "room2doors173":
+                    UpdateRoom2Doors173(e);
+                    break;
+                case "room2elevator":
+                    UpdateRoom2Elevator(e, ref temp);
+                    break;
+                case "room2elevator2":
+                    UpdateRoom2Elevator2(e);
+                    break;
+                case "room2fan":
+                    UpdateRoom2Fan(e, ref temp);
+                    break;
+                case "room2nuke":
+                    UpdateRoom2Nuke(e);
+                    break;
+                case "room2offices2":
+                    UpdateRoom2Offices2(e, ref temp);
+                    break;
+                case "room2offices3":
+                    UpdateRoom2Offices3(e);
+                    break;
             }
         }
     }
@@ -278,7 +634,7 @@ public static class RoomEventSystem
             if (e.Room.RoomDoors[4]!.Open)
             {
                 if (e.Room.RoomDoors[4]!.OpenState > 50 ||
-                    EntityDistance!(Collider, e.Room.RoomDoors[4]!.FrameObj) < 0.5f)
+                    EntityDistance?.Invoke(Collider, e.Room.RoomDoors[4]!.FrameObj) < 0.5f)
                 {
                     e.Room.RoomDoors[4]!.OpenState = MathF.Min(e.Room.RoomDoors[4]!.OpenState, 50);
                     e.Room.RoomDoors[4]!.Open = false;
@@ -306,7 +662,7 @@ public static class RoomEventSystem
                 e.EventState2 = UpdateElevators!(e.EventState2, e.Room.RoomDoors[0]!.Obj, e.Room.RoomDoors[1]!.Obj, e.Room.Objects[8], e);
             }
 
-            EntityAlpha!(Fog, 1.0f);
+            EntityAlpha?.Invoke(Fog, 1.0f);
         }
     }
 
@@ -337,7 +693,7 @@ public static class RoomEventSystem
             {
                 e.Room.RoomDoors[2]!.Open = true;
 
-                ShowEntity!(Fog);
+                ShowEntity?.Invoke(Fog);
                 AmbientLight!(Brightness, Brightness, Brightness);
                 CameraFogRange!(Camera, CameraFogNear, CameraFogFar);
                 CameraFogMode!(Camera, 1);
@@ -394,19 +750,19 @@ public static class RoomEventSystem
                 // If no balcony guard, create intro NPCs
                 if (e.Room.NPC[0] == null)
                 {
-                    e.Room.NPC[3] = CreateNPC!(NPCtypeGuard, EntityX!(e.Room.Objects[2]), EntityY!(e.Room.Objects[2]), EntityZ!(e.Room.Objects[2]));
+                    e.Room.NPC[3] = CreateNPC!(NPCtypeGuard, EntityX?.Invoke(e.Room.Objects[2]), EntityY?.Invoke(e.Room.Objects[2]), EntityZ?.Invoke(e.Room.Objects[2]));
                     RotateEntity!(e.Room.NPC[3]!.Collider, 0, 90, 0);
                     SetNPCFrame!(e.Room.NPC[3], 286);
                     e.Room.NPC[3]!.State = 8;
                     MoveEntity!(e.Room.NPC[3]!.Collider, 1, 0, 0);
 
-                    e.Room.NPC[4] = CreateNPC!(NPCtypeD, EntityX!(e.Room.Objects[3]), 0.5f, EntityZ!(e.Room.Objects[3]));
+                    e.Room.NPC[4] = CreateNPC!(NPCtypeD, EntityX?.Invoke(e.Room.Objects[3]), 0.5f, EntityZ?.Invoke(e.Room.Objects[3]));
                     SetNPCFrame!(e.Room.NPC[4], 19);
                     e.Room.NPC[4]!.State = 3;
                     RotateEntity!(e.Room.NPC[4]!.Collider, 0, 270, 0);
                     MoveEntity!(e.Room.NPC[4]!.Collider, 0, 0, (int)2.65f);
 
-                    e.Room.NPC[5] = CreateNPC!(NPCtypeD, EntityX!(e.Room.Objects[4]), 0.5f, EntityZ!(e.Room.Objects[4]));
+                    e.Room.NPC[5] = CreateNPC!(NPCtypeD, EntityX?.Invoke(e.Room.Objects[4]), 0.5f, EntityZ?.Invoke(e.Room.Objects[4]));
                     ChangeNPCTextureID!(e.Room.NPC[5], 6);
                     SetNPCFrame!(e.Room.NPC[5], 19);
                     e.Room.NPC[5]!.State = 3;
@@ -414,16 +770,16 @@ public static class RoomEventSystem
                     MoveEntity!(e.Room.NPC[5]!.Collider, (int)0.25f, 0, 3);
                     RotateEntity!(e.Room.NPC[5]!.Collider, 0, 0, 0);
 
-                    float x = EntityX!(e.Room.Obj) + 3712 * RoomScale;
+                    float x = EntityX?.Invoke(e.Room.Obj) + 3712 * RoomScale;
                     float y = 384.0f * RoomScale;
-                    float z = EntityZ!(e.Room.Obj) + 1312 * RoomScale;
+                    float z = EntityZ?.Invoke(e.Room.Obj) + 1312 * RoomScale;
 
                     for (int i = 3; i <= 5; i++)
                     {
                         PositionEntity!(e.Room.NPC[i]!.Collider,
-                            (int)(x + (EntityX!(e.Room.NPC[i]!.Collider) - EntityX!(e.Room.Obj))),
-                            (int)(y + EntityY!(e.Room.NPC[i]!.Collider) + 0.4f),
-                            (int)(z + (EntityZ!(e.Room.NPC[i]!.Collider) - EntityZ!(e.Room.Obj))));
+                            (int)(x + (EntityX?.Invoke(e.Room.NPC[i]!.Collider) - EntityX?.Invoke(e.Room.Obj))),
+                            (int)(y + EntityY?.Invoke(e.Room.NPC[i]!.Collider) + 0.4f),
+                            (int)(z + (EntityZ?.Invoke(e.Room.NPC[i]!.Collider) - EntityZ?.Invoke(e.Room.Obj))));
                         ResetEntity!(e.Room.NPC[i]!.Collider);
                     }
                 }
@@ -452,7 +808,7 @@ public static class RoomEventSystem
             if (e.EventState < 850 && Curr173 != null)
             {
                 PositionEntity!(Curr173.Collider, (int)(e.Room.X + 32 * RoomScale), (int)0.31f, (int)(e.Room.Z + 1072 * RoomScale));
-                HideEntity!(Curr173.Obj);
+                HideEntity?.Invoke(Curr173.Obj);
             }
 
             if (e.EventState >= 500)
@@ -461,7 +817,7 @@ public static class RoomEventSystem
 
                 if ((int)e.EventState2 == 0)
                 {
-                    ShowEntity!(Curr173!.Obj);
+                    ShowEntity?.Invoke(Curr173!.Obj);
 
                     if (e.EventState > 900 && e.Room.RoomDoors[5]!.Open)
                     {
@@ -487,7 +843,7 @@ public static class RoomEventSystem
                                 MoveEntity!(e.Room.NPC[2]!.Collider, 0, 0, (int)(e.Room.NPC[2]!.CurrSpeed * FPSfactor));
                                 e.Room.NPC[2]!.State = 8;
 
-                                if (EntityZ!(e.Room.NPC[2]!.Collider) < e.Room.Z)
+                                if (EntityZ?.Invoke(e.Room.NPC[2]!.Collider) < e.Room.Z)
                                 {
                                     PointEntity!(e.Room.NPC[2]!.Obj, e.Room.NPC[1]!.Collider);
                                     RotateEntity!(e.Room.NPC[2]!.Collider, 0,
@@ -521,7 +877,7 @@ public static class RoomEventSystem
                                 LightBlink = 3.0f;
                                 PlaySound2!(StoneDragSFX, Camera, Curr173!.Collider, 1.0f, 1.0f);
                                 PointEntity!(Curr173!.Collider, e.Room.NPC[2]!.Collider);
-                                if (EntityY!(Collider) < 320 * RoomScale)
+                                if (EntityY?.Invoke(Collider) < 320 * RoomScale)
                                     BlinkTimer = -10;
                             }
 
@@ -530,7 +886,7 @@ public static class RoomEventSystem
 
                             if (e.Room.NPC[2]!.State != 1 && KillTimer >= 0)
                             {
-                                if (EntityZ!(e.Room.NPC[2]!.Collider) < e.Room.Z - 1150 * RoomScale)
+                                if (EntityZ?.Invoke(e.Room.NPC[2]!.Collider) < e.Room.Z - 1150 * RoomScale)
                                 {
                                     e.Room.RoomDoors[5]!.Open = false;
                                     LightBlink = 3.0f;
@@ -538,10 +894,10 @@ public static class RoomEventSystem
                                     BlinkTimer = -10;
                                     PlaySound2!(StoneDragSFX, Camera, Curr173!.Collider, 1.0f, 1.0f);
 
-                                    if (EntityDistance!(Curr173!.Collider, Collider) < 2.5f &&
-                                        MathF.Abs(EntityY!(Collider) - EntityY!(Curr173!.Collider)) < 1.0f)
+                                    if (EntityDistance?.Invoke(Curr173!.Collider, Collider) < 2.5f &&
+                                        MathF.Abs(EntityY?.Invoke(Collider) - EntityY?.Invoke(Curr173!.Collider)) < 1.0f)
                                     {
-                                        PositionEntity!(Curr173!.Collider, (int)EntityX!(Collider), (int)EntityY!(Collider), (int)EntityZ!(Collider));
+                                        PositionEntity!(Curr173!.Collider, (int)EntityX?.Invoke(Collider), (int)EntityY?.Invoke(Collider), (int)EntityZ?.Invoke(Collider));
                                     }
                                     else
                                     {
@@ -574,7 +930,7 @@ public static class RoomEventSystem
                         CanSave = true;
                         if (e.Room.NPC[2]!.State != 1)
                         {
-                            if (EntityX!(Collider) < e.Room.X + 1384 * RoomScale)
+                            if (EntityX?.Invoke(Collider) < e.Room.X + 1384 * RoomScale)
                                 e.EventState = MathF.Max(e.EventState, 900);
 
                             if (e.Room.RoomDoors[5]!.OpenState == 0)
@@ -588,16 +944,16 @@ public static class RoomEventSystem
                 }
 
                 // Falling corpses animation
-                PositionEntity!(e.Room.Objects[0], (int)EntityX!(e.Room.Objects[0]),
-                    (int)(-MathF.Max(e.EventState - 1300, 0) / 4500), (int)EntityZ!(e.Room.Objects[0]));
+                PositionEntity!(e.Room.Objects[0], (int)EntityX?.Invoke(e.Room.Objects[0]),
+                    (int)(-MathF.Max(e.EventState - 1300, 0) / 4500), (int)EntityZ?.Invoke(e.Room.Objects[0]));
                 RotateEntity!(e.Room.Objects[0], (int)(-MathF.Max(e.EventState - 1320, 0) / 130), 0, (int)(-MathF.Max(e.EventState - 1300, 0) / 40));
 
-                PositionEntity!(e.Room.Objects[1], (int)EntityX!(e.Room.Objects[1]),
-                    (int)(-MathF.Max(e.EventState - 1800, 0) / 5000), (int)EntityZ!(e.Room.Objects[1]));
+                PositionEntity!(e.Room.Objects[1], (int)EntityX?.Invoke(e.Room.Objects[1]),
+                    (int)(-MathF.Max(e.EventState - 1800, 0) / 5000), (int)EntityZ?.Invoke(e.Room.Objects[1]));
                 RotateEntity!(e.Room.Objects[1], (int)(-MathF.Max(e.EventState - 2040, 0) / 135), 0, (int)(-MathF.Max(e.EventState - 2040, 0) / 43));
 
                 // Corpse decay sound
-                if (EntityDistance!(e.Room.Objects[0], Collider) < 2.5f)
+                if (EntityDistance?.Invoke(e.Room.Objects[0], Collider) < 2.5f)
                 {
                     if (_rng.Next(300) == 1)
                         PlaySound2!(DecaySFX[_rng.Next(1, 4)], Camera, e.Room.Objects[0], 3.0f, 1.0f);
@@ -691,14 +1047,14 @@ public static class RoomEventSystem
                 ShouldPlay = 13;
 
                 // Slow player down to match guard speed
-                CurrSpeed = MathF.Min(CurrSpeed - (CurrSpeed * (0.008f / EntityDistance!(e.Room.NPC[3]!.Collider, Collider)) * FPSfactor), CurrSpeed);
+                CurrSpeed = MathF.Min(CurrSpeed - (CurrSpeed * (0.008f / EntityDistance?.Invoke(e.Room.NPC[3]!.Collider, Collider)) * FPSfactor), CurrSpeed);
 
                 if (e.EventState3 < 170)
                 {
                     if (e.EventState3 == 1.0f)
                     {
                         PositionEntity!(Camera, (int)x, (int)y, (int)z);
-                        HideEntity!(Collider);
+                        HideEntity?.Invoke(Collider);
                         PositionEntity!(Collider, (int)x, (int)0.302f, (int)z);
                         RotateEntity!(Camera, -70, 0, 0);
 
@@ -710,8 +1066,8 @@ public static class RoomEventSystem
 
                         PlaySoundStrict!(); // IntroSFX[11]
                         BlurTimer = 500;
-                        ShowEntity!(Light);
-                        EntityAlpha!(Light, 0.5f);
+                        ShowEntity?.Invoke(Light);
+                        EntityAlpha?.Invoke(Light, 0.5f);
                     }
 
                     if (e.EventState3 < 3)
@@ -725,9 +1081,9 @@ public static class RoomEventSystem
 
                     if (e.EventState3 < 15)
                     {
-                        x = EntityX!(e.Room.Obj) - (3224.0f + 1024.0f) * RoomScale;
+                        x = EntityX?.Invoke(e.Room.Obj) - (3224.0f + 1024.0f) * RoomScale;
                         y = 136.0f * RoomScale;
-                        z = EntityZ!(e.Room.Obj) + 8.0f * RoomScale;
+                        z = EntityZ?.Invoke(e.Room.Obj) + 8.0f * RoomScale;
 
                         if (e.EventState3 < 14)
                         {
@@ -736,10 +1092,10 @@ public static class RoomEventSystem
                             if (e.EventState3 - FPSfactor / 30.0f < 12 && e.EventState3 > 12)
                                 PlaySound2!(StepSFX[0], Camera, Collider, 8.0f, 0.3f);
 
-                            ShowEntity!(Light);
-                            EntityAlpha!(Light, 0.9f - (e.EventState3 / 2.0f));
+                            ShowEntity?.Invoke(Light);
+                            EntityAlpha?.Invoke(Light, 0.9f - (e.EventState3 / 2.0f));
 
-                            x = x + (EntityX!(e.Room.Obj) - (3048.0f + 1024.0f) * RoomScale - x) * MathF.Max((e.EventState3 - 10.0f) / 4.0f, 0.0f);
+                            x = x + (EntityX?.Invoke(e.Room.Obj) - (3048.0f + 1024.0f) * RoomScale - x) * MathF.Max((e.EventState3 - 10.0f) / 4.0f, 0.0f);
 
                             if (e.EventState3 < 10)
                             {
@@ -750,7 +1106,7 @@ public static class RoomEventSystem
                                 y = (y + 0.2f) + (0.302f + 0.6f - (y + 0.2f)) * MathF.Max((e.EventState3 - 10) / 4.0f, 0.0f);
                             }
 
-                            z = z + (EntityZ!(e.Room.Obj) + 104.0f * RoomScale - z) * MathF.Min(MathF.Max((e.EventState3 - 3) / 5.0f, 0), 1.0f);
+                            z = z + (EntityZ?.Invoke(e.Room.Obj) + 104.0f * RoomScale - z) * MathF.Min(MathF.Max((e.EventState3 - 3) / 5.0f, 0), 1.0f);
 
                             // Camera rotation animation
                             RotateEntity!(Camera,
@@ -759,17 +1115,17 @@ public static class RoomEventSystem
                                 (int)(MathF.Sin(e.EventState3 * 25.7f * MathF.PI / 180) * 8.0f));
 
                             PositionEntity!(Camera, (int)x, (int)y, (int)z);
-                            HideEntity!(Collider);
+                            HideEntity?.Invoke(Collider);
                             PositionEntity!(Collider, (int)x, (int)0.302f, (int)z);
                             DropSpeed = 0;
                         }
                         else
                         {
-                            HideEntity!(Light);
+                            HideEntity?.Invoke(Light);
 
-                            PositionEntity!(Collider, (int)EntityX!(Collider), (int)0.302f, (int)EntityZ!(Collider));
+                            PositionEntity!(Collider, (int)EntityX?.Invoke(Collider), (int)0.302f, (int)EntityZ?.Invoke(Collider));
                             ResetEntity!(Collider);
-                            ShowEntity!(Collider);
+                            ShowEntity?.Invoke(Collider);
                             DropSpeed = 0;
                             e.EventState3 = 15;
                             Msg = "Pick up the paper on the desk.";
@@ -822,7 +1178,7 @@ public static class RoomEventSystem
                         e.EventState3 = MathF.Min(e.EventState3 + FPSfactor / 4, 699);
 
                         // Outside the cell check
-                        if (Distance!(EntityX!(Collider), EntityZ!(Collider),
+                        if (Distance!(EntityX?.Invoke(Collider), EntityZ?.Invoke(Collider),
                             PlayerRoom!.X - (3072 + 1024) * RoomScale, PlayerRoom!.Z + 192.0f * RoomScale) > 1.5f)
                         {
                             if (e.EventState3 > 250)
@@ -860,8 +1216,8 @@ public static class RoomEventSystem
                             }
                             else if (e.EventState3 > 630)
                             {
-                                PositionEntity!(Collider, (int)EntityX!(Collider), (int)EntityY!(Collider),
-                                    (int)MathF.Min(EntityZ!(Collider), EntityZ!(e.Room.Obj) + 490 * RoomScale));
+                                PositionEntity!(Collider, (int)EntityX?.Invoke(Collider), (int)EntityY?.Invoke(Collider),
+                                    (int)MathF.Min(EntityZ?.Invoke(Collider), EntityZ?.Invoke(e.Room.Obj) + 490 * RoomScale));
 
                                 if (e.Room.RoomDoors[6]!.Open)
                                 {
@@ -912,7 +1268,7 @@ public static class RoomEventSystem
             }
             CameraFogMode!(Camera, 0);
             AmbientLight!(140, 140, 140);
-            HideEntity!(Fog);
+            HideEntity?.Invoke(Fog);
 
             LightVolume = 4.0f;
             TempLightVolume = 4.0f;
@@ -932,7 +1288,7 @@ public static class RoomEventSystem
 
         if (PlayerRoom == e.Room)
         {
-            if (EntityDistance!(Collider, e.Room.Objects[0]) < 1.8f)
+            if (EntityDistance?.Invoke(Collider, e.Room.Objects[0]) < 1.8f)
             {
                 if ((int)e.EventState == 0)
                 {
@@ -963,7 +1319,7 @@ public static class RoomEventSystem
             // Play zone transition sound
             if ((int)e.EventState2 == 0)
             {
-                if (EntityZ!(Collider) < e.Room.Z)
+                if (EntityZ?.Invoke(Collider) < e.Room.Z)
                 {
                     if (PlayerZone == 1)
                     {
@@ -985,7 +1341,7 @@ public static class RoomEventSystem
                     GiveAchievement!("Achv1048");
                     e.Room.Objects[1] = LoadAnimMeshStrict!("GFX\\npcs\\scp-1048.b3d");
                     ScaleEntity!(e.Room.Objects[1], 0.05f, 0.05f, 0.05f);
-                    PositionEntity!(e.Room.Objects[1], (int)EntityX!(e.Room.Objects[0]), (int)EntityY!(e.Room.Objects[0]), (int)EntityZ!(e.Room.Objects[0]));
+                    PositionEntity!(e.Room.Objects[1], (int)EntityX?.Invoke(e.Room.Objects[0]), (int)EntityY?.Invoke(e.Room.Objects[0]), (int)EntityZ?.Invoke(e.Room.Objects[0]));
                     SetAnimTime!(e.Room.Objects[1], 267);
                 }
 

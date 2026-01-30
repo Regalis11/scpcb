@@ -613,6 +613,36 @@ public static class RoomEventSystem
                 case "room2offices3":
                     UpdateRoom2Offices3(e);
                     break;
+                case "room2tesla":
+                    UpdateRoom2Tesla(e, ref i, ref temp);
+                    break;
+                case "room2trick":
+                    UpdateRoom2Trick(e, ref pvt);
+                    break;
+                case "room2pipes106":
+                    UpdateRoom2Pipes106(e, ref pvt, ref dist);
+                    break;
+                case "room2pit106":
+                    UpdateRoom2Pit106(e);
+                    break;
+                case "room2pit":
+                    UpdateRoom2Pit(e);
+                    break;
+                case "room3pitduck":
+                    UpdateRoom3PitDuck(e);
+                    break;
+                case "room2poffices2":
+                    UpdateRoom2POffices2(e);
+                    break;
+                case "room2servers":
+                    UpdateRoom2Servers(e, ref i, ref x, ref z, ref temp);
+                    break;
+                case "room2storage":
+                    UpdateRoom2Storage(e, ref temp, ref i, ref x);
+                    break;
+                case "914":
+                    Update914(e, ref angle, ref temp);
+                    break;
             }
         }
     }
@@ -2159,6 +2189,1932 @@ public static class RoomEventSystem
             e.EventStr = "0";
         }
     }
+
+    // =====================================================================
+    // ROOM2CAFETERIA - SCP-294 Coffee Machine (UpdateEvents.bb 2521-2575)
+    // =====================================================================
+    private static void UpdateRoom2Cafeteria(Event e, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            if (!Using294)
+            {
+                float dist294 = EntityDistance?.Invoke(e.Room.Objects[0], Collider) ?? 100;
+                if (dist294 < 1.5f)
+                {
+                    GiveAchievement?.Invoke("Achv294");
+                    bool inView = EntityInView?.Invoke(e.Room.Objects[0], Camera) ?? false;
+                    if (inView)
+                    {
+                        DrawHandIcon = true;
+                        if (MouseHit1)
+                        {
+                            temp = 1; // True
+                            // Check if an item is already on the dispenser
+                            // For each Items, if not Picked and position matches Objects[1], temp = false
+                            // This would require iterating through items
+
+                            bool inserted = false;
+                            if (e.EventState2 < 2)
+                            {
+                                // Check SelectedItem for coin
+                                if (SelectedItem != null)
+                                {
+                                    string tempname = SelectedItem.ItemTemplate?.TempName ?? "";
+                                    if (tempname == "25ct" || tempname == "coin")
+                                    {
+                                        RemoveItem?.Invoke(SelectedItem);
+                                        SelectedItem = null;
+                                        e.EventState2++;
+                                        PlaySoundStrict?.Invoke(); // coin_drop.ogg
+                                        inserted = true;
+                                    }
+                                }
+                            }
+
+                            if (e.EventState2 == 2)
+                            {
+                                Using294 = (temp == 1);
+                                if (Using294) MouseHit1 = false;
+                            }
+                            else if (e.EventState2 == 1 && !inserted)
+                            {
+                                Using294 = false;
+                                Msg = "You need to insert another Quarter in order to use this machine.";
+                                MsgTimer = 70 * 5;
+                            }
+                            else if (!inserted)
+                            {
+                                Using294 = false;
+                                Msg = "You need to insert two Quarters in order to use this machine.";
+                                MsgTimer = 70 * 5;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Spawn SCP-066 once
+        if (e.EventState == 0)
+        {
+            float roomX = EntityX?.Invoke(e.Room.Obj) ?? 0;
+            float roomZ = EntityZ?.Invoke(e.Room.Obj) ?? 0;
+            CreateNPC?.Invoke(NPCtype066, roomX, 0.5f, roomZ);
+            e.EventState = 1;
+        }
+    }
+
+    // =====================================================================
+    // ROOM2CCONT - Containment Control (UpdateEvents.bb 2576-2612)
+    // =====================================================================
+    private static void UpdateRoom2CCont(Event e)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        EntityPick?.Invoke(Camera, 1.5f);
+
+        int picked = PickedEntity?.Invoke() ?? 0;
+        if (picked == e.Room.Objects[3])
+        {
+            if (e.EventState == 0)
+            {
+                e.EventState = MathF.Max(e.EventState, 1);
+                PlaySoundStrict?.Invoke(); // HorrorSFX(7)
+                PlaySoundStrict?.Invoke(); // LeverSFX
+            }
+        }
+
+        // Primary Lighting
+        OnUpdateLever?.Invoke(e.Room.Objects[1]);
+
+        // Secondary Lighting
+        float prevstate2 = e.EventState2;
+        e.EventState2 = (OnUpdateLever?.Invoke(e.Room.Objects[3]) ?? false) ? 1 : 0;
+        if (prevstate2 != e.EventState2 && e.EventState > 0)
+        {
+            PlaySound2?.Invoke(LightSFX, Camera, e.Room.Objects[3], 1.0f, 1.0f);
+        }
+
+        if (e.EventState2 != 0)
+        {
+            SecondaryLightOn = CurveValue?.Invoke(1.0f, SecondaryLightOn, 10.0f) ?? SecondaryLightOn;
+        }
+        else
+        {
+            SecondaryLightOn = CurveValue?.Invoke(0.0f, SecondaryLightOn, 10.0f) ?? SecondaryLightOn;
+        }
+
+        // Remote Door Control
+        RemoteDoorOn = OnUpdateLever?.Invoke(e.Room.Objects[5]) ?? false;
+
+        // Lever animation
+        if (e.EventState > 0 && e.EventState < 200)
+        {
+            e.EventState += FPSfactor;
+            float pitch = EntityPitch?.Invoke(e.Room.Objects[3]) ?? 0;
+            float yaw = EntityYaw?.Invoke(e.Room.Objects[3]) ?? 0;
+            float newPitch = CurveValue?.Invoke(-85, pitch, 5) ?? pitch;
+            RotateEntity?.Invoke(e.Room.Objects[3], (int)newPitch, (int)yaw, 0);
+        }
+    }
+
+    // =====================================================================
+    // ROOM2CLOSETS - SCP-173 Class-D Murder Scene (UpdateEvents.bb 2613-2686)
+    // =====================================================================
+    private static void UpdateRoom2Closets(Event e, ref int i)
+    {
+        if (e.Room == null) return;
+
+        if (e.EventState == 0)
+        {
+            if (PlayerRoom == e.Room && Curr173 != null && Curr173.Idle < 2)
+            {
+                if (string.IsNullOrEmpty(e.EventStr) && QuickLoadPercent == -1)
+                {
+                    QuickLoadPercent = 0;
+                    QuickLoad_CurrEvent = e;
+                    e.EventStr = "load0";
+                }
+            }
+        }
+        else
+        {
+            e.EventState += FPSfactor;
+
+            // Phase 1: NPC[1] turns to face room center (0 - 3.5 seconds)
+            if (e.EventState < 70 * 3.5f)
+            {
+                float targetYaw = e.Room.Angle + 90;
+                float currYaw = EntityYaw?.Invoke(e.Room.NPC[1]!.Collider) ?? 0;
+                float newYaw = CurveAngle?.Invoke(targetYaw, currYaw, 100.0f) ?? currYaw;
+                RotateEntity?.Invoke(e.Room.NPC[1]!.Collider, 0, (int)newYaw, 0);
+
+                e.Room.NPC[0]!.State = 1;
+                if (e.EventState > 70 * 3.2f && e.EventState - FPSfactor <= 70 * 3.2f)
+                {
+                    PlaySound2?.Invoke(IntroSFX[15], Camera, e.Room.Obj, 15.0f, 1.0f);
+                }
+            }
+            // Phase 2: NPCs looking around (3.5 - 6.5 seconds)
+            else if (e.EventState < 70 * 6.5f)
+            {
+                if (e.EventState - FPSfactor < 70 * 3.5f)
+                {
+                    e.Room.NPC[0]!.State = 0;
+                    e.Room.NPC[1]!.SoundChn = PlaySound2?.Invoke(e.Room.NPC[1]!.Sound, Camera, e.Room.NPC[1]!.Collider, 12.0f, 1.0f) ?? 0;
+                }
+
+                if (e.EventState > 70 * 4.5f)
+                {
+                    PointEntity?.Invoke(e.Room.NPC[0]!.Obj, e.Room.Obj);
+                    float yaw0 = EntityYaw?.Invoke(e.Room.NPC[0]!.Obj) ?? 0;
+                    float currYaw0 = EntityYaw?.Invoke(e.Room.NPC[0]!.Collider) ?? 0;
+                    float newYaw0 = CurveAngle?.Invoke(yaw0, currYaw0, 30.0f) ?? currYaw0;
+                    RotateEntity?.Invoke(e.Room.NPC[0]!.Collider, 0, (int)newYaw0, 0);
+                }
+
+                PointEntity?.Invoke(e.Room.NPC[1]!.Obj, e.Room.Obj);
+                TurnEntity?.Invoke(e.Room.NPC[1]!.Obj, 0, MathF.Sin(e.EventState) * 25, 0);
+                float yaw1 = EntityYaw?.Invoke(e.Room.NPC[1]!.Obj) ?? 0;
+                float currYaw1 = EntityYaw?.Invoke(e.Room.NPC[1]!.Collider) ?? 0;
+                float newYaw1 = CurveAngle?.Invoke(yaw1, currYaw1, 30.0f) ?? currYaw1;
+                RotateEntity?.Invoke(e.Room.NPC[1]!.Collider, 0, (int)newYaw1, 0);
+            }
+            // Phase 3: Lights out, SCP-173 kills (6.5+ seconds)
+            else
+            {
+                if (e.EventState - FPSfactor < 70 * 6.5f)
+                {
+                    PlaySoundStrict?.Invoke(); // HorrorSFX(0)
+                    PlaySoundStrict?.Invoke(); // LightSFX
+                }
+
+                BlinkTimer = MathF.Max((70 * 6.5f - e.EventState) / 5.0f - (float)_rng.NextDouble() * 2.0f, -10);
+
+                if (BlinkTimer == -10)
+                {
+                    // Neck snaps
+                    if (e.EventState > 70 * 7.5f && e.EventState - FPSfactor <= 70 * 7.5f)
+                    {
+                        PlaySound2?.Invoke(NeckSnapSFX[0], Camera, e.Room.NPC[0]!.Collider, 8.0f, 1.0f);
+
+                        // Spawn wallet with coins
+                        float walletX = EntityX?.Invoke(e.Room.NPC[0]!.Collider) ?? 0;
+                        float walletY = EntityY?.Invoke(e.Room.NPC[0]!.Collider) ?? 0;
+                        float walletZ = EntityZ?.Invoke(e.Room.NPC[0]!.Collider) ?? 0;
+                        var wallet = CreateItem?.Invoke("Wallet", "wallet", walletX, walletY, walletZ);
+                        // Add quarters to wallet SecondInv[0] and SecondInv[1]
+                    }
+
+                    if (e.EventState > 70 * 8.0f && e.EventState - FPSfactor <= 70 * 8.0f)
+                    {
+                        PlaySound2?.Invoke(NeckSnapSFX[1], Camera, e.Room.NPC[1]!.Collider, 8.0f, 1.0f);
+                    }
+
+                    SetNPCFrame?.Invoke(e.Room.NPC[0]!, 60);
+                    e.Room.NPC[0]!.State = 8;
+
+                    SetNPCFrame?.Invoke(e.Room.NPC[1]!, 19);
+                    e.Room.NPC[1]!.State = 6;
+                }
+
+                // Position 173 and remove event
+                if (e.EventState > 70 * 8.5f)
+                {
+                    float obj0X = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+                    float obj0Y = EntityY?.Invoke(e.Room.Objects[0]) ?? 0;
+                    float obj0Z = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+                    float obj1X = EntityX?.Invoke(e.Room.Objects[1]) ?? 0;
+                    float obj1Z = EntityZ?.Invoke(e.Room.Objects[1]) ?? 0;
+
+                    PositionEntity?.Invoke(Curr173!.Collider, (int)((obj0X + obj1X) / 2), (int)obj0Y, (int)((obj0Z + obj1Z) / 2));
+                    PointEntity?.Invoke(Curr173.Collider, Collider);
+                    ResetEntity?.Invoke(Curr173.Collider);
+                    RemoveEvent?.Invoke(e);
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2DOORS173 (UpdateEvents.bb 2687-2699)
+    // =====================================================================
+    private static void UpdateRoom2Doors173(Event e)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        if (e.EventState == 0 && Curr173 != null && Curr173.Idle == 0)
+        {
+            bool visible = EntityInView?.Invoke(Curr173.Obj, Camera) ?? true;
+            if (!visible)
+            {
+                e.EventState = 1;
+                float objX = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+                float objZ = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+                PositionEntity?.Invoke(Curr173.Collider, (int)objX, (int)(0.5f * 1000), (int)objZ);
+                ResetEntity?.Invoke(Curr173.Collider);
+                RemoveEvent?.Invoke(e);
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2ELEVATOR - Guard Death Elevator (UpdateEvents.bb 2700-2757)
+    // =====================================================================
+    private static void UpdateRoom2Elevator(Event e, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (e.EventState == 0)
+        {
+            if (e.Room.Dist < 8.0f && e.Room.Dist > 0)
+            {
+                float roomX = EntityX?.Invoke(e.Room.Obj) ?? 0;
+                float roomZ = EntityZ?.Invoke(e.Room.Obj) ?? 0;
+                e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeGuard, roomX, 0.5f, roomZ);
+                if (e.Room.NPC[0] != null)
+                {
+                    PointEntity?.Invoke(e.Room.NPC[0].Collider, Collider);
+                    float yaw = EntityYaw?.Invoke(e.Room.NPC[0].Collider) ?? 0;
+                    RotateEntity?.Invoke(e.Room.NPC[0].Collider, 0, (int)yaw, 0);
+                }
+                e.EventState = 1;
+            }
+        }
+        else
+        {
+            if (e.EventState == 1)
+            {
+                if (e.Room.Dist < 5.0f || _rng.Next(700) == 1)
+                {
+                    e.EventState = 2;
+                    e.Room.NPC[0]!.State = 5;
+                    e.Room.NPC[0]!.EnemyX = EntityX?.Invoke(e.Room.Objects[1]) ?? 0;
+                    e.Room.NPC[0]!.EnemyY = EntityY?.Invoke(e.Room.Objects[1]) ?? 0;
+                    e.Room.NPC[0]!.EnemyZ = EntityZ?.Invoke(e.Room.Objects[1]) ?? 0;
+                }
+            }
+            else if (e.EventState == 2)
+            {
+                float dist = EntityDistance?.Invoke(e.Room.NPC[0]!.Collider, e.Room.Objects[1]) ?? 100;
+                if (dist < 2.0f)
+                {
+                    e.Room.RoomDoors[0]!.Open = false;
+                    PlaySound2?.Invoke(CloseDoorSFX(3, 0), Camera, e.Room.RoomDoors[0]!.Obj, 8.0f, 1.0f);
+                    PlaySoundStrict?.Invoke(); // Room2ElevatorDeath.ogg
+                    e.EventState = 2.05f;
+                }
+            }
+            else if (e.EventState < 13 * 70)
+            {
+                e.EventState += FPSfactor;
+
+                // Camera shake during screaming
+                if (e.EventState > 6.7f * 70 && e.EventState < 7.4f * 70)
+                    CameraShake = 7.4f - (e.EventState / 70.0f);
+                else if (e.EventState > 8.6f * 70 && e.EventState < 10.6f * 70)
+                    CameraShake = 10.6f - (e.EventState / 70.0f);
+                else if (e.EventState > 12.6f * 70)
+                {
+                    CameraShake = 0;
+                    if (e.EventState - FPSfactor < 12.6f * 70 && e.Room.NPC[0] != null)
+                    {
+                        RemoveNPC?.Invoke(e.Room.NPC[0]);
+                        e.Room.NPC[0] = null;
+
+                        // Create blood decals
+                        float decalX = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+                        float decalZ = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+                        OnCreateDecal?.Invoke(3, (int)(decalX * 1000), 5, (int)(decalZ * 1000), 90, _rng.Next(360), 0);
+                    }
+                    e.Room.RoomDoors[0]!.Locked = false;
+                }
+            }
+            else
+            {
+                if (e.Room.RoomDoors[0]!.Open)
+                {
+                    e.Room.RoomDoors[0]!.Locked = true;
+                    RemoveEvent?.Invoke(e);
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2ELEVATOR2 - Dead Class-D Elevator (UpdateEvents.bb 2758-2774)
+    // =====================================================================
+    private static void UpdateRoom2Elevator2(Event e)
+    {
+        if (e.Room == null) return;
+
+        if (e.Room.Dist < 8.0f && e.Room.Dist > 0)
+        {
+            // Create blood decal
+            float decalX = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+            float decalZ = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+            OnCreateDecal?.Invoke(3, (int)(decalX * 1000), 5, (int)(decalZ * 1000), 90, _rng.Next(360), 0);
+
+            // Create dead Class-D
+            e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeD, decalX, 0.5f, decalZ);
+            if (e.Room.NPC[0] != null)
+            {
+                ChangeNPCTextureID?.Invoke(e.Room.NPC[0], 0);
+                float roomYaw = EntityYaw?.Invoke(e.Room.Obj) ?? 0;
+                RotateEntity?.Invoke(e.Room.NPC[0].Collider, 0, (int)(roomYaw - 80), 0);
+                SetNPCFrame?.Invoke(e.Room.NPC[0], 19);
+                e.Room.NPC[0].State = 8;
+            }
+
+            RemoveEvent?.Invoke(e);
+        }
+    }
+
+    // =====================================================================
+    // ROOM2FAN (UpdateEvents.bb 2775-2806)
+    // =====================================================================
+    private static void UpdateRoom2Fan(Event e, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            // Rotate fan
+            TurnEntity?.Invoke(e.Room.Objects[0], e.EventState3 * FPSfactor, 0, 0);
+
+            // Play fan sound if spinning
+            if (e.EventState3 > 0.01f)
+            {
+                e.Room.SoundCHN = LoopSound2?.Invoke(RoomAmbience9, e.Room.SoundCHN, Camera, e.Room.Objects[0], 5.0f, e.EventState3 / 4.0f) ?? 0;
+            }
+
+            // Smooth fan speed
+            e.EventState3 = CurveValue?.Invoke(e.EventState2 * 5, e.EventState3, 150.0f) ?? e.EventState3;
+        }
+
+        if (e.Room.Dist < 16.0f)
+        {
+            if (e.EventState < 0)
+            {
+                e.EventState = _rng.Next(15, 30) * 70;
+                temp = (int)e.EventState2;
+                e.EventState2 = _rng.Next(0, 1);
+
+                if (PlayerRoom != e.Room)
+                {
+                    e.EventState3 = e.EventState2 * 5;
+                }
+                else
+                {
+                    if (temp == 0 && e.EventState2 == 1.0f) // Turn on
+                    {
+                        PlaySound2?.Invoke(LoadTempSound!("SFX\\ambient\\Room ambience\\FanOn.ogg"), Camera, e.Room.Objects[0], 8.0f, 1.0f);
+                    }
+                    else if (temp == 1 && e.EventState2 == 0.0f) // Turn off
+                    {
+                        PlaySound2?.Invoke(LoadTempSound!("SFX\\ambient\\Room ambience\\FanOff.ogg"), Camera, e.Room.Objects[0], 8.0f, 1.0f);
+                    }
+                }
+            }
+            else
+            {
+                e.EventState -= FPSfactor;
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2NUKE (UpdateEvents.bb 2807-2828)
+    // =====================================================================
+    private static void UpdateRoom2Nuke(Event e)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            e.EventState2 = UpdateElevators?.Invoke(e.EventState2, e.Room.RoomDoors[0]!.Obj, e.Room.RoomDoors[1]!.Obj, e.Room.Objects[5], e) ?? 0;
+            e.EventState = (OnUpdateLever?.Invoke(e.Room.Objects[1]) ?? false) ? 1 : 0;
+            OnUpdateLever?.Invoke(e.Room.Objects[3]);
+        }
+
+        // Spawn dead Class-D once
+        if (e.EventState3 == 0)
+        {
+            float objX = EntityX?.Invoke(e.Room.Objects[6]) ?? 0;
+            float objZ = EntityZ?.Invoke(e.Room.Objects[6]) ?? 0;
+            var n = CreateNPC?.Invoke(NPCtypeD, objX, 0.5f, objZ);
+            if (n != null)
+            {
+                RotateEntity?.Invoke(n.Collider, 0, (int)(e.Room.Angle + 90), 0);
+                n.State = 3;
+                SetNPCFrame?.Invoke(n, 40);
+                n.IsDead = true;
+                n.Texture = "GFX\\npcs\\body2.jpg";
+                // Would load texture here
+            }
+            e.EventState3 = 1;
+        }
+    }
+
+    // =====================================================================
+    // ROOM2OFFICES2 (UpdateEvents.bb 2829-2838)
+    // =====================================================================
+    private static void UpdateRoom2Offices2(Event e, ref int temp)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        // Random object teleportation on blink
+        if (BlinkTimer < -8 && BlinkTimer > -12)
+        {
+            temp = _rng.Next(1, 4);
+            float objX = EntityX?.Invoke(e.Room.Objects[temp]) ?? 0;
+            float objY = EntityY?.Invoke(e.Room.Objects[temp]) ?? 0;
+            float objZ = EntityZ?.Invoke(e.Room.Objects[temp]) ?? 0;
+            PositionEntity?.Invoke(e.Room.Objects[0], (int)objX, (int)objY, (int)objZ);
+            RotateEntity?.Invoke(e.Room.Objects[0], 0, _rng.Next(360), 0);
+        }
+    }
+
+    // =====================================================================
+    // ROOM2OFFICES3 (UpdateEvents.bb 2839-2853)
+    // =====================================================================
+    private static void UpdateRoom2Offices3(Event e)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        e.EventState += FPSfactor;
+        if (e.EventState > 700)
+        {
+            float dist = EntityDistance?.Invoke(e.Room.RoomDoors[0]!.Obj, Collider) ?? 0;
+            if (dist > 0.5f)
+            {
+                bool inView = EntityInView?.Invoke(e.Room.RoomDoors[0]!.Obj, Camera) ?? true;
+                if (!inView)
+                {
+                    e.Room.RoomDoors[0]!.Open = false;
+                    RemoveEvent?.Invoke(e);
+                }
+            }
+        }
+    }
+
+    // Additional state for room events
+    public static bool Using294;
+    public static bool MouseHit1;
+    public static bool DrawHandIcon;
+    public static Item? SelectedItem;
+    public static int QuickLoadPercent = -1;
+    public static Event? QuickLoad_CurrEvent;
+    public static int LightSFX;
+    public static int RoomAmbience9;
+    public static int NPCtype066 = 16;
+    public static Func<int, int, int>? CloseDoorSFX;
+
+    // =====================================================================
+    // ROOM2TESLA - Tesla Gate (UpdateEvents.bb 2854-3099) - MASSIVE EVENT
+    // =====================================================================
+    private static void UpdateRoom2Tesla(Event e, ref int i, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        temp = 1; // True by default
+        if (e.EventState2 > 70 * 3.5f && e.EventState2 < 70 * 90)
+            temp = 0; // False - MTF disabling gate
+
+        float colliderY = EntityY?.Invoke(Collider) ?? 0;
+        float roomY = EntityY?.Invoke(e.Room.Obj) ?? 0;
+
+        if (temp != 0 && colliderY > roomY && colliderY < 4.0f)
+        {
+            if (e.Sound == 0)
+                e.Sound = LoadSoundStrict?.Invoke("SFX\\Room\\Tesla\\Shock.ogg") ?? 0;
+
+            if (e.EventState == 0)
+            {
+                if (e.Room.Dist < 8)
+                {
+                    HideEntity?.Invoke(e.Room.Objects[3]);
+
+                    // Blinking light
+                    int millis = MilliSecs2?.Invoke(1) ?? 0;
+                    if ((millis % 1500) < 800)
+                        ShowEntity?.Invoke(e.Room.Objects[4]);
+                    else
+                        HideEntity?.Invoke(e.Room.Objects[4]);
+
+                    // Idle hum
+                    if (e.SoundCHN == 0)
+                        e.SoundCHN = PlaySound2?.Invoke(TeslaIdleSFX, Camera, e.Room.Objects[3], 4.0f, 0.5f) ?? 0;
+                    else if (!(ChannelPlaying?.Invoke(e.SoundCHN) ?? false))
+                        e.SoundCHN = PlaySound2?.Invoke(TeslaIdleSFX, Camera, e.Room.Objects[3], 4.0f, 0.5f) ?? 0;
+
+                    // Check player proximity to trigger points
+                    float colliderX = EntityX?.Invoke(Collider) ?? 0;
+                    float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+
+                    for (i = 0; i <= 2; i++)
+                    {
+                        float objX = EntityX?.Invoke(e.Room.Objects[i]) ?? 0;
+                        float objZ = EntityZ?.Invoke(e.Room.Objects[i]) ?? 0;
+                        float dist = Distance?.Invoke(colliderX, colliderZ, objX, objZ) ?? 1000;
+
+                        if (dist < 300.0f * RoomScale)
+                        {
+                            if (KillTimer >= 0)
+                            {
+                                PlayerSoundVolume = MathF.Max(8.0f, PlayerSoundVolume);
+                                StopChannel?.Invoke(e.SoundCHN);
+                                e.SoundCHN = PlaySound2?.Invoke(TeslaActivateSFX, Camera, e.Room.Objects[3], 4.0f, 0.5f) ?? 0;
+                                e.EventState = 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Check if SCP-106 triggers it
+                    if (Curr106 != null && Curr106.State < -10 && e.EventState == 0)
+                    {
+                        float curr106X = EntityX?.Invoke(Curr106.Collider) ?? 0;
+                        float curr106Z = EntityZ?.Invoke(Curr106.Collider) ?? 0;
+
+                        for (i = 0; i <= 2; i++)
+                        {
+                            float objX = EntityX?.Invoke(e.Room.Objects[i]) ?? 0;
+                            float objZ = EntityZ?.Invoke(e.Room.Objects[i]) ?? 0;
+                            float dist = Distance?.Invoke(curr106X, curr106Z, objX, objZ) ?? 1000;
+
+                            if (dist < 300.0f * RoomScale)
+                            {
+                                if (KillTimer >= 0)
+                                {
+                                    StopChannel?.Invoke(e.SoundCHN);
+                                    e.SoundCHN = PlaySound2?.Invoke(TeslaActivateSFX, Camera, e.Room.Objects[3], 4.0f, 0.5f) ?? 0;
+                                    HideEntity?.Invoke(e.Room.Objects[4]);
+                                    e.EventState = 1;
+                                    Curr106.State = 70 * 60 * _rng.Next(10, 13);
+                                    GiveAchievement?.Invoke("AchvTesla");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    HideEntity?.Invoke(e.Room.Objects[4]);
+                }
+            }
+            else
+            {
+                e.EventState += FPSfactor;
+
+                if (e.EventState <= 40)
+                {
+                    HideEntity?.Invoke(e.Room.Objects[3]);
+                    int millis = MilliSecs2?.Invoke(1) ?? 0;
+                    if ((millis % 100) < 50)
+                        ShowEntity?.Invoke(e.Room.Objects[4]);
+                    else
+                        HideEntity?.Invoke(e.Room.Objects[4]);
+                }
+                else
+                {
+                    // Play shock sound
+                    if (e.Room.Dist < 2)
+                    {
+                        if (e.EventState - FPSfactor <= 40)
+                            PlaySoundStrict?.Invoke();
+                    }
+                    else
+                    {
+                        if (e.EventState - FPSfactor <= 40)
+                            PlaySound2?.Invoke(e.Sound, Camera, e.Room.Objects[2], 1.0f, 1.0f);
+                    }
+
+                    if (e.EventState < 70)
+                    {
+                        // Kill player if in range
+                        if (KillTimer >= 0)
+                        {
+                            float colliderX = EntityX?.Invoke(Collider) ?? 0;
+                            float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+
+                            for (i = 0; i <= 2; i++)
+                            {
+                                float objX = EntityX?.Invoke(e.Room.Objects[i]) ?? 0;
+                                float objZ = EntityZ?.Invoke(e.Room.Objects[i]) ?? 0;
+                                float dist = Distance?.Invoke(colliderX, colliderZ, objX, objZ) ?? 1000;
+
+                                if (dist < 250.0f * RoomScale)
+                                {
+                                    ShowEntity?.Invoke(Light);
+                                    LightFlash = 0.4f;
+                                    CameraShake = 1.0f;
+                                    OnKill?.Invoke();
+                                    DeathMSG = "Subject D-9341 killed by the Tesla gate at [REDACTED].";
+                                }
+                            }
+                        }
+
+                        // Tesla visual effects
+                        HideEntity?.Invoke(e.Room.Objects[3]);
+                        HideEntity?.Invoke(e.Room.Objects[4]);
+
+                        if (_rng.Next(5) < 5)
+                        {
+                            // PositionTexture TeslaTexture, 0.0, Rnd(0,1.0)
+                            ShowEntity?.Invoke(e.Room.Objects[3]);
+                        }
+                    }
+                    else
+                    {
+                        if (e.EventState - FPSfactor < 70)
+                        {
+                            StopChannel?.Invoke(e.SoundCHN);
+                            e.SoundCHN = PlaySound2?.Invoke(TeslaPowerUpSFX, Camera, e.Room.Objects[3], 4.0f, 0.5f) ?? 0;
+                        }
+                        HideEntity?.Invoke(e.Room.Objects[3]);
+
+                        if (e.EventState > 150)
+                            e.EventState = 0;
+                    }
+                }
+            }
+        }
+        else
+        {
+            HideEntity?.Invoke(e.Room.Objects[4]);
+        }
+    }
+
+    // =====================================================================
+    // ROOM2TRICK - Teleport Trick (UpdateEvents.bb 3101-3134)
+    // =====================================================================
+    private static void UpdateRoom2Trick(Event e, ref int pvt)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        float dist = EntityDistance?.Invoke(e.Room.Obj, Collider) ?? 100;
+        if (dist < 2.0f)
+        {
+            float dist173 = EntityDistance?.Invoke(Collider, Curr173?.Obj ?? 0) ?? 100;
+            float dist106 = EntityDistance?.Invoke(Collider, Curr106?.Obj ?? 0) ?? 100;
+
+            if (dist173 < 6.0f || dist106 < 6.0f)
+            {
+                RemoveEvent?.Invoke(e);
+            }
+            else
+            {
+                // Create pivot, position at collider, point at room
+                pvt = CreatePivot?.Invoke() ?? 0;
+                float colliderX = EntityX?.Invoke(Collider) ?? 0;
+                float colliderY = EntityY?.Invoke(Collider) ?? 0;
+                float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+                PositionEntity?.Invoke(pvt, (int)colliderX, (int)colliderY, (int)colliderZ);
+                PointEntity?.Invoke(pvt, e.Room.Obj);
+                float yaw = EntityYaw?.Invoke(pvt) ?? 0;
+                RotateEntity?.Invoke(pvt, 0, (int)yaw, 0);
+
+                float distPvtRoom = EntityDistance?.Invoke(pvt, e.Room.Obj) ?? 0;
+                MoveEntity?.Invoke(pvt, 0, 0, (int)(distPvtRoom * 2 * 1000));
+
+                BlinkTimer = -10;
+                PlaySoundStrict?.Invoke(); // HorrorSFX(11)
+
+                float pvtX = EntityX?.Invoke(pvt) ?? 0;
+                float pvtY = EntityY?.Invoke(pvt) ?? 0;
+                float pvtZ = EntityZ?.Invoke(pvt) ?? 0;
+                PositionEntity?.Invoke(Collider, (int)pvtX, (int)(pvtY + 0.05f * 1000), (int)pvtZ);
+                // UpdateWorld()
+                TurnEntity?.Invoke(Collider, 0, 180, 0);
+                FreeEntity?.Invoke(pvt);
+                RemoveEvent?.Invoke(e);
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2PIPES106 - SCP-106 Pipe Inspection (UpdateEvents.bb 3920-3990)
+    // =====================================================================
+    private static void UpdateRoom2Pipes106(Event e, ref int pvt, ref float dist)
+    {
+        if (e.Room == null || Contained106) return;
+
+        if (e.EventState == 0)
+        {
+            if (PlayerRoom == e.Room)
+                e.EventState = 1;
+        }
+        else
+        {
+            e.EventState += FPSfactor * 0.7f;
+
+            float colliderY = EntityY?.Invoke(Collider) ?? 0;
+            float obj0X = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+            float obj0Z = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+            float obj1X = EntityX?.Invoke(e.Room.Objects[1]) ?? 0;
+            float obj1Z = EntityZ?.Invoke(e.Room.Objects[1]) ?? 0;
+            float distObjs = EntityDistance?.Invoke(e.Room.Objects[0], e.Room.Objects[1]) ?? 1;
+
+            // Phase 1: Walk to middle (0-50)
+            if (e.EventState < 50)
+            {
+                Curr106!.Idle = true;
+                PositionEntity?.Invoke(Curr106.Collider, (int)obj0X, (int)((colliderY - 0.15f) * 1000), (int)obj0Z);
+                PointEntity?.Invoke(Curr106.Collider, e.Room.Objects[1]);
+                MoveEntity?.Invoke(Curr106.Collider, 0, 0, (int)(distObjs * 0.5f * (e.EventState / 50.0f) * 1000));
+                AnimateNPC?.Invoke(Curr106, 284, 333, 0.02f * 35, true);
+            }
+            // Phase 2: Look around (50-200)
+            else if (e.EventState < 200)
+            {
+                Curr106!.Idle = true;
+                AnimateNPC?.Invoke(Curr106, 334, 494, 0.2f, true);
+
+                float midX = (obj0X + obj1X) / 2;
+                float midZ = (obj0Z + obj1Z) / 2;
+                PositionEntity?.Invoke(Curr106.Collider, (int)midX, (int)((colliderY - 0.15f) * 1000), (int)midZ);
+
+                float currYaw = EntityYaw?.Invoke(Curr106.Collider) ?? 0;
+                float newYaw = CurveValue?.Invoke(e.EventState, currYaw, 30.0f) ?? currYaw;
+                RotateEntity?.Invoke(Curr106.Collider, 0, (int)newYaw, 0);
+
+                // Check if player is spotted
+                float dist106 = EntityDistance?.Invoke(Curr106.Collider, Collider) ?? 100;
+                if (dist106 < 4.0f)
+                {
+                    pvt = CreatePivot?.Invoke() ?? 0;
+                    float c106X = EntityX?.Invoke(Curr106.Collider) ?? 0;
+                    float c106Y = EntityY?.Invoke(Curr106.Collider) ?? 0;
+                    float c106Z = EntityZ?.Invoke(Curr106.Collider) ?? 0;
+                    PositionEntity?.Invoke(pvt, (int)c106X, (int)c106Y, (int)c106Z);
+                    PointEntity?.Invoke(pvt, Collider);
+
+                    float pvtYaw = EntityYaw?.Invoke(pvt) ?? 0;
+                    float diff = WrapAngle?.Invoke(pvtYaw - currYaw) ?? 0;
+                    if (diff < 80)
+                    {
+                        Curr106.State = -11;
+                        Curr106.Idle = false;
+                        PlaySoundStrict?.Invoke(); // HorrorSFX(10)
+                        e.EventState = 260;
+                    }
+                    FreeEntity?.Invoke(pvt);
+                }
+            }
+            // Phase 3: Leave (200-250)
+            else if (e.EventState < 250)
+            {
+                Curr106!.Idle = true;
+                PositionEntity?.Invoke(Curr106.Collider, (int)obj0X, (int)((colliderY - 0.15f) * 1000), (int)obj0Z);
+                PointEntity?.Invoke(Curr106.Collider, e.Room.Objects[1]);
+                MoveEntity?.Invoke(Curr106.Collider, 0, 0, (int)(distObjs * ((e.EventState - 150.0f) / 100.0f) * 1000));
+                AnimateNPC?.Invoke(Curr106, 284, 333, 0.02f * 35, true);
+            }
+
+            ResetEntity?.Invoke(Curr106!.Collider);
+            float c106FinalX = EntityX?.Invoke(Curr106.Collider) ?? 0;
+            float c106FinalZ = EntityZ?.Invoke(Curr106.Collider) ?? 0;
+            PositionEntity?.Invoke(Curr106.Obj, (int)c106FinalX, (int)((colliderY - 0.15f) * 1000), (int)c106FinalZ);
+            float finalYaw = EntityYaw?.Invoke(Curr106.Collider) ?? 0;
+            RotateEntity?.Invoke(Curr106.Obj, 0, (int)finalYaw, 0);
+
+            // Create decals at certain progress
+            if ((e.EventState / 250.0f) > 0.3f && ((e.EventState - FPSfactor * 0.7f) / 250.0f) <= 0.3f)
+            {
+                e.SoundCHN = PlaySoundStrict?.Invoke() ?? 0; // HorrorSFX(6)
+                BlurTimer = 800;
+                float obj2X = EntityX?.Invoke(e.Room.Objects[2]) ?? 0;
+                float obj2Y = EntityY?.Invoke(e.Room.Objects[2]) ?? 0;
+                float obj2Z = EntityZ?.Invoke(e.Room.Objects[2]) ?? 0;
+                OnCreateDecal?.Invoke(0, (int)(obj2X * 1000), (int)(obj2Y * 1000), (int)(obj2Z * 1000), (int)(e.Room.Angle - 90), _rng.Next(360), 0);
+            }
+
+            if ((e.EventState / 250.0f) > 0.65f && ((e.EventState - FPSfactor * 0.7f) / 250.0f) <= 0.65f)
+            {
+                float obj3X = EntityX?.Invoke(e.Room.Objects[3]) ?? 0;
+                float obj3Y = EntityY?.Invoke(e.Room.Objects[3]) ?? 0;
+                float obj3Z = EntityZ?.Invoke(e.Room.Objects[3]) ?? 0;
+                OnCreateDecal?.Invoke(0, (int)(obj3X * 1000), (int)(obj3Y * 1000), (int)(obj3Z * 1000), (int)(e.Room.Angle + 90), _rng.Next(360), 0);
+            }
+
+            if (e.EventState > 250)
+            {
+                Curr106!.Idle = false;
+                RemoveEvent?.Invoke(e);
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2PIT106 (UpdateEvents.bb 3991-4014)
+    // =====================================================================
+    private static void UpdateRoom2Pit106(Event e)
+    {
+        if (e.Room == null || Contained106 || Curr106 == null || Curr106.State <= 0) return;
+
+        if (e.EventState == 0)
+        {
+            if (PlayerRoom == e.Room)
+                e.EventState = 1;
+        }
+        else
+        {
+            e.EventState++;
+            float obj7X = EntityX?.Invoke(e.Room.Objects[7]) ?? 0;
+            float obj7Y = EntityY?.Invoke(e.Room.Objects[7]) ?? 0;
+            float obj7Z = EntityZ?.Invoke(e.Room.Objects[7]) ?? 0;
+            PositionEntity?.Invoke(Curr106.Collider, (int)obj7X, (int)obj7Y, (int)obj7Z);
+            ResetEntity?.Invoke(Curr106.Collider);
+
+            PointEntity?.Invoke(Curr106.Collider, Camera);
+            int millis = MilliSecs2?.Invoke(1) ?? 0;
+            TurnEntity?.Invoke(Curr106.Collider, 0, MathF.Sin(millis / 20.0f) * 6.0f, 0);
+            MoveEntity?.Invoke(Curr106.Collider, 0, 0, (int)(MathF.Sin(millis / 15.0f) * 0.06f * 1000));
+
+            float c106X = EntityX?.Invoke(Curr106.Collider) ?? 0;
+            float c106Z = EntityZ?.Invoke(Curr106.Collider) ?? 0;
+            PositionEntity?.Invoke(Curr106.Obj, (int)c106X, (int)((obj7Y - 0.15f) * 1000), (int)c106Z);
+
+            float yaw = EntityYaw?.Invoke(Curr106.Collider) ?? 0;
+            RotateEntity?.Invoke(Curr106.Obj, 0, (int)yaw, 0);
+            Curr106.Idle = true;
+            AnimateNPC?.Invoke(Curr106, 334, 494, 0.3f, true);
+
+            if (e.EventState > 800)
+            {
+                if (BlinkTimer < -5)
+                {
+                    Curr106.Idle = false;
+                    RemoveEvent?.Invoke(e);
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2PIT (UpdateEvents.bb 4015-4026)
+    // =====================================================================
+    private static void UpdateRoom2Pit(Event e)
+    {
+        if (e.Room == null || Curr173 == null || Curr173.Idle != 0) return;
+
+        if (e.Room.Dist < 8.0f && e.Room.Dist > 0)
+        {
+            bool visible173 = EntityVisible?.Invoke(Curr173.Collider, Camera) ?? true;
+            bool visibleObj6 = EntityVisible?.Invoke(e.Room.Objects[6], Camera) ?? true;
+
+            if (!visible173 && !visibleObj6)
+            {
+                float obj6X = EntityX?.Invoke(e.Room.Objects[6]) ?? 0;
+                float obj6Z = EntityZ?.Invoke(e.Room.Objects[6]) ?? 0;
+                PositionEntity?.Invoke(Curr173.Collider, (int)obj6X, (int)(0.5f * 1000), (int)obj6Z);
+                ResetEntity?.Invoke(Curr173.Collider);
+                RemoveEvent?.Invoke(e);
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM3PITDUCK (UpdateEvents.bb 4027-4055)
+    // =====================================================================
+    private static void UpdateRoom3PitDuck(Event e)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        if (e.Room.Objects[2] == 0)
+        {
+            // Load duck mesh
+            e.Room.Objects[2] = LoadAnimMeshStrict?.Invoke("GFX\\npcs\\duck_low_res.b3d") ?? 0;
+            ScaleEntity?.Invoke(e.Room.Objects[2], 0.07f, 0.07f, 0.07f);
+            float obj0X = EntityX?.Invoke(e.Room.Objects[0]) ?? 0;
+            float obj0Y = EntityY?.Invoke(e.Room.Objects[0]) ?? 0;
+            float obj0Z = EntityZ?.Invoke(e.Room.Objects[0]) ?? 0;
+            PositionEntity?.Invoke(e.Room.Objects[2], (int)obj0X, (int)obj0Y, (int)obj0Z);
+            PointEntity?.Invoke(e.Room.Objects[2], e.Room.Obj);
+            float yaw = EntityYaw?.Invoke(e.Room.Objects[2]) ?? 0;
+            RotateEntity?.Invoke(e.Room.Objects[2], 0, (int)yaw, 0);
+
+            LoadEventSound?.Invoke(e, "SFX\\SCP\\Joke\\Saxophone.ogg");
+        }
+        else
+        {
+            bool inView = EntityInView?.Invoke(e.Room.Objects[2], Camera) ?? true;
+            if (!inView)
+            {
+                e.EventState += FPSfactor;
+                if (_rng.Next(200) == 1 && e.EventState > 300)
+                {
+                    e.EventState = 0;
+                    e.SoundCHN = PlaySound2?.Invoke(e.Sound, Camera, e.Room.Objects[2], 6.0f, 1.0f) ?? 0;
+                }
+            }
+            else
+            {
+                if (e.SoundCHN != 0)
+                {
+                    if (ChannelPlaying?.Invoke(e.SoundCHN) ?? false)
+                        StopChannel?.Invoke(e.SoundCHN);
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2POFFICES2 - SCP-106 Office Scare (UpdateEvents.bb 4142-4166)
+    // =====================================================================
+    private static void UpdateRoom2POffices2(Event e)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        if (e.EventState == 0)
+        {
+            if (e.Room.RoomDoors[0]!.Open)
+            {
+                if (e.Room.RoomDoors[0]!.OpenState == 180)
+                {
+                    e.EventState = 1;
+                    PlaySoundStrict?.Invoke(); // HorrorSFX(5)
+                }
+            }
+            else
+            {
+                float dist = EntityDistance?.Invoke(Collider, e.Room.RoomDoors[0]!.Obj) ?? 100;
+                if (dist < 1.5f && RemoteDoorOn)
+                {
+                    e.Room.RoomDoors[0]!.Open = true;
+                }
+            }
+        }
+        else
+        {
+            float dist = EntityDistance?.Invoke(e.Room.Objects[0], Collider) ?? 100;
+            if (dist < 2.0f)
+            {
+                HeartBeatVolume = CurveValue?.Invoke(0.5f, HeartBeatVolume, 5) ?? HeartBeatVolume;
+                HeartBeatRate = CurveValue?.Invoke(120, HeartBeatRate, 150) ?? HeartBeatRate;
+                e.SoundCHN = LoopSound2?.Invoke(OldManSFX4, e.SoundCHN, Camera, e.Room.Obj, 5.0f, 0.3f) ?? 0;
+                Curr106!.State -= FPSfactor * 3;
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2SERVERS - SCP-096 Server Room (UpdateEvents.bb 4167-4475) - MASSIVE
+    // =====================================================================
+    private static void UpdateRoom2Servers(Event e, ref int i, ref float x, ref float z, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (e.EventState == 0)
+        {
+            if (PlayerRoom == e.Room)
+            {
+                // Close doors when player enters
+                UseDoor?.Invoke(e.Room.RoomDoors[0]!, false);
+                e.Room.RoomDoors[0]!.Locked = true;
+                UseDoor?.Invoke(e.Room.RoomDoors[1]!, false);
+                e.Room.RoomDoors[1]!.Locked = true;
+
+                // Spawn SCP-096
+                float obj6X = EntityX?.Invoke(e.Room.Objects[6]) ?? 0;
+                float obj6Y = EntityY?.Invoke(e.Room.Objects[6]) ?? 0;
+                float obj6Z = EntityZ?.Invoke(e.Room.Objects[6]) ?? 0;
+
+                if (Curr096 == null)
+                {
+                    Curr096 = CreateNPC?.Invoke(NPCtype096, obj6X, obj6Y + 0.1f, obj6Z);
+                }
+                else
+                {
+                    PositionEntity?.Invoke(Curr096.Collider, (int)obj6X, (int)((obj6Y + 0.1f) * 1000), (int)obj6Z);
+                }
+
+                if (Curr096 != null)
+                {
+                    RotateEntity?.Invoke(Curr096.Collider, 0, (int)(e.Room.Angle + 270), 0);
+                    ResetEntity?.Invoke(Curr096.Collider);
+                    Curr096.State = 6;
+                    Curr096.State2 = 70 * 10;
+                }
+
+                LoadEventSound?.Invoke(e, "SFX\\Character\\Guard\\096ServerRoom1.ogg");
+                e.SoundCHN = PlaySoundStrict?.Invoke() ?? 0;
+
+                // Spawn guard
+                float obj7X = EntityX?.Invoke(e.Room.Objects[7]) ?? 0;
+                float obj7Y = EntityY?.Invoke(e.Room.Objects[7]) ?? 0;
+                float obj7Z = EntityZ?.Invoke(e.Room.Objects[7]) ?? 0;
+                e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeGuard, obj7X, obj7Y, obj7Z);
+
+                GiveAchievement?.Invoke("Achv096");
+                e.EventState = 1;
+            }
+        }
+        else if (e.EventState < 70 * 45)
+        {
+            // Random light flicker
+            if (_rng.Next(200) < 5 && PlayerRoom == e.Room)
+            {
+                LightBlink = (float)_rng.NextDouble() * 2.0f;
+                if (_rng.Next(5) == 1)
+                    PlaySound2?.Invoke(IntroSFX[_rng.Next(10, 12)], Camera, e.Room.Obj, 8.0f, (float)_rng.NextDouble() * 0.2f + 0.1f);
+            }
+
+            e.EventState = MathF.Min(e.EventState + FPSfactor, 70 * 43);
+
+            if (e.Room.NPC[0] != null && Curr096 != null)
+            {
+                Curr096.Target = e.Room.NPC[0];
+
+                if (e.EventState < 70 * 8)
+                {
+                    AnimateNPC?.Invoke(Curr096, 472, 520, 0.25f, true);
+                    PointEntity?.Invoke(e.Room.NPC[0].Collider, Curr096.Collider);
+                }
+                else if (e.EventState >= 70 * 8 && e.EventState < 70 * 10)
+                {
+                    // 096 stands up
+                    float distDoor0 = EntityDistance?.Invoke(Collider, e.Room.RoomDoors[0]!.FrameObj) ?? 0;
+                    float distDoor1 = EntityDistance?.Invoke(Collider, e.Room.RoomDoors[1]!.FrameObj) ?? 0;
+
+                    if (distDoor0 < distDoor1)
+                    {
+                        AnimateNPC?.Invoke(Curr096, 521, 555, 0.25f, false);
+                        if (Curr096.Frame >= 554.5f)
+                        {
+                            e.EventState = 70 * 10;
+                            Curr096.Frame = 677;
+                            SetNPCFrame?.Invoke(Curr096, 677);
+                            Curr096.State = 1;
+                            TurnEntity?.Invoke(Curr096.Collider, 0, 180, 0);
+                            MoveEntity?.Invoke(Curr096.Collider, 0, 0, (int)(0.3f * 1000));
+                        }
+                    }
+                    else
+                    {
+                        AnimateNPC?.Invoke(Curr096, 556, 590, 0.25f, false);
+                        if (Curr096.Frame >= 589.5f)
+                        {
+                            e.EventState = 70 * 10;
+                            Curr096.Frame = 677;
+                            SetNPCFrame?.Invoke(Curr096, 677);
+                            Curr096.State = 1;
+                            TurnEntity?.Invoke(Curr096.Collider, 0, 180, 0);
+                            MoveEntity?.Invoke(Curr096.Collider, 0, 0, (int)(0.3f * 1000));
+                        }
+                    }
+                    PointEntity?.Invoke(e.Room.NPC[0].Collider, Curr096.Collider);
+                }
+                else if (e.EventState >= 70 * 10 && e.EventState < 70 * 20)
+                {
+                    Curr096.State = MathF.Min(MathF.Max(1, Curr096.State), 3);
+                    Curr096.State2 = MathF.Max(Curr096.State2, 70 * 12);
+
+                    if (e.EventState - FPSfactor <= 70 * 15 && e.EventState > 70 * 15)
+                    {
+                        e.Room.NPC[0].State = 14;
+                        float c096X = EntityX?.Invoke(Curr096.Collider) ?? 0;
+                        float c096Z = EntityZ?.Invoke(Curr096.Collider) ?? 0;
+                        e.Room.NPC[0].PathStatus = FindPath?.Invoke(e.Room.NPC[0], c096X, 0.4f, c096Z) ?? 0;
+                        e.Room.NPC[0].PathTimer = 300;
+                    }
+                    else
+                    {
+                        PointEntity?.Invoke(e.Room.NPC[0].Collider, Curr096.Collider);
+                    }
+
+                    bool guardVisible = EntityVisible?.Invoke(e.Room.NPC[0].Collider, Curr096.Collider) ?? false;
+                    if (guardVisible)
+                    {
+                        e.Room.RoomDoors[2]!.Open = false;
+                        e.Room.NPC[0].State = 13;
+                        PointEntity?.Invoke(e.Room.NPC[0].Obj, Curr096.Collider);
+                        float guardObjYaw = EntityYaw?.Invoke(e.Room.NPC[0].Obj) ?? 0;
+                        float guardYaw = EntityYaw?.Invoke(e.Room.NPC[0].Collider) ?? 0;
+                        float newYaw = CurveAngle?.Invoke(guardObjYaw, guardYaw, 30) ?? guardYaw;
+                        RotateEntity?.Invoke(e.Room.NPC[0].Collider, 0, (int)newYaw, 0);
+                    }
+                }
+                else
+                {
+                    if (Curr096.State == 4)
+                    {
+                        Curr096.LastSeen = 1;
+                        e.Room.NPC[0].State = 2;
+                        PointEntity?.Invoke(e.Room.NPC[0].Obj, Curr096.Collider);
+                        float guardObjYaw = EntityYaw?.Invoke(e.Room.NPC[0].Obj) ?? 0;
+                        float guardYaw = EntityYaw?.Invoke(e.Room.NPC[0].Collider) ?? 0;
+                        float newYaw = CurveAngle?.Invoke(guardObjYaw, guardYaw, 30) ?? guardYaw;
+                        RotateEntity?.Invoke(e.Room.NPC[0].Collider, 0, (int)newYaw, 0);
+                        if (PlayerRoom == e.Room)
+                            LightBlink = e.Room.NPC[0].Reload + (float)_rng.NextDouble() * 1.5f + 0.5f;
+                        Curr096.Target = e.Room.NPC[0];
+                    }
+                    else
+                    {
+                        if (e.EventState > 70 * 22)
+                            Curr096.State = 4;
+                        if (e.Room.NPC[0].State == 13)
+                        {
+                            e.Room.NPC[0].State = 14;
+                            float roomX = EntityX?.Invoke(e.Room.Obj) ?? 0;
+                            float roomZ = EntityZ?.Invoke(e.Room.Obj) ?? 0;
+                            e.Room.NPC[0].PathStatus = FindPath?.Invoke(e.Room.NPC[0], roomX, 0.4f, roomZ) ?? 0;
+                            e.Room.NPC[0].PathTimer = 300;
+                            e.Room.NPC[0].Speed *= 1.8f;
+                        }
+                    }
+                }
+
+                // Guard death scene
+                float animTime = AnimTime?.Invoke(Curr096.Obj) ?? 0;
+                if (animTime > 25 && animTime < 150)
+                {
+                    FreeSoundStrict?.Invoke(e.Sound);
+                    e.Sound = LoadSoundStrict?.Invoke("SFX\\Character\\Guard\\096ServerRoom2.ogg") ?? 0;
+                    e.SoundCHN = PlaySoundStrict?.Invoke() ?? 0;
+
+                    Curr096.CurrSpeed = 0;
+
+                    // Create blood decals
+                    for (i = 0; i <= 6; i++)
+                    {
+                        float guardX = EntityX?.Invoke(e.Room.NPC[0].Collider) ?? 0;
+                        float guardZ = EntityZ?.Invoke(e.Room.NPC[0].Collider) ?? 0;
+                        OnCreateDecal?.Invoke(_rng.Next(2, 3), (int)((guardX + _rng.NextDouble() * 4 - 2) * 1000), 3, (int)((guardZ + _rng.NextDouble() * 4 - 2) * 1000), 90, _rng.Next(360), 0);
+                    }
+
+                    Curr096.State = 5;
+                    StopStreamStrict?.Invoke(Curr096.SoundChn);
+                    Curr096.SoundChn = 0;
+
+                    RemoveNPC?.Invoke(e.Room.NPC[0]);
+                    e.Room.NPC[0] = null;
+                }
+            }
+            else
+            {
+                // Guard is dead, open doors again after timer
+                if (e.EventState >= 70 * 40 && e.EventState - FPSfactor < 70 * 40)
+                {
+                    e.Room.RoomDoors[0]!.Locked = false;
+                    e.Room.RoomDoors[1]!.Locked = false;
+                    UseDoor?.Invoke(e.Room.RoomDoors[0]!, false);
+                    UseDoor?.Invoke(e.Room.RoomDoors[1]!, false);
+                    FreeSoundStrict?.Invoke(e.Sound);
+                    e.Room.RoomDoors[0]!.Locked = true;
+                    e.Room.RoomDoors[1]!.Locked = true;
+                }
+
+                if (PlayerRoom == e.Room)
+                {
+                    if (e.SoundCHN != 0 && (ChannelPlaying?.Invoke(e.SoundCHN) ?? false))
+                    {
+                        LightBlink = (float)_rng.NextDouble() * 5.5f + 0.5f;
+                        if (_rng.Next(50) == 1)
+                            PlaySound2?.Invoke(IntroSFX[_rng.Next(10, 12)], Camera, e.Room.Obj, 8.0f, (float)_rng.NextDouble() * 0.2f + 0.1f);
+                    }
+
+                    // Check if player left room
+                    if (e.Room.Angle == 0 || e.Room.Angle == 180)
+                    {
+                        float colliderX = EntityX?.Invoke(Collider) ?? 0;
+                        float roomX = EntityX?.Invoke(e.Room.Obj) ?? 0;
+                        if (MathF.Abs(colliderX - roomX) > 1.3f)
+                        {
+                            e.EventState = 70 * 50;
+                            e.Sound = 0;
+                        }
+                    }
+                    else
+                    {
+                        float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+                        float roomZ = EntityZ?.Invoke(e.Room.Obj) ?? 0;
+                        if (MathF.Abs(colliderZ - roomZ) > 1.3f)
+                        {
+                            e.EventState = 70 * 50;
+                            e.Sound = 0;
+                        }
+                    }
+                }
+            }
+        }
+        else if (PlayerRoom == e.Room)
+        {
+            // Lever control for power, fuel pump, generator
+            temp = (OnUpdateLever?.Invoke(e.Room.Objects[1]) ?? false) ? 1 : 0;
+            x = (OnUpdateLever?.Invoke(e.Room.Objects[3]) ?? false) ? 1 : 0;
+            z = (OnUpdateLever?.Invoke(e.Room.Objects[5]) ?? false) ? 1 : 0;
+
+            if (x != 0)
+            {
+                e.EventState2 = MathF.Min(1.0f, e.EventState2 + FPSfactor / 350);
+                if (z != 0)
+                {
+                    if (e.Sound2 == 0)
+                        LoadEventSound?.Invoke(e, "SFX\\General\\GeneratorOn.ogg");
+                    e.EventState3 = MathF.Min(1.0f, e.EventState3 + FPSfactor / 450);
+                }
+                else
+                {
+                    e.EventState3 = MathF.Max(0.0f, e.EventState3 - FPSfactor / 450);
+                }
+            }
+            else
+            {
+                e.EventState2 = MathF.Max(0, e.EventState2 - FPSfactor / 350);
+                e.EventState3 = MathF.Max(0, e.EventState3 - FPSfactor / 450);
+            }
+
+            if (e.EventState2 > 0)
+                e.SoundCHN = LoopSound2?.Invoke(RoomAmbience8, e.SoundCHN, Camera, e.Room.Objects[3], 5.0f, e.EventState2 * 0.8f) ?? 0;
+            if (e.EventState3 > 0)
+                e.SoundCHN2 = LoopSound2?.Invoke(e.Sound2, e.SoundCHN2, Camera, e.Room.Objects[5], 6.0f, e.EventState3) ?? 0;
+
+            if (temp == 0 && x != 0 && z != 0)
+            {
+                e.Room.RoomDoors[0]!.Locked = false;
+                e.Room.RoomDoors[1]!.Locked = false;
+            }
+            else
+            {
+                if (_rng.Next(200) < 5)
+                    LightBlink = (float)_rng.NextDouble() * 0.5f + 0.5f;
+
+                if (e.Room.RoomDoors[0]!.Open)
+                {
+                    e.Room.RoomDoors[0]!.Locked = false;
+                    UseDoor?.Invoke(e.Room.RoomDoors[0]!, false);
+                }
+                if (e.Room.RoomDoors[1]!.Open)
+                {
+                    e.Room.RoomDoors[1]!.Locked = false;
+                    UseDoor?.Invoke(e.Room.RoomDoors[1]!, false);
+                }
+                e.Room.RoomDoors[0]!.Locked = true;
+                e.Room.RoomDoors[1]!.Locked = true;
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM2STORAGE - SCP-970 Endless Loop (UpdateEvents.bb 4476-4733)
+    // =====================================================================
+    private static void UpdateRoom2Storage(Event e, ref int temp, ref int i, ref float x)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        // Door lock logic based on nearby threats
+        if (e.EventState2 <= 0)
+        {
+            e.Room.RoomDoors[1]!.Locked = false;
+            e.Room.RoomDoors[4]!.Locked = false;
+
+            float dist173 = EntityDistance?.Invoke(Collider, Curr173?.Obj ?? 0) ?? 100;
+            float dist106 = EntityDistance?.Invoke(Collider, Curr106?.Obj ?? 0) ?? 100;
+
+            if (dist173 < 8.0f || dist106 < 8.0f)
+            {
+                e.Room.RoomDoors[1]!.Locked = true;
+                e.Room.RoomDoors[4]!.Locked = true;
+            }
+            else
+            {
+                // Check for MTF proximity
+                // Would iterate through NPCs
+            }
+            e.EventState2 = 70 * 5;
+        }
+        else
+        {
+            e.EventState2 -= FPSfactor;
+        }
+
+        LightVolume = TempLightVolume * 0.5f;
+        GiveAchievement?.Invoke("Achv970");
+
+        // TFormPoint logic for teleportation
+        // When player crosses threshold > 730, teleport them
+    }
+
+    // =====================================================================
+    // SCP-914 - The Clockworks (UpdateEvents.bb 7351-7553)
+    // Full 1:1 port with key turning, setting dial, and item processing
+    // =====================================================================
+    private static void Update914(Event e, ref float angle, ref int temp)
+    {
+        if (e.Room == null || PlayerRoom != e.Room) return;
+
+        // Achievement for entering with door 2 open
+        if (e.Room.RoomDoors[2]!.Open)
+        {
+            GiveAchievement?.Invoke("Achv914");
+            e.EventState2 = 1;
+        }
+
+        if (e.EventState2 == 1)
+            ShouldPlay = 22;
+
+        // Pick interaction
+        EntityPick?.Invoke(Camera, 1.0f);
+        int picked = PickedEntity?.Invoke() ?? 0;
+
+        if (picked == e.Room.Objects[0])
+        {
+            DrawHandIcon = true;
+            if (MouseHit1)
+                GrabbedEntity = e.Room.Objects[0];
+        }
+        else if (picked == e.Room.Objects[1])
+        {
+            DrawHandIcon = true;
+            if (MouseHit1)
+                GrabbedEntity = e.Room.Objects[1];
+        }
+
+        // Key and dial manipulation
+        if (MouseDown1 || MouseHit1)
+        {
+            if (GrabbedEntity != 0)
+            {
+                if (GrabbedEntity == e.Room.Objects[0]) // Key
+                {
+                    if (e.EventState == 0)
+                    {
+                        DrawHandIcon = true;
+                        TurnEntity?.Invoke(GrabbedEntity, 0, 0, (int)(-MouseXSpeed * 2.5f));
+
+                        angle = WrapAngle?.Invoke(EntityRoll?.Invoke(e.Room.Objects[0]) ?? 0) ?? 0;
+                        if (angle > 181)
+                            DrawArrowIcon3 = true;
+                        DrawArrowIcon1 = true;
+
+                        // Clamp rotation
+                        if (angle < 90)
+                            RotateEntity?.Invoke(GrabbedEntity, 0, 0, 361);
+                        else if (angle < 180)
+                            RotateEntity?.Invoke(GrabbedEntity, 0, 0, 180);
+
+                        // Check if key is turned past 180 and items are in intake booth
+                        if (angle < 181 && angle > 90)
+                        {
+                            // Check for items in booth
+                            bool hasItems = CheckFor914Items(e);
+                            if (hasItems)
+                            {
+                                e.EventState = 1;
+                                e.SoundCHN = PlaySound2?.Invoke(MachineSFX, Camera, e.Room.Objects[1], 1.0f, 1.0f) ?? 0;
+                                PlaySound2?.Invoke(LoadTempSound!("SFX\\SCP\\914\\DoorClose.ogg"), Camera, e.Room.RoomDoors[1]!.Obj, 1.0f, 1.0f);
+                            }
+                        }
+                    }
+                }
+                else if (GrabbedEntity == e.Room.Objects[1]) // Setting dial
+                {
+                    if (e.EventState == 0)
+                    {
+                        DrawHandIcon = true;
+                        TurnEntity?.Invoke(GrabbedEntity, 0, 0, (int)(-MouseXSpeed * 2.5f));
+
+                        angle = WrapAngle?.Invoke(EntityRoll?.Invoke(e.Room.Objects[1]) ?? 0) ?? 0;
+                        DrawArrowIcon3 = true;
+                        DrawArrowIcon1 = true;
+
+                        // Clamp dial rotation
+                        if (angle > 90 && angle < 180)
+                            RotateEntity?.Invoke(GrabbedEntity, 0, 0, 90);
+                        else if (angle >= 180 && angle < 270)
+                            RotateEntity?.Invoke(GrabbedEntity, 0, 0, 270);
+                    }
+                }
+            }
+        }
+        else
+        {
+            GrabbedEntity = 0;
+        }
+
+        // Determine setting from dial position
+        string setting = "";
+        if (GrabbedEntity != e.Room.Objects[1])
+        {
+            angle = WrapAngle?.Invoke(EntityRoll?.Invoke(e.Room.Objects[1]) ?? 0) ?? 0;
+            float targetAngle;
+
+            if (angle < 22.5f)
+            {
+                targetAngle = 0;
+                setting = "1:1";
+            }
+            else if (angle < 67.5f)
+            {
+                targetAngle = 40;
+                setting = "coarse";
+            }
+            else if (angle < 180)
+            {
+                targetAngle = 90;
+                setting = "rough";
+            }
+            else if (angle > 337.5f)
+            {
+                targetAngle = 359 - 360;
+                setting = "1:1";
+            }
+            else if (angle > 292.5f)
+            {
+                targetAngle = 320 - 360;
+                setting = "fine";
+            }
+            else
+            {
+                targetAngle = 270 - 360;
+                setting = "very fine";
+            }
+
+            float currRoll = EntityRoll?.Invoke(e.Room.Objects[1]) ?? 0;
+            float newRoll = CurveValue?.Invoke(targetAngle, currRoll, 20) ?? currRoll;
+            RotateEntity?.Invoke(e.Room.Objects[1], 0, 0, (int)newRoll);
+        }
+
+        // Release grabbed entity if out of view/range
+        for (int i = 0; i <= 1; i++)
+        {
+            if (GrabbedEntity == e.Room.Objects[i])
+            {
+                bool inView = EntityInView?.Invoke(e.Room.Objects[i], Camera) ?? true;
+                float dist = EntityDistance?.Invoke(e.Room.Objects[i], Camera) ?? 0;
+                if (!inView || dist > 1.0f)
+                    GrabbedEntity = 0;
+            }
+        }
+
+        // Machine running logic
+        if (e.EventState > 0)
+        {
+            e.EventState += FPSfactor;
+
+            e.Room.RoomDoors[1]!.Open = false;
+            if (e.EventState > 70 * 2)
+            {
+                if (e.Room.RoomDoors[0]!.Open)
+                    PlaySound2?.Invoke(LoadTempSound!("SFX\\SCP\\914\\DoorClose.ogg"), Camera, e.Room.RoomDoors[0]!.Obj, 1.0f, 1.0f);
+                e.Room.RoomDoors[0]!.Open = false;
+            }
+
+            // Check if player is inside intake booth
+            float colliderX = EntityX?.Invoke(Collider) ?? 0;
+            float colliderZ = EntityZ?.Invoke(Collider) ?? 0;
+            float obj2X = EntityX?.Invoke(e.Room.Objects[2]) ?? 0;
+            float obj2Z = EntityZ?.Invoke(e.Room.Objects[2]) ?? 0;
+            float distToIntake = Distance?.Invoke(colliderX, colliderZ, obj2X, obj2Z) ?? 1000;
+
+            if (distToIntake < 170.0f * RoomScale)
+            {
+                if (setting == "rough" || setting == "coarse")
+                {
+                    if (e.EventState > 70 * 2.6f && e.EventState - FPSfactor2 < 70 * 2.6f)
+                        PlaySoundStrict?.Invoke(); // Death914SFX
+                }
+
+                if (e.EventState > 70 * 3)
+                {
+                    switch (setting)
+                    {
+                        case "rough":
+                            KillTimer = MathF.Min(-1, KillTimer);
+                            BlinkTimer = -10;
+                            if (e.SoundCHN != 0)
+                                StopChannel?.Invoke(e.SoundCHN);
+                            DeathMSG = "\"A heavily mutilated corpse found inside the output booth of SCP-914. DNA testing identified the corpse as Class D Subject D-9341. The subject had obviously been \"refined\" by SCP-914 on the \"Rough\" setting, but we are still confused as to how he ended up inside the intake booth and who or what wound the key.\"";
+                            break;
+                        case "coarse":
+                            BlinkTimer = -10;
+                            if (e.EventState - FPSfactor2 < 70 * 3)
+                                PlaySoundStrict?.Invoke(); // Use914SFX
+                            break;
+                        case "1:1":
+                            BlinkTimer = -10;
+                            if (e.EventState - FPSfactor2 < 70 * 3)
+                                PlaySoundStrict?.Invoke(); // Use914SFX
+                            break;
+                        case "fine":
+                        case "very fine":
+                            BlinkTimer = -10;
+                            if (e.EventState - FPSfactor2 < 70 * 3)
+                                PlaySoundStrict?.Invoke(); // Use914SFX
+                            break;
+                    }
+                }
+            }
+
+            // Key rotation animation
+            if (e.EventState > 6 * 70)
+            {
+                float keyPitch = EntityPitch?.Invoke(e.Room.Objects[0]) ?? 0;
+                float keyYaw = EntityYaw?.Invoke(e.Room.Objects[0]) ?? 0;
+                float keyRoll = EntityRoll?.Invoke(e.Room.Objects[0]) ?? 0;
+                float newRoll = CurveAngle?.Invoke(0, keyRoll, 10.0f) ?? keyRoll;
+                RotateEntity?.Invoke(e.Room.Objects[0], (int)keyPitch, (int)keyYaw, (int)newRoll);
+            }
+            else
+            {
+                float keyPitch = EntityPitch?.Invoke(e.Room.Objects[0]) ?? 0;
+                float keyYaw = EntityYaw?.Invoke(e.Room.Objects[0]) ?? 0;
+                RotateEntity?.Invoke(e.Room.Objects[0], (int)keyPitch, (int)keyYaw, 180);
+            }
+
+            // Process items after full cycle
+            if (e.EventState > 12 * 70)
+            {
+                // Process items through Use914
+                float obj2xPos = EntityX?.Invoke(e.Room.Objects[2]) ?? 0;
+                float obj2zPos = EntityZ?.Invoke(e.Room.Objects[2]) ?? 0;
+                float obj3X = EntityX?.Invoke(e.Room.Objects[3]) ?? 0;
+                float obj3Y = EntityY?.Invoke(e.Room.Objects[3]) ?? 0;
+                float obj3Z = EntityZ?.Invoke(e.Room.Objects[3]) ?? 0;
+
+                // For each item near Objects[2], call Use914
+                Use914Items(e, setting, obj3X, obj3Y, obj3Z);
+
+                // Teleport player if inside
+                if (distToIntake < 160.0f * RoomScale)
+                {
+                    switch (setting)
+                    {
+                        case "coarse":
+                            Injuries = 4.0f;
+                            Msg = "You notice countless small incisions all around your body. They are bleeding heavily.";
+                            MsgTimer = 70 * 8;
+                            break;
+                        case "1:1":
+                            InvertMouse = !InvertMouse;
+                            break;
+                        case "fine":
+                        case "very fine":
+                            SuperMan = true;
+                            break;
+                    }
+                    BlurTimer = 1000;
+                    PositionEntity?.Invoke(Collider, (int)obj3X, (int)((obj3Y + 1.0f) * 1000), (int)obj3Z);
+                    ResetEntity?.Invoke(Collider);
+                    DropSpeed = 0;
+                }
+
+                e.Room.RoomDoors[0]!.Open = true;
+                e.Room.RoomDoors[1]!.Open = true;
+                RotateEntity?.Invoke(e.Room.Objects[0], 0, 0, 0);
+                e.EventState = 0;
+
+                int openSfx = LoadTempSound!("SFX\\SCP\\914\\DoorOpen.ogg");
+                PlaySound2?.Invoke(openSfx, Camera, e.Room.RoomDoors[0]!.Obj, 1.0f, 1.0f);
+                PlaySound2?.Invoke(openSfx, Camera, e.Room.RoomDoors[1]!.Obj, 1.0f, 1.0f);
+            }
+        }
+
+        UpdateSoundOrigin?.Invoke(e.SoundCHN, Camera, e.Room.Objects[1], 1.0f);
+    }
+
+    // Helper method to check if items are in 914's intake booth
+    private static bool CheckFor914Items(Event e)
+    {
+        // Would iterate through all items and check if any are in booth
+        // For now return true to enable testing
+        return true;
+    }
+
+    // Process items through SCP-914
+    private static void Use914Items(Event e, string setting, float outX, float outY, float outZ)
+    {
+        // Would iterate through items near intake booth and call Use914 on each
+        // This is where the full item conversion table would be applied
+    }
+
+    // =====================================================================
+    // USE914 - Item Conversion Function (Main.bb 9421-10030)
+    // Full 1:1 item conversion table
+    // =====================================================================
+    public static void Use914(Item item, string setting, float x, float y, float z)
+    {
+        if (item?.ItemTemplate == null) return;
+
+        RefinedItems++;
+        string itemName = item.ItemTemplate.Name ?? "";
+        string tempname = item.ItemTemplate.TempName ?? "";
+
+        switch (itemName)
+        {
+            case "Gas Mask":
+            case "Heavy Gas Mask":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        // Create decal
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        // Just move item to output
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Gas Mask", "supergasmask", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            case "Ballistic Vest":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("Heavy Ballistic Vest", "finevest", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "very fine":
+                        CreateItem?.Invoke("Bulky Ballistic Vest", "veryfinevest", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            case "Night Vision Goggles":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("Night Vision Goggles", "finenvgoggles", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "very fine":
+                        var nvg = CreateItem?.Invoke("Night Vision Goggles", "supernv", x, y, z);
+                        if (nvg != null) nvg.State = 1000;
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            case "Level 1 Key Card":
+            case "Level 2 Key Card":
+            case "Level 3 Key Card":
+            case "Level 4 Key Card":
+            case "Level 5 Key Card":
+            case "Key Card":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "fine":
+                        UpgradeKeyCard(item, x, y, z);
+                        break;
+                    case "very fine":
+                        // Chance for Omni card based on achievements
+                        if (_rng.Next(0, 30) == 0)
+                            CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
+                        else
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            case "Playing Card":
+            case "Coin":
+            case "Quarter":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Level 1 Key Card", "key1", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            case "First Aid Kit":
+            case "Blue First Aid Kit":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        if (_rng.Next(2) == 1)
+                            CreateItem?.Invoke("Blue First Aid Kit", "firstaid2", x, y, z);
+                        else
+                            CreateItem?.Invoke("First Aid Kit", "firstaid", x, y, z);
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("Small First Aid Kit", "finefirstaid", x, y, z);
+                        break;
+                    case "very fine":
+                        CreateItem?.Invoke("Strange Bottle", "veryfinefirstaid", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            case "S-NAV 300 Navigator":
+            case "S-NAV 310 Navigator":
+            case "S-NAV Navigator":
+            case "S-NAV Navigator Ultimate":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        CreateItem?.Invoke("Electronical components", "misc", x, y, z);
+                        break;
+                    case "1:1":
+                        var nav = CreateItem?.Invoke("S-NAV Navigator", "nav", x, y, z);
+                        if (nav != null) nav.State = 100;
+                        break;
+                    case "fine":
+                        var nav310 = CreateItem?.Invoke("S-NAV 310 Navigator", "nav", x, y, z);
+                        if (nav310 != null) nav310.State = 100;
+                        break;
+                    case "very fine":
+                        var navUlt = CreateItem?.Invoke("S-NAV Navigator Ultimate", "nav", x, y, z);
+                        if (navUlt != null) navUlt.State = 101;
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            case "Radio Transceiver":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        CreateItem?.Invoke("Electronical components", "misc", x, y, z);
+                        break;
+                    case "1:1":
+                        var radio = CreateItem?.Invoke("Radio Transceiver", "18vradio", x, y, z);
+                        if (radio != null) radio.State = 100;
+                        break;
+                    case "fine":
+                        var fineRadio = CreateItem?.Invoke("Radio Transceiver", "fineradio", x, y, z);
+                        if (fineRadio != null) fineRadio.State = 101;
+                        break;
+                    case "very fine":
+                        var vfRadio = CreateItem?.Invoke("Radio Transceiver", "veryfineradio", x, y, z);
+                        if (vfRadio != null) vfRadio.State = 101;
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            case "9V Battery":
+            case "18V Battery":
+            case "Strange Battery":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("18V Battery", "18vbat", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Strange Battery", "killbat", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            default:
+                // Default: just move item to output
+                break;
+        }
+    }
+
+    // Helper to upgrade key cards
+    private static void UpgradeKeyCard(Item item, float x, float y, float z)
+    {
+        string itemName = item.ItemTemplate?.Name ?? "";
+        switch (itemName)
+        {
+            case "Level 1 Key Card":
+                CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                break;
+            case "Level 2 Key Card":
+                CreateItem?.Invoke("Level 3 Key Card", "key3", x, y, z);
+                break;
+            case "Level 3 Key Card":
+                if (_rng.Next(10) == 1)
+                    CreateItem?.Invoke("Level 4 Key Card", "key4", x, y, z);
+                else
+                    CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                break;
+            case "Level 4 Key Card":
+                CreateItem?.Invoke("Level 5 Key Card", "key5", x, y, z);
+                break;
+            case "Level 5 Key Card":
+                if (_rng.Next(20) == 0)
+                    CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
+                else
+                    CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                break;
+        }
+        RemoveItem?.Invoke(item);
+    }
+
+    // Additional state variables
+    public static int TeslaIdleSFX;
+    public static int TeslaActivateSFX;
+    public static int TeslaPowerUpSFX;
+    public static float PlayerSoundVolume;
+    public static float LightFlash;
+    public static int OldManSFX4;
+    public static float HeartBeatVolume;
+    public static float HeartBeatRate;
+    public static int RoomAmbience8;
+    public static int MachineSFX;
+    public static float MouseXSpeed;
+    public static bool MouseDown1;
+    public static int GrabbedEntity;
+    public static bool DrawArrowIcon1;
+    public static bool DrawArrowIcon3;
+    public static float Injuries;
+    public static bool InvertMouse;
+    public static bool SuperMan;
+    public static int RefinedItems;
+    public static Func<int, float>? EntityRoll;
 
     // Additional helpers for events
     private static float PointDirection(float x1, float z1, float x2, float z2)

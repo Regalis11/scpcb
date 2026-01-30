@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using Raylib_cs;
 using SCPContainmentBreach.Core;
+using SCPContainmentBreach.Core.Systems;
 
 namespace SCPContainmentBreach.Scenes;
 
@@ -98,6 +99,12 @@ public class MainMenuScene : IScene
     // Input state
     private bool _inputActive;
     private int _activeInputField; // 0=none, 1=save name, 2=seed
+
+    // Load game state
+    private List<SaveSlotInfo> _saveSlots = new();
+    private int _loadPageOffset;
+    private string _deleteConfirmSlot = "";
+    private float _lastSaveRefresh;
 
     public void Load()
     {
@@ -608,11 +615,18 @@ public class MainMenuScene : IScene
 
     private void DrawLoadGameMenu(int screenWidth, int screenHeight)
     {
-        // Menu.bb lines 410-550 - Load game menu (simplified)
+        // Menu.bb lines 410-550 - Load game menu
         int x = (int)(159 * _menuScale);
         int y = (int)(286 * _menuScale);
         int width = (int)(400 * _menuScale);
         int height = (int)(70 * _menuScale);
+
+        // Refresh save list periodically
+        if (_animationTime - _lastSaveRefresh > 2.0f)
+        {
+            _saveSlots = SaveSystem.GetSaveSlots();
+            _lastSaveRefresh = _animationTime;
+        }
 
         // Title frame
         DrawFrame(x, y, width, height);
@@ -624,7 +638,10 @@ public class MainMenuScene : IScene
         if (DrawButton(backX, y, backW, height, "BACK", IsMouseInRect(backX, y, backW, height)))
         {
             if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            {
                 _mainMenuTab = 0;
+                _deleteConfirmSlot = "";
+            }
         }
 
         // Content frame
@@ -633,11 +650,167 @@ public class MainMenuScene : IScene
         int contentHeight = (int)(400 * _menuScale);
         DrawFrame(x, contentY, contentWidth, contentHeight);
 
-        // No saves message
-        Raylib.DrawText("No saved games found.", x + (int)(20 * _menuScale),
-            contentY + (int)(20 * _menuScale), 18, new Color((byte)150, (byte)150, (byte)150, (byte)255));
-        Raylib.DrawText("Start a new game to create a save.", x + (int)(20 * _menuScale),
-            contentY + (int)(45 * _menuScale), 16, new Color((byte)100, (byte)100, (byte)100, (byte)255));
+        if (_saveSlots.Count == 0)
+        {
+            // No saves message
+            Raylib.DrawText("No saved games found.", x + (int)(20 * _menuScale),
+                contentY + (int)(20 * _menuScale), 18, new Color((byte)150, (byte)150, (byte)150, (byte)255));
+            Raylib.DrawText("Start a new game to create a save.", x + (int)(20 * _menuScale),
+                contentY + (int)(45 * _menuScale), 16, new Color((byte)100, (byte)100, (byte)100, (byte)255));
+            Raylib.DrawText("Use F3 console: save [name]", x + (int)(20 * _menuScale),
+                contentY + (int)(70 * _menuScale), 14, new Color((byte)80, (byte)80, (byte)80, (byte)255));
+        }
+        else
+        {
+            // Draw save slots (up to 5 visible)
+            int slotY = contentY + (int)(15 * _menuScale);
+            int slotH = (int)(70 * _menuScale);
+            int maxVisible = 5;
+
+            for (int i = _loadPageOffset; i < _saveSlots.Count && i < _loadPageOffset + maxVisible; i++)
+            {
+                var slot = _saveSlots[i];
+                int sy = slotY + (i - _loadPageOffset) * (slotH + (int)(10 * _menuScale));
+
+                // Slot background
+                bool slotHovered = IsMouseInRect(x + (int)(10 * _menuScale), sy, contentWidth - (int)(20 * _menuScale), slotH);
+                Color bgColor = slotHovered ?
+                    new Color((byte)40, (byte)40, (byte)50, (byte)255) :
+                    new Color((byte)25, (byte)25, (byte)30, (byte)255);
+                Raylib.DrawRectangle(x + (int)(10 * _menuScale), sy, contentWidth - (int)(20 * _menuScale), slotH, bgColor);
+                Raylib.DrawRectangleLines(x + (int)(10 * _menuScale), sy, contentWidth - (int)(20 * _menuScale), slotH,
+                    new Color((byte)80, (byte)80, (byte)80, (byte)255));
+
+                // Slot info
+                int textX = x + (int)(25 * _menuScale);
+                Raylib.DrawText(slot.SlotName, textX, sy + 8, 18, Color.White);
+                Raylib.DrawText($"{slot.SaveDate} {slot.SaveTime}", textX, sy + 30, 14,
+                    new Color((byte)150, (byte)150, (byte)150, (byte)255));
+                string playTime = SaveSystem.FormatPlayTime(slot.PlayTime);
+                Raylib.DrawText($"Play time: {playTime}", textX, sy + 48, 12,
+                    new Color((byte)100, (byte)100, (byte)100, (byte)255));
+
+                // Position info
+                Raylib.DrawText($"Pos: ({slot.PlayerX:F0}, {slot.PlayerY:F0}, {slot.PlayerZ:F0})",
+                    textX + (int)(200 * _menuScale), sy + 30, 12,
+                    new Color((byte)100, (byte)150, (byte)100, (byte)255));
+
+                // Load button
+                int btnX = x + contentWidth - (int)(130 * _menuScale);
+                int btnW = (int)(50 * _menuScale);
+                int btnH = (int)(25 * _menuScale);
+                if (DrawButton(btnX, sy + 10, btnW, btnH, "Load", IsMouseInRect(btnX, sy + 10, btnW, btnH), 14))
+                {
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    {
+                        LoadSelectedSave(slot.SlotName);
+                    }
+                }
+
+                // Delete button
+                int delX = btnX + btnW + (int)(10 * _menuScale);
+                if (DrawButton(delX, sy + 10, btnW, btnH, "Del", IsMouseInRect(delX, sy + 10, btnW, btnH), 14))
+                {
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    {
+                        _deleteConfirmSlot = slot.SlotName;
+                    }
+                }
+            }
+
+            // Pagination
+            if (_saveSlots.Count > maxVisible)
+            {
+                int pageY = contentY + contentHeight - (int)(35 * _menuScale);
+                int pageW = (int)(30 * _menuScale);
+
+                // Previous page
+                if (_loadPageOffset > 0)
+                {
+                    if (DrawButton(x + (int)(20 * _menuScale), pageY, pageW, (int)(25 * _menuScale), "<",
+                        IsMouseInRect(x + (int)(20 * _menuScale), pageY, pageW, (int)(25 * _menuScale)), 16))
+                    {
+                        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                            _loadPageOffset = Math.Max(0, _loadPageOffset - maxVisible);
+                    }
+                }
+
+                // Page info
+                int currentPage = (_loadPageOffset / maxVisible) + 1;
+                int totalPages = ((_saveSlots.Count - 1) / maxVisible) + 1;
+                Raylib.DrawText($"Page {currentPage}/{totalPages}", x + (int)(80 * _menuScale), pageY + 5, 14,
+                    new Color((byte)150, (byte)150, (byte)150, (byte)255));
+
+                // Next page
+                if (_loadPageOffset + maxVisible < _saveSlots.Count)
+                {
+                    if (DrawButton(x + (int)(180 * _menuScale), pageY, pageW, (int)(25 * _menuScale), ">",
+                        IsMouseInRect(x + (int)(180 * _menuScale), pageY, pageW, (int)(25 * _menuScale)), 16))
+                    {
+                        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                            _loadPageOffset += maxVisible;
+                    }
+                }
+            }
+        }
+
+        // Delete confirmation dialog
+        if (!string.IsNullOrEmpty(_deleteConfirmSlot))
+        {
+            DrawDeleteConfirmDialog(screenWidth, screenHeight);
+        }
+    }
+
+    private void DrawDeleteConfirmDialog(int screenWidth, int screenHeight)
+    {
+        // Darken background
+        Raylib.DrawRectangle(0, 0, screenWidth, screenHeight, new Color((byte)0, (byte)0, (byte)0, (byte)150));
+
+        // Dialog box
+        int dw = (int)(400 * _menuScale);
+        int dh = (int)(150 * _menuScale);
+        int dx = (screenWidth - dw) / 2;
+        int dy = (screenHeight - dh) / 2;
+
+        DrawFrame(dx, dy, dw, dh);
+
+        // Message
+        Raylib.DrawText("Delete this save?", dx + dw/2 - 80, dy + (int)(20 * _menuScale), 20, Color.White);
+        Raylib.DrawText(_deleteConfirmSlot, dx + dw/2 - Raylib.MeasureText(_deleteConfirmSlot, 16)/2,
+            dy + (int)(50 * _menuScale), 16, new Color((byte)255, (byte)200, (byte)100, (byte)255));
+
+        // Buttons
+        int btnW = (int)(100 * _menuScale);
+        int btnH = (int)(35 * _menuScale);
+        int btnY = dy + dh - btnH - (int)(20 * _menuScale);
+
+        if (DrawButton(dx + (int)(50 * _menuScale), btnY, btnW, btnH, "DELETE",
+            IsMouseInRect(dx + (int)(50 * _menuScale), btnY, btnW, btnH)))
+        {
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            {
+                SaveSystem.DeleteSave(_deleteConfirmSlot);
+                _saveSlots = SaveSystem.GetSaveSlots();
+                _deleteConfirmSlot = "";
+            }
+        }
+
+        if (DrawButton(dx + dw - btnW - (int)(50 * _menuScale), btnY, btnW, btnH, "CANCEL",
+            IsMouseInRect(dx + dw - btnW - (int)(50 * _menuScale), btnY, btnW, btnH)))
+        {
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+            {
+                _deleteConfirmSlot = "";
+            }
+        }
+    }
+
+    private void LoadSelectedSave(string slotName)
+    {
+        Console.WriteLine($"[MainMenuScene] Loading save: {slotName}");
+        // TODO: Transition to game with loaded save
+        // For now just close menu
+        _mainMenuTab = 0;
     }
 
     private void DrawOptionsMenu(int screenWidth, int screenHeight)

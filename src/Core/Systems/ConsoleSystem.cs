@@ -487,6 +487,85 @@ public static class ConsoleSystem
                 CreateMsg("Console cleared.", 0, 255, 0);
                 break;
 
+            // Save game
+            case "save":
+                if (string.IsNullOrEmpty(args))
+                    args = "quicksave";
+                if (Player != null && SaveSystem.SaveGame(args, Player))
+                    CreateMsg($"Saved to: {args}", 0, 255, 0);
+                else
+                    CreateMsg("Save failed!", 255, 0, 0);
+                break;
+
+            // Load game
+            case "load":
+                if (string.IsNullOrEmpty(args))
+                {
+                    // List available saves
+                    var saves = SaveSystem.GetSaveSlots();
+                    if (saves.Count == 0)
+                    {
+                        CreateMsg("No saves found.", 255, 150, 0);
+                    }
+                    else
+                    {
+                        CreateMsg("Available saves:", 0, 255, 255);
+                        foreach (var save in saves)
+                        {
+                            CreateMsg($"  - {save.SlotName} ({save.SaveDate} {save.SaveTime})", 0, 255, 255);
+                        }
+                        CreateMsg("Usage: load [name]", 100, 100, 100);
+                    }
+                }
+                else
+                {
+                    var data = SaveSystem.LoadGame(args);
+                    if (data != null && Player != null)
+                    {
+                        SaveSystem.ApplyLoadedData(data, Player);
+                        CreateMsg($"Loaded: {args}", 0, 255, 0);
+                    }
+                    else
+                    {
+                        CreateMsg($"Failed to load: {args}", 255, 0, 0);
+                    }
+                }
+                break;
+
+            // Delete save
+            case "deletesave":
+                if (!string.IsNullOrEmpty(args))
+                {
+                    if (SaveSystem.DeleteSave(args))
+                        CreateMsg($"Deleted save: {args}", 0, 255, 0);
+                    else
+                        CreateMsg($"Failed to delete: {args}", 255, 0, 0);
+                }
+                else
+                {
+                    CreateMsg("Usage: deletesave [name]", 255, 150, 0);
+                }
+                break;
+
+            // List saves
+            case "saves":
+            case "listsaves":
+                var saveList = SaveSystem.GetSaveSlots();
+                if (saveList.Count == 0)
+                {
+                    CreateMsg("No saves found.", 255, 150, 0);
+                }
+                else
+                {
+                    CreateMsg($"Found {saveList.Count} saves:", 0, 255, 255);
+                    foreach (var s in saveList)
+                    {
+                        string time = SaveSystem.FormatPlayTime(s.PlayTime);
+                        CreateMsg($"  {s.SlotName} - {s.SaveDate} {s.SaveTime} ({time})", 0, 255, 255);
+                    }
+                }
+                break;
+
             default:
                 CreateMsg("Command not found.", 255, 0, 0);
                 break;
@@ -546,6 +625,10 @@ public static class ConsoleSystem
             case 3:
                 CreateMsg("LIST OF COMMANDS - PAGE 3/3", 0, 255, 255);
                 CreateMsg("******************************", 0, 255, 255);
+                CreateMsg("- save [name]", 0, 255, 255);
+                CreateMsg("- load [name]", 0, 255, 255);
+                CreateMsg("- saves / listsaves", 0, 255, 255);
+                CreateMsg("- deletesave [name]", 0, 255, 255);
                 CreateMsg("- unlockexits", 0, 255, 255);
                 CreateMsg("- stopsound / stfu", 0, 255, 255);
                 CreateMsg("- revive", 0, 255, 255);

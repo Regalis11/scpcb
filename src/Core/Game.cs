@@ -2,13 +2,7 @@
  * Source: Main.bb
  * Lines: 117-199, 2809-3011, 4200-4500
  * Type: Game Loop
- */
-
-/*
- * Source: Main.bb
- * Lines: 117-199, 2809-3011, 4200-4500
- * Type: Game Loop
- * Updated: Console and Config integration
+ * Updated: Console, Config, and Save system integration
  */
 
 using System;
@@ -148,6 +142,22 @@ public class Game : IDisposable
 
         if (Raylib.IsKeyPressed(KeyboardKey.F11))
             Raylib.ToggleFullscreen();
+
+        // F5 Quick save
+        if (Raylib.IsKeyPressed(KeyboardKey.F5))
+        {
+            SaveSystem.SaveGame("quicksave", _player);
+        }
+
+        // F9 Quick load
+        if (Raylib.IsKeyPressed(KeyboardKey.F9))
+        {
+            var data = SaveSystem.LoadGame("quicksave");
+            if (data != null)
+            {
+                SaveSystem.ApplyLoadedData(data, _player);
+            }
+        }
 
         // Apply console cheats
         ApplyConsoleCheats();

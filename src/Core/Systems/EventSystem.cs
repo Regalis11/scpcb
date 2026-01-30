@@ -5796,50 +5796,32 @@ public static class RoomEventSystem
         }
     }
 
-    // Additional helper delegates and state for new rooms
-    public static Action<int, float, float, float>? PositionEntity;
-    public static Action<int>? ResetEntity;
-    public static Func<int, float>? EntityPitch;
-    public static Action<int, float, float, float>? RotateEntity;
-    public static Action<int, int, float, float, float, Event>? UseDoor;
-    public static Func<int, int, Door, Door, int, int, Event, float>? UpdateElevators;
-    public static Action<int>? GiveAchievement;
-    public static Action<string, float, int>? StreamSound;
-    public static bool IsStreamPlaying;
+    // Additional state for Heavy Containment events
     public static Action<int>? UpdateButton;
     public static int ClosestButton;
     public static int FemurBreakerSFX;
-    public static Func<string, int>? LoadSoundStrict;
-    public static Action<int, float, float, float>? TurnEntity;
-    public static Func<NPC, float, float, float, bool>? AnimateNPC;
-    public static float CurrSpeed;
-    public static int CurrStepSFX;
     public static bool NoClip;
-    public static NPC? Curr173;
     public static float HideDistance = 20.0f;
     public static int WearingHazmat;
     public static int WearingGasMask;
     public static float Bloodloss;
     public static int Infect;
-    public static string Msg = "";
-    public static float MsgTimer;
     public static bool DrawArrowIcon2;
     public static int Achv008;
     public static int Achv012;
     public static int Achv035;
     public static int Achv079;
     public static int Achv205;
-    public static int MilliSecs2;
-    public static int NPCtypeGuard = 3;
-    public static int NPCtypeD = 2;
-    public static Func<int, int>? SetNPCFrame;
     public static float SFXVolume = 1.0f;
-    public static float BlinkTimer;
     public static float ForceMove;
-    public static string DeathMSG = "";
-    public static float CameraShake;
-    public static Func<int, int, bool>? EntityInView;
-    public static Func<int, int, bool>? EntityVisible;
+    public static bool DrawHandIcon;
+    public static bool MouseHit1;
+    public static bool SoundTransmission;
+    public static int MagnetDownSFX;
+    public static int MagnetUpSFX;
+    public static Action<int>? GetChild;
+    public static Action<int, float, float, float>? OnEntityAlpha;
+    public static Action<int, int, int>? EntityColor;
 }
 
 // Supporting classes

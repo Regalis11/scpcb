@@ -507,6 +507,60 @@ public static class BlitzAdapter
             // Entity color tinting - placeholder
         };
 
+        // Additional wiring for heavy containment rooms
+        RoomEventSystem.UpdateButton = (buttonHandle) =>
+        {
+            // Update button interaction state
+            if (_entities.TryGetValue(buttonHandle, out var button))
+            {
+                // Check if player is looking at and near button
+                if (Player != null)
+                {
+                    Vector3 playerPos = new Vector3(Player.X, Player.Y, -Player.Z);
+                    float dist = Vector3.Distance(playerPos, button.Position);
+                    if (dist < 1.5f)
+                    {
+                        RoomEventSystem.ClosestButton = buttonHandle;
+                    }
+                }
+            }
+        };
+
+        RoomEventSystem.GetChild = (handle) =>
+        {
+            // Get child entity - placeholder (returns same handle)
+        };
+
+        // Wire OnUpdateLever
+        RoomEventSystem.OnUpdateLever = (leverHandle) =>
+        {
+            // Check lever state based on pitch
+            if (_entities.TryGetValue(leverHandle, out var lever))
+            {
+                return lever.Pitch > 45.0f;
+            }
+            return false;
+        };
+
+        // Achievement system
+        RoomEventSystem.GiveAchievement = (name) =>
+        {
+            Console.WriteLine($"[Achievement] {name}");
+        };
+
+        // Wire OnKill
+        RoomEventSystem.OnKill = () =>
+        {
+            Console.WriteLine("[Kill] Player killed");
+        };
+
+        // OnCreateDecal
+        RoomEventSystem.OnCreateDecal = (type, x, y, z, pitch, yaw, roll) =>
+        {
+            // Create decal at position - placeholder
+            Console.WriteLine($"[Decal] Type {type} at ({x}, {y}, {z})");
+        };
+
         // Time
         RoomEventSystem.MilliSecs2 = (scale) =>
         {

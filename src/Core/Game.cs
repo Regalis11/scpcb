@@ -4,6 +4,13 @@
  * Type: Game Loop
  */
 
+/*
+ * Source: Main.bb
+ * Lines: 117-199, 2809-3011, 4200-4500
+ * Type: Game Loop
+ * Updated: Console and Config integration
+ */
+
 using System;
 using System.Numerics;
 using Raylib_cs;
@@ -82,6 +89,12 @@ public class Game : IDisposable
         // Initialize Blitz3D adapter - wires all delegates
         BlitzAdapter.Init();
 
+        // Initialize config system
+        ConfigSystem.Initialize();
+
+        // Initialize console
+        ConsoleSystem.Init();
+
         _player = new PlayerState();
         _player.X = 0;
         _player.Y = 1.0f;
@@ -114,6 +127,19 @@ public class Game : IDisposable
 
     private void Update()
     {
+        // Update console first (handles its own input)
+        ConsoleSystem.Player = _player;
+        ConsoleSystem.FPSfactor = FPSfactor;
+        ConsoleSystem.Update(DeltaTime);
+
+        // If console is open, don't process game input
+        if (ConsoleSystem.IsOpen)
+        {
+            // Still update camera for visual consistency
+            UpdateCamera();
+            return;
+        }
+
         if (Raylib.IsKeyPressed(KeyboardKey.Escape))
         {
             _running = false;
@@ -122,6 +148,9 @@ public class Game : IDisposable
 
         if (Raylib.IsKeyPressed(KeyboardKey.F11))
             Raylib.ToggleFullscreen();
+
+        // Apply console cheats
+        ApplyConsoleCheats();
 
         UpdateMouseLook();
         UpdateMovement();
@@ -161,6 +190,13 @@ public class Game : IDisposable
 
     private void UpdateMovement()
     {
+        // Noclip mode - 6DOF flying
+        if (ConsoleSystem.NoClip)
+        {
+            UpdateNoClipMovement();
+            return;
+        }
+
         bool moving = false;
         float angle = 0;
 
@@ -200,6 +236,51 @@ public class Game : IDisposable
             _player.Y += WalkSpeed * FPSfactor;
         if (Raylib.IsKeyDown(KeyboardKey.LeftControl))
             _player.Y -= WalkSpeed * FPSfactor;
+    }
+
+    /// <summary>
+    /// Noclip movement - fly in any direction based on camera angle
+    /// </summary>
+    private void UpdateNoClipMovement()
+    {
+        float speed = WalkSpeed * ConsoleSystem.NoClipSpeed;
+        if (Raylib.IsKeyDown(KeyboardKey.LeftShift))
+            speed *= RunMultiplier;
+
+        float yawRad = _player.Yaw * MathF.PI / 180.0f;
+        float pitchRad = _userCameraPitch * MathF.PI / 180.0f;
+
+        // Forward/back based on camera direction
+        if (Raylib.IsKeyDown(KeyboardKey.W))
+        {
+            _player.X += MathF.Cos(yawRad) * MathF.Cos(pitchRad) * speed * FPSfactor;
+            _player.Y -= MathF.Sin(pitchRad) * speed * FPSfactor;
+            _player.Z += MathF.Sin(yawRad) * MathF.Cos(pitchRad) * speed * FPSfactor;
+        }
+        if (Raylib.IsKeyDown(KeyboardKey.S))
+        {
+            _player.X -= MathF.Cos(yawRad) * MathF.Cos(pitchRad) * speed * FPSfactor;
+            _player.Y += MathF.Sin(pitchRad) * speed * FPSfactor;
+            _player.Z -= MathF.Sin(yawRad) * MathF.Cos(pitchRad) * speed * FPSfactor;
+        }
+
+        // Strafe
+        if (Raylib.IsKeyDown(KeyboardKey.A))
+        {
+            _player.X += MathF.Sin(yawRad) * speed * FPSfactor;
+            _player.Z -= MathF.Cos(yawRad) * speed * FPSfactor;
+        }
+        if (Raylib.IsKeyDown(KeyboardKey.D))
+        {
+            _player.X -= MathF.Sin(yawRad) * speed * FPSfactor;
+            _player.Z += MathF.Cos(yawRad) * speed * FPSfactor;
+        }
+
+        // Pure vertical
+        if (Raylib.IsKeyDown(KeyboardKey.Space))
+            _player.Y += speed * FPSfactor;
+        if (Raylib.IsKeyDown(KeyboardKey.LeftControl))
+            _player.Y -= speed * FPSfactor;
     }
 
     private void UpdateCamera()
@@ -262,12 +343,62 @@ public class Game : IDisposable
 
     private void DrawHUD()
     {
-        Raylib.DrawFPS(10, 10);
+        // Draw FPS if enabled
+        if (ConsoleSystem.ShowFPS)
+            Raylib.DrawFPS(10, 10);
 
-        Raylib.DrawText($"X:{_player.X:F2} Y:{_player.Y:F2} Z:{_player.Z:F2}", 10, 35, 16, Color.Lime);
-        Raylib.DrawText($"Yaw:{_player.Yaw:F1} Pitch:{_userCameraPitch:F1}", 10, 55, 16, Color.Lime);
-        Raylib.DrawText($"Rooms:{_map.RoomsList.Count} FPSfactor:{FPSfactor:F2}", 10, 75, 16, Color.Lime);
-        Raylib.DrawText("WASD:Move Mouse:Look Space/Ctrl:Up/Down Shift:Run", 10, 95, 14, Color.Gray);
+        // Debug HUD
+        if (ConsoleSystem.DebugHUD)
+        {
+            Raylib.DrawText($"X:{_player.X:F2} Y:{_player.Y:F2} Z:{_player.Z:F2}", 10, 35, 16, Color.Lime);
+            Raylib.DrawText($"Yaw:{_player.Yaw:F1} Pitch:{_userCameraPitch:F1}", 10, 55, 16, Color.Lime);
+            Raylib.DrawText($"Rooms:{_map.RoomsList.Count} FPSfactor:{FPSfactor:F2}", 10, 75, 16, Color.Lime);
+        }
+
+        // Show cheat indicators
+        if (ConsoleSystem.GodMode || ConsoleSystem.NoClip)
+        {
+            int y = Raylib.GetScreenHeight() - 50;
+            if (ConsoleSystem.GodMode)
+            {
+                Raylib.DrawText("GODMODE", Raylib.GetScreenWidth() - 100, y, 16, Color.Yellow);
+                y -= 20;
+            }
+            if (ConsoleSystem.NoClip)
+            {
+                Raylib.DrawText("NOCLIP", Raylib.GetScreenWidth() - 100, y, 16, Color.Yellow);
+            }
+        }
+
+        // Controls hint
+        Raylib.DrawText("WASD:Move F3:Console F11:Fullscreen ESC:Quit", 10,
+            Raylib.GetScreenHeight() - 25, 14, Color.Gray);
+
+        // Console overlay (drawn last, on top of everything)
+        ConsoleSystem.Draw();
+    }
+
+    /// <summary>
+    /// Apply console cheat effects to gameplay
+    /// </summary>
+    private void ApplyConsoleCheats()
+    {
+        // Infinite stamina
+        if (ConsoleSystem.InfiniteStamina)
+        {
+            _player.Stamina = 100.0f;
+        }
+
+        // Godmode - prevent death
+        if (ConsoleSystem.GodMode)
+        {
+            _player.Injuries = 0;
+            _player.Bloodloss = 0;
+            _player.KillTimer = 0;
+        }
+
+        // Apply fog settings
+        // (Would be applied to camera/rendering if fog was implemented)
     }
 
     private static float CurveValue(float target, float current, float rate)

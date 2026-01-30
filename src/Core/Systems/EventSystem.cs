@@ -643,6 +643,32 @@ public static class RoomEventSystem
                 case "914":
                     Update914(e, ref angle, ref temp);
                     break;
+
+                // ===== HEAVY CONTAINMENT ZONE =====
+                case "room049":
+                    UpdateRoom049(e, ref temp, ref i, ref x);
+                    break;
+                case "room079":
+                    UpdateRoom079(e, ref temp);
+                    break;
+                case "room106":
+                    UpdateRoom106(e, ref temp, ref dist, ref x);
+                    break;
+                case "room860":
+                    UpdateRoom860(e, ref i, ref x, ref angle);
+                    break;
+                case "008":
+                    Update008(e, ref dist, ref temp);
+                    break;
+                case "room205":
+                    UpdateRoom205(e, ref temp, ref dist);
+                    break;
+                case "room035":
+                    UpdateRoom035(e, ref temp, ref dist);
+                    break;
+                case "room012":
+                    UpdateRoom012(e, ref pvt, ref dist, ref angle);
+                    break;
             }
         }
     }
@@ -3837,7 +3863,7 @@ public static class RoomEventSystem
 
     // =====================================================================
     // USE914 - Item Conversion Function (Main.bb 9421-10030)
-    // Full 1:1 item conversion table
+    // FULL 1:1 item conversion table - ALL ITEMS
     // =====================================================================
     public static void Use914(Item item, string setting, float x, float y, float z)
     {
@@ -3849,18 +3875,19 @@ public static class RoomEventSystem
 
         switch (itemName)
         {
+            // ===== GAS MASK / HEAVY GAS MASK =====
             case "Gas Mask":
             case "Heavy Gas Mask":
                 switch (setting)
                 {
                     case "rough":
                     case "coarse":
-                        // Create decal
                         OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
                         RemoveItem?.Invoke(item);
                         break;
                     case "1:1":
-                        // Just move item to output
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
                         break;
                     case "fine":
                     case "very fine":
@@ -3870,6 +3897,39 @@ public static class RoomEventSystem
                 }
                 break;
 
+            // ===== SCP-1499 =====
+            case "SCP-1499":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Gas Mask", "gasmask", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("SCP-1499", "super1499", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "very fine":
+                        // Creates SCP-1499 entity NPC with triggered sound
+                        var npc1499 = CreateNPC?.Invoke(NPCtype1499, x, y, z);
+                        if (npc1499 != null)
+                        {
+                            npc1499.State = 1;
+                            npc1499.State3 = 1;
+                            // npc1499.Sound = LoadSound("SFX\\SCP\\1499\\Triggered.ogg")
+                            // npc1499.SoundChn = PlaySound2(npc1499.Sound, Camera, npc1499.Collider, 20.0f)
+                        }
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            // ===== BALLISTIC VEST =====
             case "Ballistic Vest":
                 switch (setting)
                 {
@@ -3879,6 +3939,8 @@ public static class RoomEventSystem
                         RemoveItem?.Invoke(item);
                         break;
                     case "1:1":
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
                         break;
                     case "fine":
                         CreateItem?.Invoke("Heavy Ballistic Vest", "finevest", x, y, z);
@@ -3891,6 +3953,60 @@ public static class RoomEventSystem
                 }
                 break;
 
+            // ===== CLIPBOARD =====
+            case "Clipboard":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(7, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        // Remove all items in clipboard's secondary inventory
+                        for (int i = 0; i < 20; i++)
+                        {
+                            if (item.SecondInv != null && i < item.SecondInv.Length && item.SecondInv[i] != null)
+                            {
+                                RemoveItem?.Invoke(item.SecondInv[i]);
+                                item.SecondInv[i] = null;
+                            }
+                        }
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
+                        break;
+                    case "fine":
+                        item.InvSlots = Math.Max(item.State2, 15);
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
+                        break;
+                    case "very fine":
+                        item.InvSlots = Math.Max(item.State2, 20);
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
+                        break;
+                }
+                break;
+
+            // ===== COWBELL =====
+            case "Cowbell":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "1:1":
+                    case "fine":
+                    case "very fine":
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
+                        break;
+                }
+                break;
+
+            // ===== NIGHT VISION GOGGLES =====
             case "Night Vision Goggles":
                 switch (setting)
                 {
@@ -3900,6 +4016,8 @@ public static class RoomEventSystem
                         RemoveItem?.Invoke(item);
                         break;
                     case "1:1":
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
                         break;
                     case "fine":
                         CreateItem?.Invoke("Night Vision Goggles", "finenvgoggles", x, y, z);
@@ -3907,63 +4025,104 @@ public static class RoomEventSystem
                         break;
                     case "very fine":
                         var nvg = CreateItem?.Invoke("Night Vision Goggles", "supernv", x, y, z);
-                        if (nvg != null) nvg.State = 1000;
+                        if (nvg != null) nvg.State = 1000; // Extended battery
                         RemoveItem?.Invoke(item);
                         break;
                 }
                 break;
 
-            case "Level 1 Key Card":
-            case "Level 2 Key Card":
-            case "Level 3 Key Card":
-            case "Level 4 Key Card":
-            case "Level 5 Key Card":
-            case "Key Card":
+            // ===== METAL PANEL / SCP-148 INGOT (Item combination!) =====
+            case "Metal Panel":
+            case "SCP-148 Ingot":
                 switch (setting)
                 {
                     case "rough":
                     case "coarse":
-                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        CreateItem?.Invoke("SCP-148 Ingot", "scp148ingot", x, y, z);
                         RemoveItem?.Invoke(item);
                         break;
                     case "1:1":
-                        CreateItem?.Invoke("Playing Card", "misc", x, y, z);
-                        RemoveItem?.Invoke(item);
-                        break;
                     case "fine":
-                        UpgradeKeyCard(item, x, y, z);
-                        break;
                     case "very fine":
-                        // Chance for Omni card based on achievements
-                        if (_rng.Next(0, 30) == 0)
-                            CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
+                        // Check for nearby items to combine with
+                        var nearbyItem = FindNearbyItemForCombination?.Invoke(item, x, z, 180.0f * RoomScale);
+                        if (nearbyItem != null)
+                        {
+                            string nearbyTemp = nearbyItem.ItemTemplate?.TempName ?? "";
+                            switch (nearbyTemp)
+                            {
+                                case "gasmask":
+                                case "supergasmask":
+                                    RemoveItem?.Invoke(nearbyItem);
+                                    RemoveItem?.Invoke(item);
+                                    CreateItem?.Invoke("Heavy Gas Mask", "gasmask3", x, y, z);
+                                    break;
+                                case "vest":
+                                    RemoveItem?.Invoke(nearbyItem);
+                                    RemoveItem?.Invoke(item);
+                                    CreateItem?.Invoke("Heavy Ballistic Vest", "finevest", x, y, z);
+                                    break;
+                                case "hazmatsuit":
+                                case "hazmatsuit2":
+                                    RemoveItem?.Invoke(nearbyItem);
+                                    RemoveItem?.Invoke(item);
+                                    CreateItem?.Invoke("Heavy Hazmat Suit", "hazmatsuit3", x, y, z);
+                                    break;
+                                default:
+                                    // No valid combination, convert ingot to panel or just move
+                                    if (itemName == "SCP-148 Ingot")
+                                    {
+                                        CreateItem?.Invoke("Metal Panel", "scp148", x, y, z);
+                                        RemoveItem?.Invoke(item);
+                                    }
+                                    else
+                                    {
+                                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                                        ResetEntity?.Invoke(item.Collider);
+                                    }
+                                    break;
+                            }
+                        }
                         else
-                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
-                        RemoveItem?.Invoke(item);
+                        {
+                            if (itemName == "SCP-148 Ingot")
+                            {
+                                CreateItem?.Invoke("Metal Panel", "scp148", x, y, z);
+                                RemoveItem?.Invoke(item);
+                            }
+                            else
+                            {
+                                PositionEntity?.Invoke(item.Collider, x, y, z);
+                                ResetEntity?.Invoke(item.Collider);
+                            }
+                        }
                         break;
                 }
                 break;
 
-            case "Playing Card":
-            case "Coin":
-            case "Quarter":
+            // ===== SEVERED HAND / BLACK SEVERED HAND =====
+            case "Severed Hand":
+            case "Black Severed Hand":
                 switch (setting)
                 {
                     case "rough":
                     case "coarse":
-                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        OnCreateDecal?.Invoke(3, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
                         break;
                     case "1:1":
-                        CreateItem?.Invoke("Level 1 Key Card", "key1", x, y, z);
-                        break;
                     case "fine":
                     case "very fine":
-                        CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        // Swap hand colors
+                        if (itemName == "Severed Hand")
+                            CreateItem?.Invoke("Black Severed Hand", "hand2", x, y, z);
+                        else
+                            CreateItem?.Invoke("Severed Hand", "hand", x, y, z);
                         break;
                 }
                 RemoveItem?.Invoke(item);
                 break;
 
+            // ===== FIRST AID KIT / BLUE FIRST AID KIT =====
             case "First Aid Kit":
             case "Blue First Aid Kit":
                 switch (setting)
@@ -3988,6 +4147,101 @@ public static class RoomEventSystem
                 RemoveItem?.Invoke(item);
                 break;
 
+            // ===== KEY CARDS (Level 1-5) - Full difficulty-based random =====
+            case "Level 1 Key Card":
+            case "Level 2 Key Card":
+            case "Level 3 Key Card":
+            case "Level 4 Key Card":
+            case "Level 5 Key Card":
+            case "Key Card":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        break;
+                    case "fine":
+                        UpgradeKeyCardFine(item, x, y, z);
+                        break;
+                    case "very fine":
+                        UpgradeKeyCardVeryFine(x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== KEY CARD OMNI (special handling) =====
+            case "Key Card Omni":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        if (_rng.Next(2) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== PLAYING CARD / COIN / QUARTER =====
+            case "Playing Card":
+            case "Coin":
+            case "Quarter":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Level 1 Key Card", "key1", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== MASTERCARD (special - creates quarters on coarse) =====
+            case "Mastercard":
+                switch (setting)
+                {
+                    case "rough":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "coarse":
+                        // Creates 4 quarters
+                        CreateItem?.Invoke("Quarter", "25ct", x, y, z);
+                        var q2 = CreateItem?.Invoke("Quarter", "25ct", x, y, z);
+                        var q3 = CreateItem?.Invoke("Quarter", "25ct", x, y, z);
+                        var q4 = CreateItem?.Invoke("Quarter", "25ct", x, y, z);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Level 1 Key Card", "key1", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== S-NAV NAVIGATORS =====
             case "S-NAV 300 Navigator":
             case "S-NAV 310 Navigator":
             case "S-NAV Navigator":
@@ -4014,6 +4268,7 @@ public static class RoomEventSystem
                 RemoveItem?.Invoke(item);
                 break;
 
+            // ===== RADIO TRANSCEIVER =====
             case "Radio Transceiver":
                 switch (setting)
                 {
@@ -4037,6 +4292,49 @@ public static class RoomEventSystem
                 RemoveItem?.Invoke(item);
                 break;
 
+            // ===== SCP-513 (Bell) =====
+            case "SCP-513":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        // Play special sound, remove SCP-513-1 NPCs
+                        PlaySoundStrict?.Invoke(); // LoadTempSound("SFX\\SCP\\513\\914Refine.ogg")
+                        RemoveAllNPCsOfType?.Invoke(NPCtype5131);
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("SCP-513", "scp513", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== SCP-420-J / CIGARETTE =====
+            case "Some SCP-420-J":
+            case "Cigarette":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Cigarette", "cigarette", x + 1.5f, y + 0.5f, z + 1.0f);
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("Joint", "420s", x + 1.5f, y + 0.5f, z + 1.0f);
+                        break;
+                    case "very fine":
+                        CreateItem?.Invoke("Smelly Joint", "420s", x + 1.5f, y + 0.5f, z + 1.0f);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== BATTERIES =====
             case "9V Battery":
             case "18V Battery":
             case "Strange Battery":
@@ -4057,42 +4355,381 @@ public static class RoomEventSystem
                 RemoveItem?.Invoke(item);
                 break;
 
+            // ===== EYEDROPS =====
+            case "ReVision Eyedrops":
+            case "RedVision Eyedrops":
+            case "Eyedrops":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("RedVision Eyedrops", "eyedrops", x, y, z);
+                        break;
+                    case "fine":
+                        CreateItem?.Invoke("Eyedrops", "fineeyedrops", x, y, z);
+                        break;
+                    case "very fine":
+                        CreateItem?.Invoke("Eyedrops", "supereyedrops", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== HAZMAT SUIT =====
+            case "Hazmat Suit":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Hazmat Suit", "hazmatsuit", x, y, z);
+                        break;
+                    case "fine":
+                    case "very fine":
+                        CreateItem?.Invoke("Hazmat Suit", "hazmatsuit2", x, y, z);
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== SYRINGE (with variant handling) =====
+            case "Syringe":
+                switch (tempname)
+                {
+                    case "syringe":
+                        switch (setting)
+                        {
+                            case "rough":
+                            case "coarse":
+                                OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                                break;
+                            case "1:1":
+                                CreateItem?.Invoke("Small First Aid Kit", "finefirstaid", x, y, z);
+                                break;
+                            case "fine":
+                                CreateItem?.Invoke("Syringe", "finesyringe", x, y, z);
+                                break;
+                            case "very fine":
+                                CreateItem?.Invoke("Syringe", "veryfinesyringe", x, y, z);
+                                break;
+                        }
+                        break;
+                    case "finesyringe":
+                        switch (setting)
+                        {
+                            case "rough":
+                                OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                                break;
+                            case "coarse":
+                                CreateItem?.Invoke("First Aid Kit", "firstaid", x, y, z);
+                                break;
+                            case "1:1":
+                                CreateItem?.Invoke("Blue First Aid Kit", "firstaid2", x, y, z);
+                                break;
+                            case "fine":
+                            case "very fine":
+                                CreateItem?.Invoke("Syringe", "veryfinesyringe", x, y, z);
+                                break;
+                        }
+                        break;
+                    case "veryfinesyringe":
+                        switch (setting)
+                        {
+                            case "rough":
+                            case "coarse":
+                            case "1:1":
+                            case "fine":
+                                CreateItem?.Invoke("Electronical components", "misc", x, y, z);
+                                break;
+                            case "very fine":
+                                // Spawns SCP-008 zombie NPC
+                                var zombie = CreateNPC?.Invoke(NPCtype008, x, y, z);
+                                if (zombie != null) zombie.State = 2;
+                                break;
+                        }
+                        break;
+                }
+                RemoveItem?.Invoke(item);
+                break;
+
+            // ===== SCP-500 / PILL =====
+            case "SCP-500-01":
+            case "Upgraded pill":
+            case "Pill":
+                switch (setting)
+                {
+                    case "rough":
+                    case "coarse":
+                        OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                        break;
+                    case "1:1":
+                        CreateItem?.Invoke("Pill", "pill", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "fine":
+                        // Check if SCP-427 already exists
+                        bool scp427Exists = CheckItemExists?.Invoke("scp427") ?? false;
+                        if (!scp427Exists)
+                            CreateItem?.Invoke("SCP-427", "scp427", x, y, z);
+                        else
+                            CreateItem?.Invoke("Upgraded pill", "scp500death", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                    case "very fine":
+                        CreateItem?.Invoke("Upgraded pill", "scp500death", x, y, z);
+                        RemoveItem?.Invoke(item);
+                        break;
+                }
+                break;
+
+            // ===== DEFAULT: Check tempname for cup, paper, etc. =====
             default:
-                // Default: just move item to output
+                switch (tempname)
+                {
+                    case "cup":
+                        switch (setting)
+                        {
+                            case "rough":
+                            case "coarse":
+                                OnCreateDecal?.Invoke(0, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 10), (int)(z * 1000), 90, _rng.Next(360), 0);
+                                break;
+                            case "1:1":
+                                // Invert colors
+                                var cup11 = CreateItem?.Invoke("cup", "cup", x, y, z);
+                                if (cup11 != null)
+                                {
+                                    cup11.Name = item.Name;
+                                    cup11.R = 255 - item.R;
+                                    cup11.G = 255 - item.G;
+                                    cup11.B = 255 - item.B;
+                                }
+                                break;
+                            case "fine":
+                                // Slightly randomize colors, increase state
+                                var cupFine = CreateItem?.Invoke("cup", "cup", x, y, z);
+                                if (cupFine != null)
+                                {
+                                    cupFine.Name = item.Name;
+                                    cupFine.State = 1.0f;
+                                    cupFine.R = Math.Min((int)(item.R * (0.9f + _rng.NextSingle() * 0.2f)), 255);
+                                    cupFine.G = Math.Min((int)(item.G * (0.9f + _rng.NextSingle() * 0.2f)), 255);
+                                    cupFine.B = Math.Min((int)(item.B * (0.9f + _rng.NextSingle() * 0.2f)), 255);
+                                }
+                                break;
+                            case "very fine":
+                                // More random colors, double state, chance of explosion
+                                var cupVF = CreateItem?.Invoke("cup", "cup", x, y, z);
+                                if (cupVF != null)
+                                {
+                                    cupVF.Name = item.Name;
+                                    cupVF.State = Math.Max(item.State * 2.0f, 2.0f);
+                                    cupVF.R = Math.Min((int)(item.R * (0.5f + _rng.NextSingle())), 255);
+                                    cupVF.G = Math.Min((int)(item.G * (0.5f + _rng.NextSingle())), 255);
+                                    cupVF.B = Math.Min((int)(item.B * (0.5f + _rng.NextSingle())), 255);
+                                }
+                                if (_rng.Next(5) == 1)
+                                {
+                                    ExplosionTimer = 135; // ~2 seconds at 70fps
+                                }
+                                break;
+                        }
+                        RemoveItem?.Invoke(item);
+                        break;
+
+                    case "paper":
+                        switch (setting)
+                        {
+                            case "rough":
+                            case "coarse":
+                                OnCreateDecal?.Invoke(7, (int)(x * 1000), (int)(8 * RoomScale * 1000 + 5), (int)(z * 1000), 90, _rng.Next(360), 0);
+                                break;
+                            case "1:1":
+                                // Random SCP document
+                                switch (_rng.Next(1, 7))
+                                {
+                                    case 1: CreateItem?.Invoke("Document SCP-106", "paper", x, y, z); break;
+                                    case 2: CreateItem?.Invoke("Document SCP-079", "paper", x, y, z); break;
+                                    case 3: CreateItem?.Invoke("Document SCP-173", "paper", x, y, z); break;
+                                    case 4: CreateItem?.Invoke("Document SCP-895", "paper", x, y, z); break;
+                                    case 5: CreateItem?.Invoke("Document SCP-682", "paper", x, y, z); break;
+                                    case 6: CreateItem?.Invoke("Document SCP-860", "paper", x, y, z); break;
+                                }
+                                break;
+                            case "fine":
+                            case "very fine":
+                                CreateItem?.Invoke("Origami", "misc", x, y, z);
+                                break;
+                        }
+                        RemoveItem?.Invoke(item);
+                        break;
+
+                    default:
+                        // Unknown item - just move to output
+                        PositionEntity?.Invoke(item.Collider, x, y, z);
+                        ResetEntity?.Invoke(item.Collider);
+                        break;
+                }
                 break;
         }
     }
 
-    // Helper to upgrade key cards
-    private static void UpgradeKeyCard(Item item, float x, float y, float z)
+    // ===== KEY CARD UPGRADE HELPERS (Difficulty-based random) =====
+
+    // Constants for difficulty (match BB: EASY=0, NORMAL=1, HARD=2)
+    public static int EASY = 0;
+    public static int NORMAL = 1;
+    public static int HARD = 2;
+    public static int SelectedDifficultyOtherFactors = NORMAL; // Set by game
+    public static int MAXACHIEVEMENTS = 20;
+    public static bool[] Achievements = new bool[MAXACHIEVEMENTS];
+    public static int ExplosionTimer = 0;
+
+    private static void UpgradeKeyCardFine(Item item, float x, float y, float z)
     {
         string itemName = item.ItemTemplate?.Name ?? "";
         switch (itemName)
         {
             case "Level 1 Key Card":
-                CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                switch (SelectedDifficultyOtherFactors)
+                {
+                    case 0: // EASY
+                        CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                    case 1: // NORMAL
+                        if (_rng.Next(5) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                    case 2: // HARD
+                        if (_rng.Next(4) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 2 Key Card", "key2", x, y, z);
+                        break;
+                }
                 break;
+
             case "Level 2 Key Card":
-                CreateItem?.Invoke("Level 3 Key Card", "key3", x, y, z);
+                switch (SelectedDifficultyOtherFactors)
+                {
+                    case 0:
+                        CreateItem?.Invoke("Level 3 Key Card", "key3", x, y, z);
+                        break;
+                    case 1:
+                        if (_rng.Next(4) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 3 Key Card", "key3", x, y, z);
+                        break;
+                    case 2:
+                        if (_rng.Next(3) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 3 Key Card", "key3", x, y, z);
+                        break;
+                }
                 break;
+
             case "Level 3 Key Card":
-                if (_rng.Next(10) == 1)
-                    CreateItem?.Invoke("Level 4 Key Card", "key4", x, y, z);
-                else
-                    CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                switch (SelectedDifficultyOtherFactors)
+                {
+                    case 0:
+                        if (_rng.Next(10) == 1)
+                            CreateItem?.Invoke("Level 4 Key Card", "key4", x, y, z);
+                        else
+                            CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        break;
+                    case 1:
+                        if (_rng.Next(15) == 1)
+                            CreateItem?.Invoke("Level 4 Key Card", "key4", x, y, z);
+                        else
+                            CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        break;
+                    case 2:
+                        if (_rng.Next(20) == 1)
+                            CreateItem?.Invoke("Level 4 Key Card", "key4", x, y, z);
+                        else
+                            CreateItem?.Invoke("Playing Card", "misc", x, y, z);
+                        break;
+                }
                 break;
+
             case "Level 4 Key Card":
-                CreateItem?.Invoke("Level 5 Key Card", "key5", x, y, z);
+                switch (SelectedDifficultyOtherFactors)
+                {
+                    case 0:
+                        CreateItem?.Invoke("Level 5 Key Card", "key5", x, y, z);
+                        break;
+                    case 1:
+                        if (_rng.Next(4) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 5 Key Card", "key5", x, y, z);
+                        break;
+                    case 2:
+                        if (_rng.Next(3) == 1)
+                            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                        else
+                            CreateItem?.Invoke("Level 5 Key Card", "key5", x, y, z);
+                        break;
+                }
                 break;
+
             case "Level 5 Key Card":
-                if (_rng.Next(20) == 0)
-                    CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
-                else
-                    CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+                UpgradeLevel5KeyCard(x, y, z);
                 break;
         }
-        RemoveItem?.Invoke(item);
     }
+
+    private static void UpgradeLevel5KeyCard(float x, float y, float z)
+    {
+        // Count current achievements
+        int currAchvAmount = 0;
+        for (int i = 0; i < MAXACHIEVEMENTS; i++)
+        {
+            if (Achievements[i]) currAchvAmount++;
+        }
+
+        // Achievement-based Omni card chance
+        int threshold;
+        switch (SelectedDifficultyOtherFactors)
+        {
+            case 0: // EASY: (MAXACHIEVEMENTS-1)*3 - (CurrAchvAmount-1)*3
+                threshold = (MAXACHIEVEMENTS - 1) * 3 - (currAchvAmount - 1) * 3;
+                break;
+            case 1: // NORMAL: (MAXACHIEVEMENTS-1)*4 - (CurrAchvAmount-1)*3
+                threshold = (MAXACHIEVEMENTS - 1) * 4 - (currAchvAmount - 1) * 3;
+                break;
+            default: // HARD: (MAXACHIEVEMENTS-1)*5 - (CurrAchvAmount-1)*3
+                threshold = (MAXACHIEVEMENTS - 1) * 5 - (currAchvAmount - 1) * 3;
+                break;
+        }
+
+        if (_rng.Next(0, threshold + 1) == 0)
+            CreateItem?.Invoke("Key Card Omni", "key6", x, y, z);
+        else
+            CreateItem?.Invoke("Mastercard", "misc", x, y, z);
+    }
+
+    private static void UpgradeKeyCardVeryFine(float x, float y, float z)
+    {
+        // Same achievement-based logic as Level 5 on fine
+        UpgradeLevel5KeyCard(x, y, z);
+    }
+
+    // Additional delegates for Use914
+    public static Func<Item, float, float, float, Item?>? FindNearbyItemForCombination;
+    public static Func<string, bool>? CheckItemExists;
+    public static Action<int>? RemoveAllNPCsOfType;
+    public static int NPCtype1499 = 14; // Placeholder type ID
+    public static int NPCtype5131 = 15; // SCP-513-1 type ID
+    public static int NPCtype008 = 6;   // SCP-008 zombie type ID
 
     // Additional state variables
     public static int TeslaIdleSFX;
@@ -4146,6 +4783,1063 @@ public static class RoomEventSystem
     public static Action<int, float, float, float, int, int, int>? OnCreateDecal;
     public static Func<int, bool>? OnUpdateLever;
     public static Action? OnKill;
+
+    // =====================================================================
+    // ROOM049 - SCP-049 Plague Doctor Chamber (UpdateEvents.bb 5649-5889)
+    // Has elevators, power levers, zombie awakening, MTF cutscene
+    // =====================================================================
+    private static void UpdateRoom049(Event e, ref int temp, ref int i, ref float x)
+    {
+        if (e.Room == null) return;
+
+        // Player above lower level threshold (-2848 * RoomScale)
+        if (EntityY?.Invoke(Collider) > -2848 * RoomScale)
+        {
+            // Update elevators in upper area
+            e.EventState2 = UpdateElevators?.Invoke(e.EventState2, e.Room.RoomDoors[0]!, e.Room.RoomDoors[1]!, e.Room.Objects[0], e.Room.Objects[1], e) ?? e.EventState2;
+            e.EventState3 = UpdateElevators?.Invoke(e.EventState3, e.Room.RoomDoors[2]!, e.Room.RoomDoors[3]!, e.Room.Objects[2], e.Room.Objects[3], e) ?? e.EventState3;
+        }
+        else
+        {
+            // Lower chamber logic
+            ShouldPlay = 25;
+
+            if (e.EventState == 0)
+            {
+                // Play blackout sound on first entry
+                PlaySoundStrict?.Invoke(); // LoadTempSound("SFX\\Room\\Blackout.ogg")
+
+                // Spawn Research Sector-02 Scheme paper at closest spawn point
+                float dist1 = EntityDistance?.Invoke(e.Room.Objects[11], Collider) ?? 999;
+                float dist2 = EntityDistance?.Invoke(e.Room.Objects[12], Collider) ?? 999;
+                if (dist1 < dist2)
+                {
+                    float ox = EntityX?.Invoke(e.Room.Objects[11]) ?? 0;
+                    float oy = EntityY?.Invoke(e.Room.Objects[11]) ?? 0;
+                    float oz = EntityZ?.Invoke(e.Room.Objects[11]) ?? 0;
+                    CreateItem?.Invoke("Research Sector-02 Scheme", "paper", ox, oy, oz);
+                }
+                else
+                {
+                    float ox = EntityX?.Invoke(e.Room.Objects[12]) ?? 0;
+                    float oy = EntityY?.Invoke(e.Room.Objects[12]) ?? 0;
+                    float oz = EntityZ?.Invoke(e.Room.Objects[12]) ?? 0;
+                    CreateItem?.Invoke("Research Sector-02 Scheme", "paper", ox, oy, oz);
+                }
+            }
+            else if (e.EventState > 0)
+            {
+                // Check lever states
+                bool prevGenLever = (EntityPitch?.Invoke(e.Room.Objects[9]) ?? 0) > 0;
+                temp = (OnUpdateLever?.Invoke(e.Room.Objects[7]) ?? false) ? 0 : 1; // power feed inverted
+                bool generatorOn = OnUpdateLever?.Invoke(e.Room.Objects[9]) ?? false;
+
+                // Lock elevator doors in lower area
+                e.Room.RoomDoors[1]!.Locked = true;
+                e.Room.RoomDoors[3]!.Locked = true;
+                e.Room.RoomDoors[1]!.IsElevatorDoor = 0;
+                e.Room.RoomDoors[3]!.IsElevatorDoor = 0;
+
+                // Play lever sound on state change
+                if (prevGenLever != generatorOn)
+                {
+                    if (!generatorOn)
+                        PlaySoundStrict?.Invoke(); // LightSFX
+                    else
+                        PlaySoundStrict?.Invoke(); // TeslaPowerUpSFX
+                }
+
+                if (e.EventState >= 70) // ~1 second after init
+                {
+                    if (generatorOn)
+                    {
+                        ShouldPlay = 8;
+                        e.EventState = MathF.Max(e.EventState, 70 * 180); // 180 seconds
+                        SecondaryLightOn = CurveValue(1.0f, SecondaryLightOn, 10.0f);
+                        // LoopSound2 for fuel pump
+                        // Unlock doors 4-6
+                        for (i = 4; i <= 6; i++)
+                        {
+                            if (e.Room.RoomDoors[i] != null)
+                                e.Room.RoomDoors[i].Locked = false;
+                        }
+                    }
+                    else
+                    {
+                        SecondaryLightOn = CurveValue(0.0f, SecondaryLightOn, 10.0f);
+                        // Lock doors 4-6
+                        for (i = 4; i <= 6; i++)
+                        {
+                            if (e.Room.RoomDoors[i] != null)
+                                e.Room.RoomDoors[i].Locked = true;
+                        }
+                    }
+                }
+                else
+                {
+                    e.EventState = MathF.Min(e.EventState + FPSfactor, 70);
+                }
+
+                // Power feed AND generator on -> elevators work, SCP-049 can spawn
+                if (temp != 0 && generatorOn)
+                {
+                    e.Room.RoomDoors[1]!.Locked = false;
+                    e.Room.RoomDoors[3]!.Locked = false;
+                    e.EventState2 = UpdateElevators?.Invoke(e.EventState2, e.Room.RoomDoors[0]!, e.Room.RoomDoors[1]!, e.Room.Objects[0], e.Room.Objects[1], e) ?? e.EventState2;
+                    e.EventState3 = UpdateElevators?.Invoke(e.EventState3, e.Room.RoomDoors[2]!, e.Room.RoomDoors[3]!, e.Room.Objects[2], e.Room.Objects[3], e) ?? e.EventState3;
+
+                    // SCP-049 spawn in elevator logic
+                    if (e.Room.NPC[0] != null && e.Room.NPC[0].Idle > 0)
+                    {
+                        i = 0;
+                        if ((EntityDistance?.Invoke(Collider, e.Room.RoomDoors[1]!.FrameObj) ?? 99) < 3.0f)
+                            i = 1;
+                        else if ((EntityDistance?.Invoke(Collider, e.Room.RoomDoors[3]!.FrameObj) ?? 99) < 3.0f)
+                            i = 3;
+
+                        if (i > 0)
+                        {
+                            // Position 049 in elevator
+                            PositionEntity?.Invoke(e.Room.NPC[0].Collider,
+                                EntityX?.Invoke(e.Room.Objects[i]) ?? 0,
+                                EntityY?.Invoke(e.Room.Objects[i]) ?? 0,
+                                EntityZ?.Invoke(e.Room.Objects[i]) ?? 0);
+                            ResetEntity?.Invoke(e.Room.NPC[0].Collider);
+                            // PlaySound2(ElevatorBeepSFX...)
+                            e.Room.RoomDoors[i]!.Locked = false;
+                            UseDoor?.Invoke(e.Room.RoomDoors[i]!, false, true);
+                            e.Room.RoomDoors[i - 1]!.Open = false;
+                            e.Room.RoomDoors[i]!.Open = true;
+                            // Find path to player
+                            e.Room.NPC[0].Idle = 0;
+                            e.Room.NPC[0].HideFromNVG = false;
+                            e.Room.NPC[0].PrevState = 2;
+                            e.Room.NPC[0].State = 2;
+                        }
+                    }
+                }
+
+                // Timer progression - zombie awakening
+                if (e.EventState < 70 * 190)
+                {
+                    if (e.EventState >= 70 * 180) // 180 seconds
+                    {
+                        e.Room.RoomDoors[1]!.Open = false;
+                        e.Room.RoomDoors[3]!.Open = false;
+                        e.Room.RoomDoors[0]!.Open = true;
+                        e.Room.RoomDoors[2]!.Open = true;
+                        e.EventState = 70 * 190;
+                    }
+                }
+                else if (e.EventState < 70 * 240) // 240 seconds
+                {
+                    // Awaken all zombies
+                    // For each NPC of type Zombie, set State = 1, SetNPCFrame(155)
+                    e.EventState = 70 * 241;
+                }
+            }
+        }
+
+        // Negative EventState = MTF capture/zombie transformation cutscene
+        if (e.EventState < 0)
+        {
+            if (e.EventState > -70 * 4) // First ~4 seconds
+            {
+                Infect = 0;
+                // Player falling logic, teleport to chamber, spawn MTF
+                // This is the SCP-049-2 transformation cutscene
+            }
+            else
+            {
+                BlurTimer = 800;
+                ForceMove = 0.5f;
+                Injuries = MathF.Max(2.0f, Injuries);
+                Bloodloss = 0;
+                Infect = 0;
+                // Continue MTF scene
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM079 - SCP-079 AI Chamber (UpdateEvents.bb 5891-6002)
+    // Dead guard spawn, 079 speech, Gate B opening trigger
+    // =====================================================================
+    private static void UpdateRoom079(Event e, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            if (e.EventState == 0)
+            {
+                // Spawn dead guard
+                e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeGuard,
+                    EntityX?.Invoke(e.Room.Objects[2]) ?? 0,
+                    (EntityY?.Invoke(e.Room.Objects[2]) ?? 0) + 0.5f,
+                    EntityZ?.Invoke(e.Room.Objects[2]) ?? 0);
+
+                if (e.Room.NPC[0] != null)
+                {
+                    PointEntity?.Invoke(e.Room.NPC[0].Collider, e.Room.Obj);
+                    RotateEntity?.Invoke(e.Room.NPC[0].Collider, 0, EntityYaw?.Invoke(e.Room.NPC[0].Collider) ?? 0, 0);
+                    SetNPCFrame?.Invoke(e.Room.NPC[0], 288); // Dead pose
+                    e.Room.NPC[0].State = 8;
+                }
+                e.EventState = 1;
+            }
+
+            ShouldPlay = 4;
+
+            if (RemoteDoorOn)
+            {
+                // Close door if player too close
+                if (e.Room.RoomDoors[0]!.Open)
+                {
+                    if (e.Room.RoomDoors[0]!.OpenState > 50 ||
+                        (EntityDistance?.Invoke(Collider, e.Room.RoomDoors[0]!.FrameObj) ?? 99) < 0.5f)
+                    {
+                        e.Room.RoomDoors[0]!.OpenState = MathF.Min(e.Room.RoomDoors[0]!.OpenState, 50);
+                        e.Room.RoomDoors[0]!.Open = false;
+                        PlaySoundStrict?.Invoke(); // DoorError.ogg
+                    }
+                }
+            }
+            else if (e.EventState < 10000)
+            {
+                if (e.EventState == 1)
+                {
+                    e.EventState = 2;
+                }
+                else if (e.EventState == 2)
+                {
+                    // Player approaches 079
+                    if ((EntityDistance?.Invoke(e.Room.Objects[0], Collider) ?? 99) < 3.0f)
+                    {
+                        GiveAchievement?.Invoke(Achv079);
+                        e.EventState = 3;
+                        e.EventState2 = 1;
+                        // Start speech stream
+                        StreamSound?.Invoke("SFX\\SCP\\079\\Speech.ogg", SFXVolume, 0);
+                    }
+                }
+                else if (e.EventState < 2000)
+                {
+                    // 079 speaking - animate screen
+                    if (IsStreamPlaying ?? false)
+                    {
+                        if (_rng.Next(3) == 1)
+                        {
+                            // EntityTexture(Objects[1], OldAiPics(0)) - show static
+                            ShowEntity?.Invoke(e.Room.Objects[1]);
+                        }
+                        else if (_rng.Next(10) == 1)
+                        {
+                            HideEntity?.Invoke(e.Room.Objects[1]);
+                        }
+                    }
+                    else
+                    {
+                        // Speech ended - show error screen
+                        ShowEntity?.Invoke(e.Room.Objects[1]);
+                        e.EventState += FPSfactor;
+                    }
+                }
+                else
+                {
+                    // Player returns to 079 - refuse dialogue
+                    if ((EntityDistance?.Invoke(e.Room.Objects[0], Collider) ?? 99) < 2.5f)
+                    {
+                        e.EventState = 10001;
+                        StreamSound?.Invoke("SFX\\SCP\\079\\Refuse.ogg", SFXVolume, 0);
+                    }
+                }
+            }
+            else
+            {
+                // Refuse speech animation
+                if (IsStreamPlaying ?? false)
+                {
+                    if (_rng.Next(3) == 1)
+                        ShowEntity?.Invoke(e.Room.Objects[1]);
+                    else if (_rng.Next(10) == 1)
+                        HideEntity?.Invoke(e.Room.Objects[1]);
+                }
+            }
+        }
+
+        // Gate B trigger when remote door is on after first interaction
+        if (e.EventState2 == 1)
+        {
+            if (RemoteDoorOn)
+            {
+                StreamSound?.Invoke("SFX\\SCP\\079\\GateB.ogg", SFXVolume, 0);
+                e.EventState2 = 2;
+
+                // Trigger exit1 and gateaentrance events
+                // For each event with name "exit1" or "gateaentrance", set EventState3 = 1
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM106 - SCP-106 Containment (UpdateEvents.bb 6003-6205)
+    // Femur breaker, lure subject, magnets, 106 capture/release
+    // =====================================================================
+    private static void UpdateRoom106(Event e, ref int temp, ref float dist, ref float x)
+    {
+        if (e.Room == null) return;
+
+        // Radio static when transmission active
+        if (SoundTransmission)
+        {
+            if (e.EventState == 1)
+            {
+                e.EventState3 = MathF.Min(e.EventState3 + FPSfactor, 4000);
+            }
+            // PlaySound(RadioStatic) if not playing
+        }
+
+        // Spawn lure subject if not exists
+        if (e.Room.NPC[0] == null)
+        {
+            // TFormPoint(1088, 1096, 1728, room.obj, 0)
+            float lx = EntityX?.Invoke(e.Room.Objects[5]) ?? 0;
+            float ly = EntityY?.Invoke(e.Room.Objects[5]) ?? 0;
+            float lz = EntityZ?.Invoke(e.Room.Objects[5]) ?? 0;
+            e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeD, lx, ly, lz);
+            if (e.Room.NPC[0] != null)
+            {
+                TurnEntity?.Invoke(e.Room.NPC[0].Collider, 0, e.Room.Angle + 90, 0);
+                e.Room.NPC[0].HideFromNVG = true;
+            }
+        }
+
+        if (PlayerRoom == e.Room && e.Room.NPC[0] != null)
+        {
+            ShouldPlay = 66;
+
+            // Animate lure subject struggling
+            e.Room.NPC[0].State = 6;
+            if (e.Room.NPC[0].Idle == 0)
+            {
+                AnimateNPC?.Invoke(e.Room.NPC[0], 17.0f, 19.0f, 0.01f, false);
+                if (e.Room.NPC[0].Frame >= 19.0f) e.Room.NPC[0].Idle = 1;
+            }
+            else
+            {
+                AnimateNPC?.Invoke(e.Room.NPC[0], 19.0f, 17.0f, -0.01f, false);
+                if (e.Room.NPC[0].Frame <= 17.0f) e.Room.NPC[0].Idle = 0;
+            }
+
+            // Position lure subject on femur breaker
+            PositionEntity?.Invoke(e.Room.NPC[0].Collider,
+                EntityX?.Invoke(e.Room.Objects[5]) ?? 0,
+                (EntityY?.Invoke(e.Room.Objects[5]) ?? 0) + 0.1f,
+                EntityZ?.Invoke(e.Room.Objects[5]) ?? 0);
+            RotateEntity?.Invoke(e.Room.NPC[0].Collider,
+                EntityPitch?.Invoke(e.Room.Objects[5]) ?? 0,
+                EntityYaw?.Invoke(e.Room.Objects[5]) ?? 0,
+                0);
+            ResetEntity?.Invoke(e.Room.NPC[0].Collider);
+
+            temp = (int)e.EventState2;
+
+            // Check magnet lever state
+            float obj6Y = EntityY?.Invoke(e.Room.Objects[6]) ?? 0;
+            bool magnetCondition = (obj6Y < -990 * RoomScale) && (obj6Y > -1275.0f * RoomScale);
+            bool leverState = OnUpdateLever?.Invoke(e.Room.Objects[1]) ?? false;
+            if (GrabbedEntity == e.Room.Objects[1] && DrawHandIcon)
+                e.EventState2 = leverState ? 1 : 0;
+
+            // Play magnet sound on state change
+            if (e.EventState2 != temp)
+            {
+                if (e.EventState2 == 0)
+                    PlaySoundStrict?.Invoke(); // MagnetDownSFX
+                else
+                    PlaySoundStrict?.Invoke(); // MagnetUpSFX
+            }
+
+            // Sound transmission lever
+            if ((e.EventState3 > 3200) || (e.EventState3 < 2500) || (e.EventState != 1))
+            {
+                SoundTransmission = OnUpdateLever?.Invoke(e.Room.Objects[3]) ?? false;
+            }
+
+            if (e.EventState == 0)
+            {
+                // Idle state - lure subject waiting
+                if (SoundTransmission && _rng.Next(100) == 1)
+                {
+                    // Play idle sounds from lure subject
+                }
+
+                if (SoundTransmission)
+                {
+                    // Update femur breaker button
+                    UpdateButton?.Invoke(e.Room.Objects[4]);
+                    if (ClosestButton == e.Room.Objects[4] && MouseHit1)
+                    {
+                        e.EventState = 1; // Start femur breaker
+                        if (SoundTransmission)
+                        {
+                            // Play femur breaker sound
+                            FemurBreakerSFX = LoadSoundStrict?.Invoke("SFX\\Room\\106Chamber\\FemurBreaker.ogg") ?? 0;
+                        }
+                    }
+                }
+            }
+            else if (e.EventState == 1) // Bone broken
+            {
+                // Lure subject crying sounds
+                if (SoundTransmission && e.EventState3 < 2000)
+                {
+                    // Play sniffling sounds
+                }
+
+                if (e.EventState3 >= 2500) // ~36 seconds at 70fps
+                {
+                    // 106 appears
+                    if (e.EventState2 == 1 && (e.EventState3 - FPSfactor) < 2500)
+                    {
+                        // Magnets ON when 106 arrives - teleport to bottom
+                        if (Curr106 != null)
+                        {
+                            PositionEntity?.Invoke(Curr106.Collider,
+                                EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                                EntityY?.Invoke(e.Room.Objects[6]) ?? 0,
+                                EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+                            Contained106 = false;
+                            ShowEntity?.Invoke(Curr106.Obj);
+                            Curr106.Idle = false;
+                            Curr106.State = -11;
+                        }
+                        e.EventState = 2;
+                        return;
+                    }
+
+                    ShouldPlay = 10;
+
+                    // 106 rising from floor
+                    if (Curr106 != null)
+                    {
+                        float riseHeight = 700.0f + 108.0f * (MathF.Min(e.EventState3 - 2500.0f, 800) / 320.0f);
+                        PositionEntity?.Invoke(Curr106.Collider,
+                            EntityX?.Invoke(e.Room.Objects[5]) ?? 0,
+                            riseHeight * RoomScale,
+                            EntityZ?.Invoke(e.Room.Objects[5]) ?? 0);
+                        HideEntity?.Invoke(Curr106.Obj2);
+                        RotateEntity?.Invoke(Curr106.Collider, 0, (EntityYaw?.Invoke(e.Room.Objects[5]) ?? 0) + 180.0f, 0);
+                        Curr106.State = -11;
+                        AnimateNPC?.Invoke(Curr106, 206, 250, 0.1f, false);
+                        Curr106.Idle = true;
+                    }
+
+                    // Create blood decals at specific times
+                    if ((e.EventState3 - FPSfactor) < 2500)
+                    {
+                        // First decal
+                        OnCreateDecal?.Invoke(0, (int)((EntityX?.Invoke(e.Room.Objects[5]) ?? 0) * 1000),
+                            (int)(936.0f * RoomScale * 1000),
+                            (int)((EntityZ?.Invoke(e.Room.Objects[5]) ?? 0) * 1000),
+                            90, 0, _rng.Next(360));
+                        // Play 106Bait.ogg
+                    }
+                    else if ((e.EventState3 - FPSfactor) < 2900 && e.EventState3 >= 2900)
+                    {
+                        // Free femur breaker sound, create second decal
+                    }
+                    else if (e.EventState3 > 3200)
+                    {
+                        // Final state - 106 caught or released
+                        if (e.EventState2 == 1) // Magnets ON
+                        {
+                            Contained106 = true;
+                        }
+                        else // Magnets OFF - 106 escapes
+                        {
+                            if (Curr106 != null)
+                            {
+                                PositionEntity?.Invoke(Curr106.Collider,
+                                    EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                                    EntityY?.Invoke(e.Room.Objects[6]) ?? 0,
+                                    EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+                                Contained106 = false;
+                                ShowEntity?.Invoke(Curr106.Obj);
+                                Curr106.Idle = false;
+                                Curr106.State = -11;
+                            }
+                            e.EventState = 2;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Magnet bobbing animation when ON
+            if (e.EventState2 != 0)
+            {
+                float bobY = -980.0f * RoomScale + MathF.Sin(MilliSecs2 * 0.04f) * 0.07f; // 0.04 = radians per ms for bob speed
+                PositionEntity?.Invoke(e.Room.Objects[6],
+                    EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                    CurveValue(bobY, EntityY?.Invoke(e.Room.Objects[6]) ?? 0, 200.0f),
+                    EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+                RotateEntity?.Invoke(e.Room.Objects[6],
+                    MathF.Sin(MilliSecs2 * 0.03f), // Subtle rotation
+                    EntityYaw?.Invoke(e.Room.Objects[6]) ?? 0,
+                    -MathF.Sin(MilliSecs2 * 0.025f));
+            }
+            else
+            {
+                // Magnets OFF - lower position
+                PositionEntity?.Invoke(e.Room.Objects[6],
+                    EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                    CurveValue(-1280.0f * RoomScale, EntityY?.Invoke(e.Room.Objects[6]) ?? 0, 200.0f),
+                    EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+                RotateEntity?.Invoke(e.Room.Objects[6], 0, EntityYaw?.Invoke(e.Room.Objects[6]) ?? 0, 0);
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM860 - SCP-860 Forest Door (UpdateEvents.bb 6407-6608)
+    // Blue key door, forest dimension, SCP-860-2 monster
+    // =====================================================================
+    private static void UpdateRoom860(Event e, ref int i, ref float x, ref float angle)
+    {
+        if (e.Room == null) return;
+
+        // fr = Forest structure reference
+        // e.EventState = is player in forest
+        // e.EventState2 = which door side entered
+        // e.EventState3 = monster spawn timer
+
+        if (PlayerRoom == e.Room)
+        {
+            if (e.EventState == 1.0f) // Player is in forest
+            {
+                CurrStepSFX = 2; // Forest footstep sounds
+                if (Curr106 != null) Curr106.Idle = true; // 106 won't chase in forest
+
+                // UpdateForest(fr, Collider)
+
+                // Monster music
+                if (e.Room.NPC[0] != null)
+                {
+                    if ((e.Room.NPC[0].State2 == 1 && e.Room.NPC[0].State > 1) || e.Room.NPC[0].State > 2)
+                        ShouldPlay = 12; // Chase music
+                    else
+                        ShouldPlay = 9;  // Forest ambient
+                }
+
+                // Fall death check
+                if (!NoClip)
+                {
+                    if ((EntityY?.Invoke(Collider) ?? 99) <= 28.5f)
+                    {
+                        OnKill?.Invoke();
+                        BlinkTimer = -2;
+                    }
+                }
+
+                // Monster spawn timer
+                if (e.Room.NPC[0] != null)
+                {
+                    if (e.Room.NPC[0].State == 0 || (EntityDistance?.Invoke(Collider, e.Room.NPC[0].Collider) ?? 0) > 20.0f)
+                    {
+                        e.EventState3 += (1 + CurrSpeed) * FPSfactor;
+                        if ((e.EventState3 % 500) < 10.0f && ((e.EventState3 - FPSfactor) % 500) > 490.0f)
+                        {
+                            // Difficulty-based spawn chance
+                            // 3000 - (500 * aggressiveNPCs) threshold
+                            if (e.EventState3 > 3000 && _rng.Next(10000) < e.EventState3)
+                            {
+                                e.Room.NPC[0].State = 2; // Attack
+                                PositionEntity?.Invoke(e.Room.NPC[0].Collider, 0, -110, 0);
+                                e.EventState3 -= _rng.Next(1000, 2000);
+                            }
+                            else
+                            {
+                                e.Room.NPC[0].State = 1; // Spawn ambient
+                                PositionEntity?.Invoke(e.Room.NPC[0].Collider, 0, -110, 0);
+                            }
+                        }
+                    }
+                }
+
+                // Check door interaction to exit forest
+                for (i = 0; i <= 1; i++)
+                {
+                    // If player near Door[i] and clicks, check if correct exit
+                    // If i == EventState2, teleport back to normal room
+                    // Else "The door will not budge"
+                }
+
+                // Forest fog/camera settings
+                x = e.Room.NPC[0] != null ? MathF.Max(1.0f - (e.Room.NPC[0].State3 / 300.0f), 0.1f) : 2.0f;
+                // CameraClsColor(98*x, 133*x, 162*x)
+                // CameraRange(RoomScale, 8.5)
+                // CameraFogRange(0.5, 8.0)
+            }
+            else
+            {
+                // Normal room - not in forest
+                if (!Contained106 && Curr106 != null) Curr106.Idle = false;
+
+                // Check if door can be opened with SCP-860 key
+                // If player near Objects[3] and has scp860 item selected
+                // On click: teleport to forest, set EventState = 1
+            }
+        }
+    }
+
+    // =====================================================================
+    // 008 - SCP-008 Containment (UpdateEvents.bb 7129-7220)
+    // Zombie virus, glass breaking, infection
+    // =====================================================================
+    private static void Update008(Event e, ref float dist, ref int temp)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            GiveAchievement?.Invoke(Achv008);
+
+            if (e.EventState == 0)
+            {
+                // Spawn 173 near container if far enough
+                if (Curr173 != null && Curr173.Idle < 2)
+                {
+                    if ((EntityDistance?.Invoke(Curr173.Collider, Collider) ?? 0) > HideDistance)
+                    {
+                        PositionEntity?.Invoke(Curr173.Collider,
+                            EntityX?.Invoke(e.Room.Objects[3]) ?? 0,
+                            0.5f,
+                            EntityZ?.Invoke(e.Room.Objects[3]) ?? 0);
+                        ResetEntity?.Invoke(Curr173.Collider);
+                    }
+                }
+                e.EventState = 1;
+            }
+            else if (e.EventState == 1)
+            {
+                // Alarm loop
+                // LoopSound2(AlarmSFX(0), e.SoundCHN, Camera, Objects[0], 5.0)
+
+                // Blinking warning light
+                if ((MilliSecs2 % 1000) < 500)
+                    ShowEntity?.Invoke(e.Room.Objects[5]);
+                else
+                    HideEntity?.Invoke(e.Room.Objects[5]);
+
+                dist = EntityDistance?.Invoke(Collider, e.Room.Objects[0]) ?? 99;
+                if (dist < 2.0f)
+                {
+                    e.Room.RoomDoors[0]!.Locked = true;
+                    e.Room.RoomDoors[1]!.Locked = true;
+
+                    if (e.EventState2 == 0)
+                    {
+                        ShowEntity?.Invoke(e.Room.Objects[2]); // Glass
+
+                        // 173 breaks glass when close and player not looking
+                        if (Curr173 != null && (EntityDistance?.Invoke(Curr173.Collider, e.Room.Objects[4]) ?? 99) < 3.0f)
+                        {
+                            if ((BlinkTimer < -10 || !EntityInView(Curr173.Obj, Camera)) && Curr173.Idle == 0)
+                            {
+                                PositionEntity?.Invoke(Curr173.Collider,
+                                    EntityX?.Invoke(e.Room.Objects[4]) ?? 0,
+                                    0.5f,
+                                    EntityZ?.Invoke(e.Room.Objects[4]) ?? 0);
+                                ResetEntity?.Invoke(Curr173.Collider);
+
+                                HideEntity?.Invoke(e.Room.Objects[2]); // Glass broken
+
+                                // Infect player if not wearing hazmat
+                                if (WearingHazmat == 0)
+                                {
+                                    Injuries += 0.1f;
+                                    if (Infect == 0) Infect = 1;
+                                    Msg = "The window shattered and a piece of glass cut your arm.";
+                                    MsgTimer = 70 * 8;
+                                }
+
+                                // PlaySound2(GlassBreak.ogg...)
+                                e.EventState2 = 1;
+                            }
+                        }
+                    }
+
+                    // Lever interaction
+                    if (dist < 1.0f)
+                    {
+                        if (EntityInView(e.Room.Objects[0], Camera))
+                        {
+                            DrawHandIcon = true;
+                            if (MouseDown1)
+                            {
+                                DrawArrowIcon2 = true;
+                                // Rotate lever based on mouse movement
+                            }
+                        }
+                    }
+
+                    // Infect if bleeding and not wearing hazmat
+                    if (WearingHazmat == 0 && Bloodloss > 0.0f)
+                    {
+                        if (Infect == 0)
+                        {
+                            Infect = 1;
+                        }
+                    }
+                }
+
+                // Check if lever pulled to close valve
+                if ((EntityPitch?.Invoke(e.Room.Levers[0]) ?? 90) < 40)
+                {
+                    e.EventState = 2;
+                    PlaySoundStrict?.Invoke(); // LeverSFX
+                }
+                else
+                {
+                    // Spawn gas particles
+                }
+            }
+            else
+            {
+                // Valve closed - safe
+                HideEntity?.Invoke(e.Room.Objects[5]); // Light off
+                e.Room.RoomDoors[0]!.Locked = false;
+                e.Room.RoomDoors[1]!.Locked = false;
+                e.Room.RoomDoors[2]!.Locked = false;
+
+                // Animate lever back
+                // When fully closed, RemoveEvent(e)
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM205 - SCP-205 Light Women (UpdateEvents.bb 6206-6406)
+    // Shadow projections, death in darkness
+    // =====================================================================
+    private static void UpdateRoom205(Event e, ref int temp, ref float dist)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            if (e.EventState == 0 || e.Room.Objects[0] == 0)
+            {
+                // Hide shadow models initially
+                if (e.Room.Objects[3] != 0)
+                {
+                    HideEntity?.Invoke(e.Room.Objects[3]);
+                    HideEntity?.Invoke(e.Room.Objects[4]);
+                    HideEntity?.Invoke(e.Room.Objects[5]);
+                    HideEntity?.Invoke(e.Room.Objects[6]);
+                }
+
+                if (e.Room.RoomDoors[1]!.Open)
+                {
+                    e.EventState = 1;
+                    GiveAchievement?.Invoke(Achv205);
+                }
+            }
+            else
+            {
+                ShouldPlay = 16;
+
+                // Complex animation state machine for shadow women
+                // EventState controls which phase:
+                // 1-13 = Progressive shadow appearances
+                // 66 = Attack animation
+                // 67 = Darkness damage phase
+
+                if (e.EventState < 65)
+                {
+                    // Check if player enters chamber
+                    dist = Distance(EntityX?.Invoke(Collider) ?? 0, EntityZ?.Invoke(Collider) ?? 0,
+                                   EntityX?.Invoke(e.Room.Objects[0]) ?? 0, EntityZ?.Invoke(e.Room.Objects[0]) ?? 0);
+                    if (dist < 2.0f)
+                    {
+                        PlaySoundStrict?.Invoke(); // Enter.ogg
+                        e.EventState = MathF.Max(e.EventState, 65);
+                        ShowEntity?.Invoke(e.Room.Objects[3]);
+                        ShowEntity?.Invoke(e.Room.Objects[4]);
+                        ShowEntity?.Invoke(e.Room.Objects[5]);
+                        HideEntity?.Invoke(e.Room.Objects[6]);
+                        e.Room.RoomDoors[0]!.Open = false;
+                    }
+
+                    // Random door opening/closing
+                    if (e.EventState > 7 && _rng.Next(300) == 1)
+                    {
+                        e.Room.RoomDoors[0]!.Open = !e.Room.RoomDoors[0]!.Open;
+                    }
+
+                    e.EventState2 += FPSfactor;
+                }
+
+                // State-based shadow animations (simplified)
+                switch ((int)e.EventState)
+                {
+                    case 67:
+                        // Darkness damage
+                        if (_rng.Next(150) == 1)
+                        {
+                            Injuries += _rng.NextSingle() * 0.4f + 0.4f;
+                            PlaySoundStrict?.Invoke(); // DamageSFX
+                            CameraShake = 0.5f;
+                            if (Injuries > 5.0f) OnKill?.Invoke();
+                        }
+                        break;
+                    default:
+                        // Progress through animation states
+                        e.EventState3 += FPSfactor;
+                        if (e.EventState3 > 50)
+                        {
+                            ShowEntity?.Invoke(e.Room.Objects[1]);
+                            e.EventState++;
+                            e.EventState3 = 0;
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM035 - SCP-035 Mask Chamber (UpdateEvents.bb 5210-5648)
+    // Possessed host, gas valves, escape sequence
+    // =====================================================================
+    private static void UpdateRoom035(Event e, ref int temp, ref float dist)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            // EventState2 = has 035 told closet code
+            // EventState3 = gas valve state (0=no, <35*70=dying, >35*70=dead)
+
+            if (e.EventState == 0)
+            {
+                // Player approaches containment
+                if ((EntityDistance?.Invoke(Collider, e.Room.Objects[3]) ?? 99) < 2)
+                {
+                    // Spawn possessed D-class
+                    e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeD,
+                        EntityX?.Invoke(e.Room.Objects[4]) ?? 0,
+                        0.5f,
+                        EntityZ?.Invoke(e.Room.Objects[4]) ?? 0);
+                    if (e.Room.NPC[0] != null)
+                    {
+                        e.Room.NPC[0].Texture = "GFX\\NPCs\\035victim.jpg";
+                        e.Room.NPC[0].Model = "GFX\\NPCs\\035.b3d";
+                        // SetAnimTime(501) - standing pose
+                        e.Room.NPC[0].Frame = 501;
+                        e.Room.NPC[0].State = 6;
+                    }
+                    e.EventState = 1;
+                }
+            }
+            else if (e.EventState > 0)
+            {
+                // 035 host interaction loop
+                // Complex dialogue and gas valve state machine
+
+                // Check gas valve lever
+                temp = OnUpdateLever?.Invoke(e.Room.Levers[1]) ?? false ? 1 : 0;
+                if (temp != 0 || (e.EventState3 > 25 * 70 && e.EventState3 < 50 * 70))
+                {
+                    // Gas on - position gas effects
+                    if (temp != 0)
+                    {
+                        PositionEntity?.Invoke(e.Room.Objects[5],
+                            EntityX?.Invoke(e.Room.Objects[5]) ?? 0,
+                            424.0f * RoomScale,
+                            EntityZ?.Invoke(e.Room.Objects[5]) ?? 0);
+                        PositionEntity?.Invoke(e.Room.Objects[6],
+                            EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                            424.0f * RoomScale,
+                            EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+                    }
+
+                    // Progress gas damage
+                    if (e.EventState3 > -30 * 70)
+                    {
+                        e.EventState3 = MathF.Abs(e.EventState3) + FPSfactor;
+                        // Play various gassed sounds at specific times
+                        // Host death at 35*70
+                    }
+                }
+                else
+                {
+                    // Gas off
+                    PositionEntity?.Invoke(e.Room.Objects[5],
+                        EntityX?.Invoke(e.Room.Objects[5]) ?? 0,
+                        10,
+                        EntityZ?.Invoke(e.Room.Objects[5]) ?? 0);
+                    PositionEntity?.Invoke(e.Room.Objects[6],
+                        EntityX?.Invoke(e.Room.Objects[6]) ?? 0,
+                        10,
+                        EntityZ?.Invoke(e.Room.Objects[6]) ?? 0);
+
+                    // Host looks at player
+                    if (e.Room.NPC[0] != null && e.Room.NPC[0].State == 0)
+                    {
+                        PointEntity?.Invoke(e.Room.NPC[0].Obj, Collider);
+                        // Occasional random movement
+                    }
+
+                    // Dialogue progression
+                    e.EventState += FPSfactor;
+                    // Various dialogue triggers at specific times
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // ROOM012 - SCP-012 Bad Composition (UpdateEvents.bb 5053-5209)
+    // Compulsion effect, self-harm, death
+    // =====================================================================
+    private static void UpdateRoom012(Event e, ref int pvt, ref float dist, ref float angle)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom == e.Room)
+        {
+            if (e.EventState == 0)
+            {
+                // Check if player near door with remote control
+                if ((EntityDistance?.Invoke(Collider, e.Room.RoomDoors[0]!.Obj) ?? 99) < 2.5f && RemoteDoorOn)
+                {
+                    GiveAchievement?.Invoke(Achv012);
+                    PlaySoundStrict?.Invoke(); // HorrorSFX(7)
+                    // PlaySound2(LeverSFX...)
+                    e.EventState = 1;
+                    e.Room.RoomDoors[0]!.Locked = false;
+                    UseDoor?.Invoke(e.Room.RoomDoors[0]!, false, false);
+                    e.Room.RoomDoors[0]!.Locked = true;
+                }
+            }
+            else
+            {
+                // Music loop
+                // LoopSound2(012Golgotha.ogg...)
+
+                // Composition descent animation
+                if (e.EventState < 90)
+                    e.EventState = CurveValue(90, e.EventState, 500);
+                float compY = (-130 - 448 * MathF.Sin(e.EventState * MathF.PI / 180)) * RoomScale;
+                PositionEntity?.Invoke(e.Room.Objects[2],
+                    EntityX?.Invoke(e.Room.Objects[2]) ?? 0,
+                    compY,
+                    EntityZ?.Invoke(e.Room.Objects[2]) ?? 0);
+
+                // Compulsion effect (if not wearing SCP-714 or gas mask 3)
+                if (!Wearing714 && WearingGasMask < 3 && WearingHazmat < 3)
+                {
+                    if (EntityVisible(e.Room.Objects[2], Camera))
+                    {
+                        // Force player to look at composition
+                        // Progress EventState3 (compulsion timer)
+
+                        dist = Distance(EntityX?.Invoke(Collider) ?? 0, EntityZ?.Invoke(Collider) ?? 0,
+                                       EntityX?.Invoke(e.Room.Objects[2]) ?? 0, EntityZ?.Invoke(e.Room.Objects[2]) ?? 0);
+
+                        HeartBeatRate = 150;
+                        HeartBeatVolume = MathF.Max(3.0f - dist, 0.0f) / 3.0f;
+
+                        if (dist < 0.6f)
+                        {
+                            e.EventState3 = MathF.Min(e.EventState3 + FPSfactor, 86 * 70); // ~86 seconds max
+
+                            // Self-harm progression at specific times
+                            if (e.EventState3 > 70 && (e.EventState3 - FPSfactor) <= 70)
+                            {
+                                PlaySoundStrict?.Invoke(); // Speech1.ogg
+                            }
+                            else if (e.EventState3 > 13 * 70 && (e.EventState3 - FPSfactor) <= 13 * 70)
+                            {
+                                Msg = "You start pushing your nails into your wrist, drawing blood.";
+                                MsgTimer = 7 * 70;
+                                Injuries += 0.5f;
+                            }
+                            else if (e.EventState3 > 31 * 70 && (e.EventState3 - FPSfactor) <= 31 * 70)
+                            {
+                                // Texture change - blood on composition
+                                Msg = "You tear open your left wrist and start writing on the composition with your blood.";
+                                MsgTimer = 7 * 70;
+                                Injuries = MathF.Max(Injuries, 1.5f);
+                            }
+                            else if (e.EventState3 > 85 * 70 && (e.EventState3 - FPSfactor) <= 85 * 70)
+                            {
+                                DeathMSG = "Subject D-9341 found in a pool of blood next to SCP-012. Subject seems to have ripped open his wrists and written three extra lines to the composition before dying of blood loss.";
+                                OnKill?.Invoke();
+                            }
+                        }
+                        else
+                        {
+                            // Force move toward composition
+                            angle = WrapAngle((EntityYaw?.Invoke(pvt) ?? 0) - (EntityYaw?.Invoke(Collider) ?? 0));
+                            if (angle < 40.0f)
+                                ForceMove = (40.0f - angle) * 0.02f;
+                            else if (angle > 310.0f)
+                                ForceMove = (40.0f - MathF.Abs(360.0f - angle)) * 0.02f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Additional helper delegates and state for new rooms
+    public static Action<int, float, float, float>? PositionEntity;
+    public static Action<int>? ResetEntity;
+    public static Func<int, float>? EntityPitch;
+    public static Action<int, float, float, float>? RotateEntity;
+    public static Action<int, int, float, float, float, Event>? UseDoor;
+    public static Func<int, int, Door, Door, int, int, Event, float>? UpdateElevators;
+    public static Action<int>? GiveAchievement;
+    public static Action<string, float, int>? StreamSound;
+    public static bool IsStreamPlaying;
+    public static Action<int>? UpdateButton;
+    public static int ClosestButton;
+    public static int FemurBreakerSFX;
+    public static Func<string, int>? LoadSoundStrict;
+    public static Action<int, float, float, float>? TurnEntity;
+    public static Func<NPC, float, float, float, bool>? AnimateNPC;
+    public static float CurrSpeed;
+    public static int CurrStepSFX;
+    public static bool NoClip;
+    public static NPC? Curr173;
+    public static float HideDistance = 20.0f;
+    public static int WearingHazmat;
+    public static int WearingGasMask;
+    public static float Bloodloss;
+    public static int Infect;
+    public static string Msg = "";
+    public static float MsgTimer;
+    public static bool DrawArrowIcon2;
+    public static int Achv008;
+    public static int Achv012;
+    public static int Achv035;
+    public static int Achv079;
+    public static int Achv205;
+    public static int MilliSecs2;
+    public static int NPCtypeGuard = 3;
+    public static int NPCtypeD = 2;
+    public static Func<int, int>? SetNPCFrame;
+    public static float SFXVolume = 1.0f;
+    public static float BlinkTimer;
+    public static float ForceMove;
+    public static string DeathMSG = "";
+    public static float CameraShake;
+    public static Func<int, int, bool>? EntityInView;
+    public static Func<int, int, bool>? EntityVisible;
 }
 
 // Supporting classes

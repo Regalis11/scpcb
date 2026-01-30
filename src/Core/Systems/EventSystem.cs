@@ -669,7 +669,76 @@ public static class RoomEventSystem
                 case "room012":
                     UpdateRoom012(e, ref pvt, ref dist, ref angle);
                     break;
+
+                // ===== ENTRANCE ZONE ENDINGS =====
+                case "gatea":
+                    UpdateGateA(e, ref temp, ref i, ref dist, ref angle);
+                    break;
+                case "exit1_ending":
+                    UpdateExit1Ending(e, ref temp, ref i, ref dist, ref angle);
+                    break;
             }
+        }
+
+        // Update explosion timer (Gate B nuke ending)
+        UpdateExplosion();
+    }
+
+    // =====================================================================
+    // EXPLOSION TIMER - Gate B Nuke Ending (UpdateEvents.bb 10107-10141)
+    // Triggers when ExplosionTimer > 0 (set by exit1_ending when nuke is armed)
+    // =====================================================================
+    private static void UpdateExplosion()
+    {
+        if (ExplosionTimer <= 0) return;
+
+        ExplosionTimer += FPSfactor;
+
+        if (ExplosionTimer < 140.0f)
+        {
+            // Initial rumble phase
+            if (ExplosionTimer - FPSfactor < 5.0f)
+            {
+                ExplosionSFX = LoadSoundStrict?.Invoke("SFX\\Ending\\GateB\\Nuke1.ogg") ?? 0;
+                PlaySoundStrict?.Invoke();
+                CameraShake = 10.0f;
+                ExplosionTimer = 5.0f;
+            }
+
+            CameraShake = CurveValue(ExplosionTimer / 60.0f, CameraShake, 50.0f);
+        }
+        else
+        {
+            // Main explosion phase
+            CameraShake = MathF.Min(ExplosionTimer / 20.0f, 20.0f);
+
+            if (ExplosionTimer - FPSfactor < 140.0f)
+            {
+                BlinkTimer = 1.0f;
+                ExplosionSFX = LoadSoundStrict?.Invoke("SFX\\Ending\\GateB\\Nuke2.ogg") ?? 0;
+                PlaySoundStrict?.Invoke();
+
+                // Create explosion particles
+                // for i = 0 to 10+(10*(ParticleAmount+1))
+                //     CreateParticle at player position
+            }
+
+            LightFlash = MathF.Min((ExplosionTimer - 140.0f) / 10.0f, 5.0f);
+
+            // Kill player at 160 frames (~2.3 seconds after blast)
+            if (ExplosionTimer > 160)
+            {
+                KillTimer = MathF.Min(KillTimer, -0.1f);
+            }
+
+            // Reset explosion at 500 frames (cleanup)
+            if (ExplosionTimer > 500)
+            {
+                ExplosionTimer = 0;
+            }
+
+            // Keep player from falling through world during explosion
+            PositionEntity?.Invoke(Collider, EntityX?.Invoke(Collider) ?? 0, 200, EntityZ?.Invoke(Collider) ?? 0, 1, 0);
         }
     }
 
@@ -5822,6 +5891,828 @@ public static class RoomEventSystem
     public static Action<int>? GetChild;
     public static Action<int, float, float, float>? OnEntityAlpha;
     public static Action<int, int, int>? EntityColor;
+
+    // =====================================================================
+    // GATE A ENDING (UpdateEvents.bb 9599-10103)
+    // SCP-106 escape/containment, helicopters, HID turret, MTF capture
+    // Endings: A1 (Chaos Insurgency), A2 (MTF Capture)
+    // =====================================================================
+    private static void UpdateGateA(Event e, ref int temp, ref int i, ref float dist, ref float angle)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom != e.Room)
+        {
+            HideEntity?.Invoke(e.Room.Obj);
+            return;
+        }
+
+        // Hide all other rooms, show only gate room
+        // (In full impl: For Each Rooms -> HideEntity)
+        ShowEntity?.Invoke(e.Room.Obj);
+
+        if (e.EventState == 0)
+        {
+            // === INITIALIZATION - Load Gate A Tunnel, spawn NPCs ===
+            // DrawLoading(0)
+
+            // Load gate tunnel mesh
+            // e.Room.Objects[0] = LoadMesh("GFX\MAP\gateatunnel.b3d")
+            // Position, scale, parent to room
+
+            // Remove all NPCs except 106 and 173
+            // For Each NPC: if n != Curr106 and n != Curr173 then RemoveNPC(n)
+            if (Curr173 != null) Curr173.Idle = true;
+            Curr096 = null;
+
+            // Disable fog
+            // CameraFogMode(Camera, 0)
+            SecondaryLightOn = 1;
+            HideDistance = 35.0f;
+
+            // Spawn 3 Apache helicopters (NPC[2] to NPC[4])
+            for (i = 2; i <= 4; i++)
+            {
+                e.Room.NPC[i] = CreateNPC?.Invoke(NPCtypeApache, e.Room.X, e.Room.Y + 11, e.Room.Z);
+                if (e.Room.NPC[i] != null)
+                {
+                    e.Room.NPC[i].State = Contained106 ? 0 : 1; // Attack if 106 not contained
+                }
+            }
+
+            // Spawn 2 guards (NPC[0], NPC[1])
+            for (i = 0; i <= 1; i++)
+            {
+                e.Room.NPC[i] = CreateNPC?.Invoke(NPCtypeGuard,
+                    EntityX?.Invoke(e.Room.Objects[i + 5]) ?? 0,
+                    EntityY?.Invoke(e.Room.Objects[i + 5]) ?? 0,
+                    EntityZ?.Invoke(e.Room.Objects[i + 5]) ?? 0);
+                if (e.Room.NPC[i] != null) e.Room.NPC[i].State = 0;
+            }
+
+            // Spawn 4 MTF units (NPC[5] to NPC[8])
+            for (i = 5; i <= 8; i++)
+            {
+                e.Room.NPC[i] = CreateNPC?.Invoke(NPCtypeMTF,
+                    EntityX?.Invoke(e.Room.Objects[i + 2]) ?? 0,
+                    EntityY?.Invoke(e.Room.Objects[i + 2]) ?? 0,
+                    EntityZ?.Invoke(e.Room.Objects[i + 2]) ?? 0);
+                if (e.Room.NPC[i] != null)
+                {
+                    e.Room.NPC[i].State = 5;
+                    e.Room.NPC[i].PrevState = 1;
+                }
+            }
+
+            // If 106 NOT contained, play escape sound
+            if (!Contained106)
+            {
+                PlaySoundStrict?.Invoke(); // 106Escape.ogg
+            }
+
+            e.EventState = 1.0f;
+        }
+        else
+        {
+            // === MAIN ENDING LOOP ===
+            ShouldPlay = 17; // Gate A music
+
+            e.EventState += FPSfactor;
+
+            // Hide fog, set camera range for outdoor scene
+            HideEntity?.Invoke(Fog);
+            CameraFogRange?.Invoke(Camera, 5, 30);
+
+            // Update sky coloring based on player angle
+            angle = MathF.Max(MathF.Sin((EntityYaw?.Invoke(Collider) ?? 0) + 90) * MathF.PI / 180, 0);
+            // CameraFogColor(Camera, 200+angle*40, 200+angle*20, 200)
+            CameraRange?.Invoke(Camera, 0.05f, 30);
+            AmbientLight?.Invoke(140, 140, 140);
+
+            // Animate helicopters in circular pattern
+            for (i = 2; i <= 4; i++)
+            {
+                if (e.Room.NPC[i] != null && e.Room.NPC[i].State < 2)
+                {
+                    float hx = (EntityX?.Invoke(e.Room.Objects[3]) ?? 0) + MathF.Cos(e.EventState / 10 + 120 * i) * 6000.0f * RoomScale;
+                    float hz = (EntityZ?.Invoke(e.Room.Objects[3]) ?? 0) + MathF.Sin(e.EventState / 10 + 120 * i) * 6000.0f * RoomScale;
+                    PositionEntity?.Invoke(e.Room.NPC[i].Collider, hx, e.Room.Y + 11, hz, 1, 0);
+                    RotateEntity?.Invoke(e.Room.NPC[i].Collider, 7, (int)(e.EventState / 10 + 120 * i), 20);
+                }
+            }
+
+            // === SCP-106 ESCAPE SEQUENCE (if not contained) ===
+            if (e.EventState >= 350 && !Contained106)
+            {
+                if (e.EventState - FPSfactor < 350)
+                {
+                    // 106 emerges from ground
+                    if (Curr106 != null)
+                    {
+                        Curr106.State = -0.1f;
+                        SetNPCFrame?.Invoke(Curr106, 110);
+                        PositionEntity?.Invoke(Curr106.Collider,
+                            EntityX?.Invoke(e.Room.Objects[3]) ?? 0,
+                            (EntityY?.Invoke(Collider) ?? 0) - 50.0f,
+                            EntityZ?.Invoke(e.Room.Objects[3]) ?? 0, 1, 0);
+
+                        // Create blood decal
+                        OnCreateDecal?.Invoke(0,
+                            (int)((EntityX?.Invoke(e.Room.Objects[3]) ?? 0) * 1000),
+                            (int)(((EntityY?.Invoke(e.Room.Objects[3]) ?? 0) + 0.01f) * 1000),
+                            (int)((EntityZ?.Invoke(e.Room.Objects[3]) ?? 0) * 1000),
+                            90, _rng.Next(360), 0);
+
+                        PlaySoundStrict?.Invoke(); // HorrorSFX(5), DecaySFX(0)
+                    }
+                }
+                else if (Curr106 != null && Curr106.State < 0)
+                {
+                    // 106 walking across bridge
+                    HideEntity?.Invoke(Curr106.Obj2);
+                    Curr106.PathTimer = 70 * 100; // ~100 seconds path timeout
+
+                    // Find path to MTF unit
+                    if (Curr106.PathStatus != 1)
+                    {
+                        // 106 rising animation
+                        if (Curr106.State <= -10)
+                        {
+                            dist = EntityY?.Invoke(Curr106.Collider) ?? 0;
+                            PositionEntity?.Invoke(Curr106.Collider,
+                                EntityX?.Invoke(Curr106.Collider) ?? 0,
+                                EntityY?.Invoke(e.Room.Objects[3]) ?? 0,
+                                EntityZ?.Invoke(Curr106.Collider) ?? 0, 1, 0);
+
+                            // Find path to MTF NPC[5]
+                            if (e.Room.NPC[5] != null)
+                            {
+                                Curr106.PathStatus = FindPath?.Invoke(Curr106,
+                                    EntityX?.Invoke(e.Room.NPC[5].Collider) ?? 0,
+                                    EntityY?.Invoke(e.Room.NPC[5].Collider) ?? 0,
+                                    EntityZ?.Invoke(e.Room.NPC[5].Collider) ?? 0) ?? 0;
+                            }
+                            Curr106.PathTimer = 70 * 200;
+                            PositionEntity?.Invoke(Curr106.Collider,
+                                EntityX?.Invoke(Curr106.Collider) ?? 0,
+                                dist,
+                                EntityZ?.Invoke(Curr106.Collider) ?? 0, 1, 0);
+                            ResetEntity?.Invoke(Curr106.Collider);
+                            Curr106.PathLocation = 1;
+                        }
+                    }
+                    else
+                    {
+                        // 106 walking - helicopters start attacking
+                        Curr106.PathTimer = 70 * 200;
+                        for (i = 2; i <= 4; i++)
+                        {
+                            if (e.Room.NPC[i] != null)
+                            {
+                                e.Room.NPC[i].State = 3; // Attack mode
+                                e.Room.NPC[i].EnemyX = EntityX?.Invoke(Curr106.Obj) ?? 0;
+                                e.Room.NPC[i].EnemyY = (EntityY?.Invoke(Curr106.Obj) ?? 0) + 5.0f;
+                                e.Room.NPC[i].EnemyZ = EntityZ?.Invoke(Curr106.Obj) ?? 0;
+                            }
+                        }
+
+                        // MTF units also target 106
+                        for (i = 5; i <= 8; i++)
+                        {
+                            if (e.Room.NPC[i] != null)
+                            {
+                                e.Room.NPC[i].State = 5;
+                                e.Room.NPC[i].EnemyX = EntityX?.Invoke(Curr106.Obj) ?? 0;
+                                e.Room.NPC[i].EnemyY = (EntityY?.Invoke(Curr106.Obj) ?? 0) + 0.4f;
+                                e.Room.NPC[i].EnemyZ = EntityZ?.Invoke(Curr106.Obj) ?? 0;
+                            }
+                        }
+
+                        // Aim HID turret at 106 (Objects[9]=base, Objects[10]=gun)
+                        // ... turret tracking logic ...
+
+                        // Create blood decals under 106 periodically
+                        if (FPSfactor > 0 && ((int)(e.EventState - FPSfactor) % 100) <= 50 && ((int)e.EventState % 100) > 50)
+                        {
+                            OnCreateDecal?.Invoke(0,
+                                (int)((EntityX?.Invoke(Curr106.Collider) ?? 0) * 1000),
+                                (int)(((EntityY?.Invoke(e.Room.Objects[3]) ?? 0) + 0.01f) * 1000),
+                                (int)((EntityZ?.Invoke(Curr106.Collider) ?? 0) * 1000),
+                                90, _rng.Next(360), 0);
+                        }
+                    }
+
+                    // 106 reaches destination - retreats underground
+                    dist = Distance(EntityX?.Invoke(Curr106.Collider) ?? 0, EntityZ?.Invoke(Curr106.Collider) ?? 0,
+                                   EntityX?.Invoke(e.Room.Objects[4]) ?? 0, EntityZ?.Invoke(e.Room.Objects[4]) ?? 0);
+
+                    if (dist < 15.0f && e.SoundCHN2 == 0)
+                    {
+                        // Play Franklin.ogg (radio chatter)
+                        e.SoundCHN2 = PlaySound2?.Invoke(LoadTempSound!("SFX\\Ending\\GateA\\Franklin.ogg"), Camera, Collider, 20, 1) ?? 0;
+                    }
+
+                    if (dist < 0.4f)
+                    {
+                        // 106 sinks into ground
+                        Curr106.PathStatus = 0;
+                        Curr106.PathTimer = 70 * 200;
+
+                        if (Curr106.State3 == 0)
+                        {
+                            SetNPCFrame?.Invoke(Curr106, 259);
+                            // Play 106Retreat.ogg
+                        }
+
+                        AnimateNPC?.Invoke(Curr106, 259, 110, -0.1f, false);
+                        Curr106.State3 += FPSfactor;
+
+                        // Sink animation
+                        PositionEntity?.Invoke(Curr106.Collider,
+                            EntityX?.Invoke(Curr106.Collider) ?? 0,
+                            CurveValue((EntityY?.Invoke(e.Room.Objects[3]) ?? 0) - (Curr106.State3 / 4500.0f), EntityY?.Invoke(Curr106.Collider) ?? 0, 100.0f),
+                            EntityZ?.Invoke(Curr106.Collider) ?? 0, 1, 0);
+
+                        if (Curr106.State3 > 700.0f)
+                        {
+                            // 106 fully submerged - helicopters attack player
+                            Curr106.State = 100000;
+                            e.EventState2 = 0;
+                            for (i = 5; i <= 8; i++)
+                            {
+                                if (e.Room.NPC[i] != null) e.Room.NPC[i].State = 1;
+                            }
+                            for (i = 2; i <= 4; i++)
+                            {
+                                if (e.Room.NPC[i] != null) e.Room.NPC[i].State = 2; // Attack player
+                            }
+                            HideEntity?.Invoke(Curr106.Obj);
+                        }
+                    }
+                    else if (dist < 8.5f)
+                    {
+                        // HID Turret firing sequence
+                        if (e.EventState2 == 0)
+                        {
+                            // Play HIDTurret.ogg
+                            e.SoundCHN2 = PlaySound2?.Invoke(LoadSoundStrict!("SFX\\Ending\\GateA\\HIDTurret.ogg"), Camera, Collider, 30, 1) ?? 0;
+                            e.EventState2 = 1;
+                        }
+                        else if (e.EventState2 > 0)
+                        {
+                            e.EventState2 += FPSfactor;
+
+                            // At 7.5 seconds, create beam particle effect
+                            if (e.EventState2 >= 7.5f * 70 && e.EventState2 - FPSfactor < 7.5f * 70)
+                            {
+                                // Create particle beam from turret to 106
+                            }
+                            else if (e.EventState2 >= 7.5f * 70 && e.EventState2 < 14.3f * 70)
+                            {
+                                CameraShake = 0.5f;
+                                LightFlash = 0.3f + ((EntityInView?.Invoke(e.Room.Objects[10], Camera) ?? false) ? 0.5f : 0);
+                            }
+                        }
+                    }
+                }
+
+                // Player enters tunnel - triggers Chaos Insurgency ending
+                if (e.EventState3 == 0)
+                {
+                    if (MathF.Abs((EntityY?.Invoke(Collider) ?? 0) - (EntityY?.Invoke(e.Room.Objects[11]) ?? 0)) < 1.0f)
+                    {
+                        dist = Distance(EntityX?.Invoke(Collider) ?? 0, EntityZ?.Invoke(Collider) ?? 0,
+                                       EntityX?.Invoke(e.Room.Objects[11]) ?? 0, EntityZ?.Invoke(e.Room.Objects[11]) ?? 0);
+                        if (dist < 12.0f)
+                        {
+                            // Trigger Chaos Insurgency capture sequence
+                            if (Curr106 != null)
+                            {
+                                Curr106.State = 100000;
+                                HideEntity?.Invoke(Curr106.Obj);
+                            }
+
+                            // MTF spawn at tunnel entrance, chase player
+                            for (i = 5; i <= 8; i++)
+                            {
+                                if (e.Room.NPC[i] != null)
+                                {
+                                    e.Room.NPC[i].State = 3;
+                                    PositionEntity?.Invoke(e.Room.NPC[i].Collider,
+                                        (EntityX?.Invoke(e.Room.Objects[15]) ?? 0) + (i - 6) * 0.3f,
+                                        EntityY?.Invoke(e.Room.Objects[15]) ?? 0,
+                                        (EntityZ?.Invoke(e.Room.Objects[15]) ?? 0) + (i - 6) * 0.3f, 1, 0);
+                                    ResetEntity?.Invoke(e.Room.NPC[i].Collider);
+                                }
+                            }
+
+                            // Play "There he is!" audio
+                            if (e.Room.NPC[5] != null)
+                            {
+                                e.Room.NPC[5].Sound = LoadSoundStrict?.Invoke("SFX\\Character\\MTF\\ThereHeIs1.ogg") ?? 0;
+                            }
+
+                            e.Room.RoomDoors[2]!.Open = true;
+
+                            // Remove helicopters
+                            for (i = 2; i <= 4; i++)
+                            {
+                                if (e.Room.NPC[i] != null)
+                                {
+                                    RemoveNPC?.Invoke(e.Room.NPC[i]);
+                                    e.Room.NPC[i] = null;
+                                }
+                            }
+
+                            e.EventState3 = 1.0f;
+                        }
+                    }
+                }
+                else if (e.EventState3 == 1.0f)
+                {
+                    // MTF chasing player
+                    for (i = 5; i <= 8; i++)
+                    {
+                        if (e.Room.NPC[i] != null)
+                        {
+                            dist = EntityDistance?.Invoke(e.Room.NPC[i].Collider, Collider) ?? 99;
+                            e.Room.NPC[i].State = dist > 4.0f ? 3 : 1;
+                        }
+                    }
+
+                    // Player reaches shadow entity - Chaos Insurgency ending
+                    if (MathF.Abs((EntityY?.Invoke(Collider) ?? 0) - (EntityY?.Invoke(e.Room.Objects[11]) ?? 0)) < 1.0f)
+                    {
+                        dist = Distance(EntityX?.Invoke(Collider) ?? 0, EntityZ?.Invoke(Collider) ?? 0,
+                                       EntityX?.Invoke(e.Room.Objects[11]) ?? 0, EntityZ?.Invoke(e.Room.Objects[11]) ?? 0);
+                        if (dist < 7.0f)
+                        {
+                            // Spawn shadow figures (Chaos Insurgency members)
+                            // Play Bell1.ogg
+
+                            CameraShake = 1.0f;
+                            LightFlash = 1.0f;
+                            e.EventState3 = 2.0f;
+                        }
+                    }
+                }
+                else
+                {
+                    // Chaos Insurgency capture finale
+                    e.EventState3 += FPSfactor;
+                    Stamina = -5.0f;
+                    BlurTimer = MathF.Sin(e.EventState3 * 0.7f) * 1000.0f;
+
+                    if (KillTimer == 0)
+                    {
+                        // Camera zoom effect
+                        dist = EntityDistance?.Invoke(Collider, e.Room.Objects[11]) ?? 0;
+                        if (dist < 6.5f)
+                        {
+                            // Pull player toward shadow entity
+                            PositionEntity?.Invoke(Collider,
+                                CurveValue(EntityX?.Invoke(e.Room.Objects[11]) ?? 0, EntityX?.Invoke(Collider) ?? 0, dist * 80),
+                                EntityY?.Invoke(Collider) ?? 0,
+                                CurveValue(EntityZ?.Invoke(e.Room.Objects[0]) ?? 0, EntityZ?.Invoke(Collider) ?? 0, dist * 80),
+                                1, 0);
+                        }
+                    }
+
+                    // Tunnel closes
+                    if (e.EventState3 > 50 && e.EventState3 < 230)
+                    {
+                        CameraShake = MathF.Sin(e.EventState3 - 50) * 3;
+                        // Rotate tunnel doors closed (Objects[13], Objects[14])
+                    }
+
+                    // Play CI.ogg, then ending
+                    if (e.EventState3 >= 230.0f)
+                    {
+                        if (e.EventState3 - FPSfactor < 230.0f)
+                        {
+                            // Play CI.ogg
+                        }
+
+                        if (!(ChannelPlaying?.Invoke(e.SoundCHN) ?? false) && string.IsNullOrEmpty(SelectedEnding))
+                        {
+                            // Play Bell2.ogg
+                            SelectedEnding = "A1"; // Chaos Insurgency ending
+                            GodMode = false;
+                            NoClip = false;
+                            KillTimer = -0.1f;
+                            DeathMSG = "";
+                            OnKill?.Invoke();
+                        }
+
+                        if (!string.IsNullOrEmpty(SelectedEnding))
+                        {
+                            CameraShake = CurveValue(2.0f, CameraShake, 10.0f);
+                            LightFlash = CurveValue(2.0f, LightFlash, 8.0f);
+                        }
+                    }
+                }
+            }
+            else if (e.EventState >= 350 && Contained106)
+            {
+                // === 106 CONTAINED - MTF CAPTURE ENDING (A2) ===
+                if (e.EventState2 == 0)
+                {
+                    e.EventState2 = 1;
+
+                    // MTF units patrol and look for player
+                    for (i = 5; i <= 8; i++)
+                    {
+                        if (e.Room.NPC[i] != null)
+                        {
+                            e.Room.NPC[i].State = 3;
+                            e.Room.NPC[i].PathTimer = 70 * _rng.Next(15, 20);
+                            e.Room.NPC[i].LastSeen = 70 * 300;
+                        }
+                    }
+                }
+                else
+                {
+                    // MTF spots player
+                    for (i = 5; i <= 8; i++)
+                    {
+                        if (e.Room.NPC[i] != null)
+                        {
+                            if (e.Room.NPC[i].State == 5)
+                            {
+                                e.Room.NPC[i].EnemyX = EntityX?.Invoke(Collider) ?? 0;
+                                e.Room.NPC[i].EnemyY = EntityY?.Invoke(Collider) ?? 0;
+                                e.Room.NPC[i].EnemyZ = EntityZ?.Invoke(Collider) ?? 0;
+                            }
+                            else if ((EntityDistance?.Invoke(e.Room.NPC[i].Collider, Collider) ?? 99) < 6.0f)
+                            {
+                                e.Room.NPC[i].State = 5;
+                                e.Room.NPC[i].CurrSpeed = 0;
+                            }
+                        }
+                    }
+
+                    // Player detected by any MTF
+                    if (e.EventState2 <= 1)
+                    {
+                        for (i = 5; i <= 8; i++)
+                        {
+                            if (e.Room.NPC[i] != null && e.Room.NPC[i].State == 5)
+                            {
+                                // All MTF units aim at player
+                                for (temp = 5; temp <= 8; temp++)
+                                {
+                                    if (e.Room.NPC[temp] != null)
+                                    {
+                                        e.Room.NPC[temp].State = 5;
+                                        e.Room.NPC[temp].EnemyX = EntityX?.Invoke(Collider) ?? 0;
+                                        e.Room.NPC[temp].EnemyY = EntityY?.Invoke(Collider) ?? 0;
+                                        e.Room.NPC[temp].EnemyZ = EntityZ?.Invoke(Collider) ?? 0;
+                                        e.Room.NPC[temp].Reload = 2000;
+                                        UnableToMove = true;
+                                    }
+                                }
+
+                                if (e.EventState2 == 1)
+                                {
+                                    // Play "STOP RIGHT THERE!"
+                                    e.SoundCHN = PlaySound2?.Invoke(LoadSoundStrict!("SFX\\Ending\\GateA\\STOPRIGHTTHERE.ogg"), Camera, Collider, 20, 1) ?? 0;
+                                    e.EventState2 = 2;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Wait for speech to end, then trigger ending
+                        ShouldPlay = 0;
+                        CurrSpeed = 0;
+                        if (!(ChannelPlaying?.Invoke(e.SoundCHN) ?? false))
+                        {
+                            PlaySoundStrict?.Invoke(); // IntroSFX(9)
+                            SelectedEnding = "A2"; // MTF Capture ending
+                            GodMode = false;
+                            NoClip = false;
+                            KillTimer = -0.1f;
+                            DeathMSG = "";
+                            OnKill?.Invoke();
+                            BlinkTimer = -10;
+                            RemoveEvent?.Invoke(e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    // EXIT1 ENDING - Gate B (UpdateEvents.bb 9170-9598)
+    // SCP-682 Battle, Alpha Warhead, MTF Capture
+    // Endings: B1 (682), B2 (Nuke), B3 (MTF Execution)
+    // =====================================================================
+    private static void UpdateExit1Ending(Event e, ref int temp, ref int i, ref float dist, ref float angle)
+    {
+        if (e.Room == null) return;
+
+        if (PlayerRoom != e.Room) return;
+
+        // Only trigger when player above threshold (outside)
+        if ((EntityY?.Invoke(Collider) ?? 0) <= 1040.0f * RoomScale)
+            return;
+
+        ShowEntity?.Invoke(e.Room.Obj);
+
+        if (e.EventState == 0)
+        {
+            // === INITIALIZATION ===
+            // DrawLoading(0, True)
+
+            // Fix light sprites
+            // Remove all NPCs
+            Curr173 = null;
+            Curr106 = null;
+            Curr096 = null;
+
+            // Disable fog for outdoor scene
+            // CameraFogMode(Camera, 0)
+            SecondaryLightOn = 1;
+
+            // Spawn Apache helicopter (NPC[0])
+            e.Room.NPC[0] = CreateNPC?.Invoke(NPCtypeApache, e.Room.X, 100.0f, e.Room.Z);
+            if (e.Room.NPC[0] != null) e.Room.NPC[0].State = 1;
+
+            // Spawn guard at position (NPC[1])
+            e.Room.NPC[1] = CreateNPC?.Invoke(NPCtypeGuard,
+                EntityX?.Invoke(e.Room.Objects[4]) ?? 0,
+                (EntityY?.Invoke(e.Room.Objects[4]) ?? 0) + 0.2f,
+                EntityZ?.Invoke(e.Room.Objects[4]) ?? 0);
+            if (e.Room.NPC[1] != null)
+            {
+                e.Room.NPC[1].State = 0;
+                e.Room.NPC[1].State2 = 10;
+            }
+
+            // Load terrain mesh, create sky
+
+            e.EventState = 1.0f;
+        }
+        else
+        {
+            // UpdateSky()
+
+            if (e.EventState < 2.0f && string.IsNullOrEmpty(SelectedEnding))
+            {
+                // Helicopter circling
+                if (e.Room.NPC[0]?.State == 2)
+                {
+                    ShouldPlay = 6; // Battle music
+                }
+                else
+                {
+                    e.EventState2 = (e.EventState2 + FPSfactor) % 3600;
+                    PositionEntity?.Invoke(e.Room.NPC[0]!.Collider,
+                        (EntityX?.Invoke(e.Room.Obj) ?? 0) + MathF.Cos(e.EventState2 / 10) * 6000.0f * RoomScale,
+                        14000 * RoomScale,
+                        (EntityZ?.Invoke(e.Room.Obj) ?? 0) + MathF.Sin(e.EventState2 / 10) * 6000.0f * RoomScale,
+                        1, 0);
+                    RotateEntity?.Invoke(e.Room.NPC[0].Collider, 7, (int)(e.EventState2 / 10), 20);
+                    ShouldPlay = 5; // Ambient
+                }
+
+                // Player approaches battle zone
+                if ((EntityDistance?.Invoke(Collider, e.Room.Objects[10]) ?? 99) < 320 * RoomScale)
+                {
+                    e.EventState = 2.0f;
+                    e.Room.RoomDoors[2]!.Open = false;
+                    e.Room.RoomDoors[2]!.Locked = true;
+                    e.Room.RoomDoors[3]!.Open = false;
+                    e.Room.RoomDoors[3]!.Locked = true;
+
+                    // Spawn more helicopters for battle
+                    e.Room.NPC[2] = CreateNPC?.Invoke(NPCtypeApache,
+                        EntityX?.Invoke(e.Room.Objects[9]) ?? 0,
+                        (EntityY?.Invoke(e.Room.Objects[9]) ?? 0) + 0.5f,
+                        EntityZ?.Invoke(e.Room.Objects[9]) ?? 0);
+                    if (e.Room.NPC[2] != null) e.Room.NPC[2].State = 3;
+
+                    e.Room.NPC[3] = CreateNPC?.Invoke(NPCtypeApache,
+                        EntityX?.Invoke(e.Room.Objects[7]) ?? 0,
+                        (EntityY?.Invoke(e.Room.Objects[7]) ?? 0) - 2.0f,
+                        EntityZ?.Invoke(e.Room.Objects[7]) ?? 0);
+                    if (e.Room.NPC[3] != null) e.Room.NPC[3].State = 3;
+
+                    e.Room.NPC[0]!.State = 3;
+
+                    // Play 682Battle.ogg announcement
+                    PlayAnnouncement?.Invoke("SFX\\Ending\\GateB\\682Battle.ogg");
+                }
+            }
+            else
+            {
+                // === SCP-682 BATTLE SEQUENCE ===
+                ShouldPlay = 6;
+                e.EventState += FPSfactor;
+
+                // Helicopters attack position (Objects[11])
+                if (e.EventState < 40.0f * 70)
+                {
+                    float targetX = (EntityX?.Invoke(e.Room.Objects[11]) ?? 0) + MathF.Sin(MilliSecs2 / 25.0f) * 3;
+                    float targetY = (EntityY?.Invoke(e.Room.Objects[11]) ?? 0) + MathF.Cos(MilliSecs2 / 85.0f) + 9.0f;
+                    float targetZ = (EntityZ?.Invoke(e.Room.Objects[11]) ?? 0) + MathF.Cos(MilliSecs2 / 25.0f) * 3;
+
+                    if (e.Room.NPC[0] != null)
+                    {
+                        e.Room.NPC[0].EnemyX = targetX;
+                        e.Room.NPC[0].EnemyY = targetY;
+                        e.Room.NPC[0].EnemyZ = targetZ;
+                    }
+                    if (e.Room.NPC[2] != null)
+                    {
+                        e.Room.NPC[2].EnemyX = targetX;
+                        e.Room.NPC[2].EnemyY = targetY - 4;
+                        e.Room.NPC[2].EnemyZ = targetZ;
+                    }
+                    if (e.Room.NPC[3]?.State == 3)
+                    {
+                        e.Room.NPC[3].EnemyX = targetX;
+                        e.Room.NPC[3].EnemyY = targetY - 5.5f;
+                        e.Room.NPC[3].EnemyZ = targetZ;
+                    }
+                }
+
+                // Camera shake synced to battle events
+                if (e.EventState > 0.6f * 70 && e.EventState < 42.2f * 70)
+                {
+                    // Various timed shakes matching audio cues
+                    if (e.EventState < 0.7f * 70) CameraShake = 0.5f;
+                    else if (e.EventState > 12.1f * 70 && e.EventState < 12.3f * 70) CameraShake = 1.0f;
+                    else if (e.EventState > 13.3f * 70 && e.EventState < 13.5f * 70) CameraShake = 1.5f;
+                    else if (e.EventState > 16.5f * 70 && e.EventState < 18.5f * 70) CameraShake = 3.0f;
+                    else if (e.EventState > 21.5f * 70 && e.EventState < 24.0f * 70) CameraShake = 2.0f;
+                    else if (e.EventState > 35.0f * 70 && e.EventState < 36.5f * 70)
+                    {
+                        CameraShake = 1.5f;
+                        // Play DetonatingAlphaWarheads.ogg at 35s mark
+                        if (e.EventState - FPSfactor <= 35.0f * 70)
+                        {
+                            e.SoundCHN = StreamSoundStrict?.Invoke("SFX\\Ending\\GateB\\DetonatingAlphaWarheads.ogg", SFXVolume, 0) ?? 0;
+                        }
+                    }
+                    else if (e.EventState > 42.0f * 70)
+                    {
+                        CameraShake = 0.5f;
+                        // Helicopters leave
+                        if (e.Room.NPC[0] != null)
+                        {
+                            e.Room.NPC[0].EnemyX = (EntityX?.Invoke(e.Room.Objects[19]) ?? 0) + 4.0f;
+                            e.Room.NPC[0].EnemyY = (EntityY?.Invoke(e.Room.Objects[19]) ?? 0) + 4.0f;
+                            e.Room.NPC[0].EnemyZ = (EntityZ?.Invoke(e.Room.Objects[19]) ?? 0) + 4.0f;
+                        }
+                        if (e.Room.NPC[2] != null)
+                        {
+                            e.Room.NPC[2].EnemyX = EntityX?.Invoke(e.Room.Objects[19]) ?? 0;
+                            e.Room.NPC[2].EnemyY = EntityY?.Invoke(e.Room.Objects[19]) ?? 0;
+                            e.Room.NPC[2].EnemyZ = EntityZ?.Invoke(e.Room.Objects[19]) ?? 0;
+                        }
+                    }
+                }
+
+                // SCP-682 arm appears at 26.5s (destroys one helicopter)
+                if (e.EventState > 26.5f * 70)
+                {
+                    if (e.Room.Objects[12] == 0)
+                    {
+                        // Load 682 arm mesh
+                        // Animate arm swinging down, helicopter crashes
+                    }
+                }
+
+                // Alpha Warhead countdown
+                if (e.EventState >= 45.0f * 70)
+                {
+                    if (e.EventState < 75.0f * 70)
+                    {
+                        if (e.SoundCHN2 == 0)
+                        {
+                            // Play Siren.ogg
+                            e.SoundCHN2 = StreamSoundStrict?.Invoke("SFX\\Ending\\GateB\\Siren.ogg", SFXVolume, Mode) ?? 0;
+                        }
+                    }
+                    else
+                    {
+                        // 75+ seconds - determine ending
+                        if (string.IsNullOrEmpty(SelectedEnding))
+                        {
+                            ShouldPlay = 66; // Silence
+
+                            StopStreamStrict?.Invoke(e.SoundCHN);
+                            StopStreamStrict?.Invoke(e.SoundCHN2);
+
+                            // Check if nuke is armed (room2nuke event)
+                            bool nukeArmed = true; // Would check room2nuke.EventState
+
+                            if (nukeArmed)
+                            {
+                                // NUKE ENDING (B2)
+                                ExplosionTimer = MathF.Max(ExplosionTimer, 0.1f);
+                                SelectedEnding = "B2";
+                            }
+                            else
+                            {
+                                // MTF EXECUTION ENDING (B3)
+                                // Play AlphaWarheadsFail.ogg
+                                PlayAnnouncement?.Invoke("SFX\\Ending\\GateB\\AlphaWarheadsFail.ogg");
+
+                                // Spawn MTF units
+                                for (i = 0; i <= 1; i++)
+                                {
+                                    var mtf = CreateNPC?.Invoke(NPCtypeMTF,
+                                        (EntityX?.Invoke(e.Room.Objects[18]) ?? 0) + i * 0.4f,
+                                        (EntityY?.Invoke(e.Room.Objects[18]) ?? 0) + 0.29f,
+                                        (EntityZ?.Invoke(e.Room.Objects[18]) ?? 0) + i * 0.4f);
+                                }
+
+                                SelectedEnding = "B3";
+                                e.EventState = 85.0f * 70;
+                            }
+                        }
+                        else if (SelectedEnding == "B3")
+                        {
+                            // MTF chasing player
+                            e.Room.RoomDoors[5]!.Open = true;
+
+                            // Player detected - execution sequence
+                            if (e.EventState3 > 0 && e.EventState3 <= 500)
+                            {
+                                e.EventState3 += FPSfactor;
+                                UnableToMove = true;
+                            }
+                            else if (e.EventState3 > 500)
+                            {
+                                // Gunshot - game over
+                                ShouldPlay = 0;
+                                CurrSpeed = 0;
+                                // Play Gunshot.ogg
+                                GodMode = false;
+                                NoClip = false;
+                                KillTimer = -0.1f;
+                                DeathMSG = "";
+                                OnKill?.Invoke();
+                                BlinkTimer = -10;
+                                RemoveEvent?.Invoke(e);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Outdoor scene settings
+            HideEntity?.Invoke(Fog);
+            CameraFogRange?.Invoke(Camera, 5, 45);
+
+            angle = MathF.Max(MathF.Sin((EntityYaw?.Invoke(Collider) ?? 0) * MathF.PI / 180), 0);
+            // CameraFogColor, CameraClsColor with warm sunset tones
+            CameraRange?.Invoke(Camera, 0.05f, 60);
+            AmbientLight?.Invoke(140, 140, 140);
+
+            // Guard/Helicopter detection and shooting logic
+            if (e.Room.NPC[1]?.State != 1)
+            {
+                if ((EntityDistance?.Invoke(e.Room.NPC[1]!.Collider, Collider) ?? 99) < 15.0f ||
+                    (EntityVisible?.Invoke(e.Room.NPC[0]!.Collider, Collider) ?? false))
+                {
+                    e.Room.NPC[1].State = 1;
+                    e.Room.NPC[1].State3 = 1;
+                }
+            }
+
+            // Stop shooting if player is under cover
+            if ((EntityDistance?.Invoke(e.Room.NPC[1]!.Collider, Collider) ?? 99) < 8.9f ||
+                (EntityDistance?.Invoke(e.Room.Objects[5], Collider) ?? 99) < 16.9f)
+            {
+                e.Room.NPC[1].State3 = 0;
+            }
+            else
+            {
+                e.Room.NPC[1].State3 = 1;
+            }
+        }
+    }
+
+    // Explosion timer for Gate B nuke ending
+    public static float ExplosionTimer;
+    public static int ExplosionSFX;
+
+    // Additional ending-related state
+    public static string SelectedEnding = "";
+    public static bool GodMode;
+    public static bool UnableToMove;
+    public static float Stamina;
+    public static float LightFlash;
+    public static int Mode;
+    public static Action<string>? PlayAnnouncement;
+    public static int NPCtypeApache = 20;
+    public static int NPCtypeMTF = 1;
 }
 
 // Supporting classes

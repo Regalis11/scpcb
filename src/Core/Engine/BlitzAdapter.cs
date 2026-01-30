@@ -33,6 +33,10 @@ public static class BlitzAdapter
     private static readonly Dictionary<int, Sound> _channels = new();
     private static int _nextChannelHandle = 1;
 
+    // 3D Audio tracking (entity + range for each channel)
+    private static readonly Dictionary<int, int> _channelEntities = new();
+    private static readonly Dictionary<int, float> _channelRanges = new();
+
     // Camera reference
     public static Camera3D Camera;
     public static int CameraHandle;
@@ -280,25 +284,29 @@ public static class BlitzAdapter
             return 0;
         };
 
+        // =====================================================================
+        // 3D AUDIO SYSTEM - Simulated spatial audio using volume + pan
+        // Distance attenuation: volume = 1.0 / (1 + dist * dropoff)
+        // Pan calculation: based on angle between camera forward and sound direction
+        // =====================================================================
+
         RoomEventSystem.PlaySound2 = (soundHandle, cameraHandle, entityHandle, range, volume) =>
         {
             if (_sounds.TryGetValue(soundHandle, out var sound))
             {
-                float dist = 0;
-                if (_entities.TryGetValue(entityHandle, out var e) && _entities.TryGetValue(cameraHandle, out var cam))
-                {
-                    dist = Vector3.Distance(e.Position, cam.Position);
-                }
+                var (vol, pan) = Calculate3DAudio(cameraHandle, entityHandle, range, volume);
 
-                float vol = Math.Clamp(1.0f - (dist / range), 0, 1) * volume;
                 if (vol > 0.01f)
                 {
                     Raylib.SetSoundVolume(sound, vol);
+                    Raylib.SetSoundPan(sound, pan);
                     Raylib.PlaySound(sound);
                 }
 
                 int channelHandle = _nextChannelHandle++;
                 _channels[channelHandle] = sound;
+                _channelEntities[channelHandle] = entityHandle;
+                _channelRanges[channelHandle] = range;
                 return channelHandle;
             }
             return 0;
@@ -308,36 +316,52 @@ public static class BlitzAdapter
         {
             if (existingChannel != 0 && _channels.TryGetValue(existingChannel, out var existingSound))
             {
-                // Update existing looping sound
-                if (_sounds.TryGetValue(soundHandle, out var sound))
+                // Update existing looping sound with new 3D position
+                var (vol, pan) = Calculate3DAudio(cameraHandle, entityHandle, range, volume);
+                Raylib.SetSoundVolume(existingSound, vol);
+                Raylib.SetSoundPan(existingSound, pan);
+
+                // Restart if not playing (for looping)
+                if (!Raylib.IsSoundPlaying(existingSound) && vol > 0.01f)
                 {
-                    float dist = 0;
-                    if (_entities.TryGetValue(entityHandle, out var e) && _entities.TryGetValue(cameraHandle, out var cam))
-                    {
-                        dist = Vector3.Distance(e.Position, cam.Position);
-                    }
-                    float vol = Math.Clamp(1.0f - (dist / range), 0, 1) * volume;
-                    Raylib.SetSoundVolume(sound, vol);
+                    Raylib.PlaySound(existingSound);
                 }
                 return existingChannel;
             }
 
-            // Start new loop
-            return RoomEventSystem.PlaySound2!(soundHandle, cameraHandle, entityHandle, range, volume);
+            // Start new looping sound
+            if (_sounds.TryGetValue(soundHandle, out var sound))
+            {
+                var (vol, pan) = Calculate3DAudio(cameraHandle, entityHandle, range, volume);
+
+                if (vol > 0.01f)
+                {
+                    Raylib.SetSoundVolume(sound, vol);
+                    Raylib.SetSoundPan(sound, pan);
+                    Raylib.PlaySound(sound);
+                }
+
+                int channelHandle = _nextChannelHandle++;
+                _channels[channelHandle] = sound;
+                _channelEntities[channelHandle] = entityHandle;
+                _channelRanges[channelHandle] = range;
+                return channelHandle;
+            }
+            return 0;
         };
 
         RoomEventSystem.UpdateSoundOrigin = (channelHandle, cameraHandle, entityHandle, range) =>
         {
-            // Update 3D sound position
+            // Update 3D sound position in real-time
             if (_channels.TryGetValue(channelHandle, out var sound))
             {
-                float dist = 0;
-                if (_entities.TryGetValue(entityHandle, out var e) && _entities.TryGetValue(cameraHandle, out var cam))
-                {
-                    dist = Vector3.Distance(e.Position, cam.Position);
-                }
-                float vol = Math.Clamp(1.0f - (dist / range), 0, 1);
+                var (vol, pan) = Calculate3DAudio(cameraHandle, entityHandle, range, 1.0f);
                 Raylib.SetSoundVolume(sound, vol);
+                Raylib.SetSoundPan(sound, pan);
+
+                // Store updated tracking info
+                _channelEntities[channelHandle] = entityHandle;
+                _channelRanges[channelHandle] = range;
             }
         };
 
@@ -647,6 +671,92 @@ public static class BlitzAdapter
     // HELPER METHODS
     // ========================================================================
 
+    /// <summary>
+    /// Calculate 3D audio volume and pan based on listener/emitter positions.
+    /// Returns (volume, pan) where pan is 0.0 (left) to 1.0 (right), 0.5 = center.
+    ///
+    /// Volume formula: volume = baseVolume * (1.0 / (1.0 + dist / range))
+    /// This gives smooth attenuation: at distance=0, vol=1; at distance=range, vol=0.5
+    ///
+    /// Pan formula: Calculate angle from camera forward to sound source,
+    /// then map to stereo: left = 0.0, center = 0.5, right = 1.0
+    /// </summary>
+    private static (float volume, float pan) Calculate3DAudio(int cameraHandle, int entityHandle, float range, float baseVolume)
+    {
+        if (!_entities.TryGetValue(entityHandle, out var emitter))
+            return (0, 0.5f);
+
+        // Get camera/listener position
+        Vector3 listenerPos = Camera.Position;
+        Vector3 emitterPos = emitter.Position;
+
+        // Calculate distance
+        float dist = Vector3.Distance(listenerPos, emitterPos);
+
+        // Volume attenuation: smooth falloff curve
+        // At dist=0: vol=1.0, at dist=range: vol=0.5, at dist=2*range: vol=0.33
+        float dropoff = range > 0 ? range : 10.0f; // Prevent division by zero
+        float volume = baseVolume / (1.0f + dist / dropoff);
+        volume = Math.Clamp(volume, 0, 1);
+
+        // If too quiet, skip pan calculation
+        if (volume < 0.01f)
+            return (0, 0.5f);
+
+        // Pan calculation: based on angle from camera forward to sound
+        // Camera forward in XZ plane
+        float camYawRad = Camera.Target.X * MathF.PI / 180.0f; // Approximate
+        Vector3 forward = new Vector3(
+            MathF.Sin(Player?.Yaw ?? 0 * MathF.PI / 180.0f),
+            0,
+            -MathF.Cos(Player?.Yaw ?? 0 * MathF.PI / 180.0f)
+        );
+        Vector3 right = new Vector3(forward.Z, 0, -forward.X);
+
+        // Direction to emitter (normalized XZ)
+        Vector3 toEmitter = emitterPos - listenerPos;
+        toEmitter.Y = 0; // Only horizontal pan
+        if (toEmitter.LengthSquared() > 0.0001f)
+        {
+            toEmitter = Vector3.Normalize(toEmitter);
+
+            // Dot product with right vector gives left/right positioning
+            // -1 = full left, 0 = center, 1 = full right
+            float rightDot = Vector3.Dot(toEmitter, right);
+
+            // Map to pan: 0.0 (left) to 1.0 (right)
+            float pan = 0.5f + rightDot * 0.5f;
+            pan = Math.Clamp(pan, 0, 1);
+
+            return (volume, pan);
+        }
+
+        return (volume, 0.5f); // Center if directly on listener
+    }
+
+    /// <summary>
+    /// Update all active 3D sound channels (call each frame)
+    /// </summary>
+    public static void Update3DAudio()
+    {
+        foreach (var kvp in _channels)
+        {
+            int channelHandle = kvp.Key;
+            Sound sound = kvp.Value;
+
+            if (Raylib.IsSoundPlaying(sound))
+            {
+                if (_channelEntities.TryGetValue(channelHandle, out int entityHandle) &&
+                    _channelRanges.TryGetValue(channelHandle, out float range))
+                {
+                    var (vol, pan) = Calculate3DAudio(CameraHandle, entityHandle, range, 1.0f);
+                    Raylib.SetSoundVolume(sound, vol);
+                    Raylib.SetSoundPan(sound, pan);
+                }
+            }
+        }
+    }
+
     private static int CreatePivotInternal()
     {
         var entity = new BlitzEntity();
@@ -702,6 +812,8 @@ public static class BlitzAdapter
 
         _entities.Clear();
         _channels.Clear();
+        _channelEntities.Clear();
+        _channelRanges.Clear();
 
         Console.WriteLine("[BlitzAdapter] Shutdown complete");
     }

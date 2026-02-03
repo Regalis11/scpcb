@@ -1,0 +1,144 @@
+================================================================================
+PROJECT MIRROR v2.0.0 "STOROZH" - INSTALLATION GUIDE
+================================================================================
+
+Etot fayl soderzhit instruktsii po integratsii moda v Main.bb
+
+================================================================================
+FAILY MODA (10 moduley):
+================================================================================
+
+ProjectMirror_Core.bb      - Glavnyy kontroller
+ProjectMirror_Story.bb     - Syuzhet, dialogi, 3 dnya, 4 kontsovki
+ProjectMirror_Echo.bb      - Sistema fantomov/ekho
+ProjectMirror_939.bb       - Imitatsiya golosov SCP-939
+ProjectMirror_914.bb       - Kvesty SCP-914
+ProjectMirror_MTF.bb       - Taktika MTF Epsilon-11
+ProjectMirror_VFX.bb       - Vizual'nye effekty, sanity
+ProjectMirror_Cutscene.bb  - Kamera katsten
+ProjectMirror_UI.bb        - Interfeys (HUD, metry, zagolovki)
+ProjectMirror_Gameplay.bb  - Mekhaniki (stealth, 096, nuke)
+
+================================================================================
+INTEGRATSIYA V MAIN.BB:
+================================================================================
+
+1. INCLUDE (posle stroki ~2688, gde ostalnye Include):
+-------------------------------------------------------
+
+Include "ProjectMirror_Core.bb"
+
+
+2. INIT (pered stroki ~8542, v funktsii InitNewGame ili podobnoy):
+------------------------------------------------------------------
+
+InitProjectMirror()
+
+
+3. UPDATE (posle stroki ~2989, v glavnom game loop):
+----------------------------------------------------
+
+UpdateProjectMirror()
+
+
+4. RENDER (pered strokou ~3355, v HUD rendering):
+-------------------------------------------------
+
+RenderProjectMirror()
+
+
+5. CLEANUP (v funktsii vyhoda/novoy igry):
+------------------------------------------
+
+CleanupProjectMirror()
+
+
+6. SAVE/LOAD (v funktsiyakh sohraneniya/zagruzki):
+--------------------------------------------------
+
+; v Save:
+SaveProjectMirrorState(file)
+
+; v Load:
+LoadProjectMirrorState(file)
+
+
+7. HOOKS (optsional'no, dlya polnoy integratsii):
+-------------------------------------------------
+
+; Kogda igrok beret predmet:
+OnMirrorItemPickup(item)
+
+; Kogda sozdaetsya NPC:
+OnMirrorNPCCreated(npc)
+
+; Kogda igrok vhodit v komnatu:
+OnMirrorRoomEnter(room)
+
+; Kogda igraetsya zvuk dialoga:
+OnMirrorDialogPlayed(soundPath, speakerName, room)
+
+
+================================================================================
+KONSOLNYYE KOMANDY (dlya testirovaniya):
+================================================================================
+
+mirror_debug        - Vkl/vykl debug HUD
+mirror_day N        - Pereklyuchit' na den' N (1-3)
+mirror_act N        - Pereklyuchit' na akt N (1-7, tol'ko den' 3)
+mirror_karma N      - Izmenit' karmu na N
+mirror_sanity N     - Ustanovit' sanity na N%
+mirror_ending N     - Zapustit' kontsovku N (1-4)
+mirror_nuke         - Aktivirovat' boegolovku
+mirror_096          - Trigger rage 096
+mirror_mtf_betray   - Trigger predatelstvo MTF
+mirror_lockdown     - Zablokirovat' vse sektory
+mirror_breach       - Nachalo proryva
+mirror_flash        - Test flashbang
+mirror_echo N       - Trigger echo event N
+
+
+================================================================================
+STRUKTURA DNYA 3:
+================================================================================
+
+ACT I   - PROBUZHDENIE (IDs 200-209)
+ACT II  - EKHO PROSHLOGO (IDs 210-229)
+ACT III - GOLOSA DRUZEY (IDs 230-259)
+ACT IV  - MASHINA I CHUMA (IDs 260-279)
+ACT V   - SMOTRI V POL (IDs 280-299)
+ACT VI  - POVERKHNOST' (IDs 300-319)
+ACT VII - FINAL (IDs 320-399)
+
+
+================================================================================
+KONTSOVKI:
+================================================================================
+
+1. WHISTLEBLOWER - Translyatsiya dannykh, pobeg, presledovaniye
+2. SYMBIOSIS     - Soyuz s 079, mir obrechyon
+3. DEATH         - Prostoy pobeg, snayper, smert'
+4. ZERO PROTOCOL - Boegolovka, flashbacks, "Spasibo za sluzhbu"
+
+
+================================================================================
+TREBUYEMYE ZVUKOVYE FAILY:
+================================================================================
+
+SFX\Room\Intro\Announcement.ogg  - Anons iz originala
+SFX\General\LightFlicker.ogg     - Miganie sveta
+SFX\General\Alarm.ogg            - Sirena trevogi
+SFX\Door\Open.ogg                - Zvuk dveri (sanity)
+SFX\Step\Run1.ogg                - Shagi (sanity)
+SFX\Radio\Static.ogg             - Pomekhi ratsii
+SFX\Room\Nuke\Alarm.ogg          - Sirena boegolovki
+SFX\SCP\096\Scream.ogg           - Krik 096
+
+
+================================================================================
+KONTAKT:
+================================================================================
+
+claude.ai/code/session_01Cy855J54H4ko8jCsB5DcvL
+
+================================================================================

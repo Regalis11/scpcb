@@ -2430,6 +2430,9 @@ DrawLoading(80,True)
 
 Include "NPCs.bb"
 
+; Project Mirror - SCP: СТОРОЖ mod (must be after Items.bb, MapSystem.bb, NPCs.bb)
+Include "ProjectMirror_Core.bb"
+
 ;-------------------------------------  Events --------------------------------------------------------------
 
 Type Events
@@ -2987,6 +2990,7 @@ Repeat
 			UpdateDecals()
 			UpdateMTF()
 			UpdateNPCs()
+			UpdateProjectMirror() ; Project Mirror mod update
 			UpdateItems()
 			UpdateParticles()
 			Use427()
@@ -4866,9 +4870,12 @@ Function DrawGUI()
 			
 			AASetFont Font1
 		EndIf
-		
+
 	EndIf
-	
+
+	; Project Mirror mod HUD rendering
+	RenderProjectMirror()
+
 	If SelectedScreen <> Null Then
 		DrawImage SelectedScreen\img, GraphicWidth/2-ImageWidth(SelectedScreen\img)/2,GraphicHeight/2-ImageHeight(SelectedScreen\img)/2
 		
@@ -8539,6 +8546,10 @@ Function InitNewGame()
 	DropSpeed = 0
 	
 	PrevTime = MilliSecs()
+
+	; Initialize Project Mirror mod
+	InitProjectMirror()
+
 	CatchErrors("InitNewGame")
 End Function
 
@@ -8644,9 +8655,12 @@ Function NullGame(playbuttonsfx%=True)
 	
 	KillSounds()
 	If playbuttonsfx Then PlaySound_Strict ButtonSFX
-	
+
 	FreeParticles()
-	
+
+	; Cleanup Project Mirror mod
+	CleanupProjectMirror()
+
 	ClearTextureCache
 	
 	DebugHUD = False

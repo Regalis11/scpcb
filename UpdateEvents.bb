@@ -1489,41 +1489,53 @@ Function UpdateEvents()
 				EndIf
 				
 				If e\room\RoomTemplate\Name = "checkpoint2"
-					For e2.Events = Each Events
-						If e2\EventName = "008"
-							If e2\EventState = 2
-								If e\room\RoomDoors[0]\locked
-									TurnCheckpointMonitorsOff(1)
-									e\room\RoomDoors[0]\locked = False
-									e\room\RoomDoors[1]\locked = False
-								EndIf
-							Else
-								If e\room\dist < 12
-									UpdateCheckpointMonitors(1)
-									e\room\RoomDoors[0]\locked = True
-									e\room\RoomDoors[1]\locked = True
+					; Pre-breach (Day 1/2): keep checkpoint doors unlocked
+					If CurrentDay < 3 Then
+						e\room\RoomDoors[0]\locked = False
+						e\room\RoomDoors[1]\locked = False
+					Else
+						For e2.Events = Each Events
+							If e2\EventName = "008"
+								If e2\EventState = 2
+									If e\room\RoomDoors[0]\locked
+										TurnCheckpointMonitorsOff(1)
+										e\room\RoomDoors[0]\locked = False
+										e\room\RoomDoors[1]\locked = False
+									EndIf
+								Else
+									If e\room\dist < 12
+										UpdateCheckpointMonitors(1)
+										e\room\RoomDoors[0]\locked = True
+										e\room\RoomDoors[1]\locked = True
+									EndIf
 								EndIf
 							EndIf
-						EndIf
-					Next
+						Next
+					EndIf
 				Else
-					For e2.Events = Each Events
-						If e2\EventName = "room2sl"
-							If e2\EventState3 = 0
-								If e\room\dist < 12
-									TurnCheckpointMonitorsOff(0)
-									e\room\RoomDoors[0]\locked = False
-									e\room\RoomDoors[1]\locked = False
-								EndIf
-							Else
-								If e\room\dist < 12
-									UpdateCheckpointMonitors(0)
-									e\room\RoomDoors[0]\locked = True
-									e\room\RoomDoors[1]\locked = True
+					; Pre-breach (Day 1/2): keep checkpoint doors unlocked
+					If CurrentDay < 3 Then
+						e\room\RoomDoors[0]\locked = False
+						e\room\RoomDoors[1]\locked = False
+					Else
+						For e2.Events = Each Events
+							If e2\EventName = "room2sl"
+								If e2\EventState3 = 0
+									If e\room\dist < 12
+										TurnCheckpointMonitorsOff(0)
+										e\room\RoomDoors[0]\locked = False
+										e\room\RoomDoors[1]\locked = False
+									EndIf
+								Else
+									If e\room\dist < 12
+										UpdateCheckpointMonitors(0)
+										e\room\RoomDoors[0]\locked = True
+										e\room\RoomDoors[1]\locked = True
+									EndIf
 								EndIf
 							EndIf
-						EndIf
-					Next
+						Next
+					EndIf
 				EndIf
 				
 				If e\room\RoomDoors[0]\open <> e\EventState Then
@@ -2569,7 +2581,10 @@ Function UpdateEvents()
 				EndIf
 				
 				If e\EventState = 0 Then
-					CreateNPC(NPCtype066, EntityX(e\room\obj), 0.5, EntityZ(e\room\obj))
+					; Only spawn SCP-066 on Day 3 (after breach)
+					If CurrentDay = 3 Then
+						CreateNPC(NPCtype066, EntityX(e\room\obj), 0.5, EntityZ(e\room\obj))
+					EndIf
 					e\EventState = 1
 				EndIf
 				;[End Block]
